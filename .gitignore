@@ -1,0 +1,25 @@
+# Virtual Environment
+.venv/
+env/
+venv/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# User Data & Sensitive Credentials (do not push personal cookies)
+data/*.json
+!data/.gitkeep
+
+# Downloads & Renders
+downloads/*
+!downloads/.gitkeep
+
+# Logs & Temp
+*.log
+*.zip
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

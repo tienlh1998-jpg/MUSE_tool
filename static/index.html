@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MUSE AI MV Studio - Đạo Diễn & Sản Xuất MV Hàng Loạt</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Marked for Markdown Rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+            },
+            surface: {
+              800: '#1e1e2d',
+              850: '#181824',
+              900: '#12121a',
+              950: '#0c0c12'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #12121a; }
+    ::-webkit-scrollbar-thumb { background: #2d2d3f; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
+    .prose code { color: #a5b4fc; background: #1f1f30; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    .prose pre { background: #151522; padding: 12px; border-radius: 8px; border: 1px solid #2d2d42; overflow-x: auto; }
+    .prose h1, .prose h2, .prose h3 { color: #f3f4f6; margin-top: 1.2em; margin-bottom: 0.5em; font-weight: 700; }
+    .prose h1 { font-size: 1.5em; border-bottom: 1px solid #2d2d42; padding-bottom: 0.3em; }
+    .prose h2 { font-size: 1.25em; }
+    .prose h3 { font-size: 1.1em; color: #818cf8; }
+    .prose p { margin-bottom: 0.8em; line-height: 1.6; color: #d1d5db; }
+    .prose ul, .prose ol { padding-left: 1.2em; margin-bottom: 0.8em; color: #d1d5db; }
+    .prose li { margin-bottom: 0.3em; }
+    .prose strong { color: #f9fafb; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+  </style>
+</head>
+<body class="bg-surface-950 text-gray-200 min-h-screen flex flex-col font-sans selection:bg-brand-600 selection:text-white">
+
+  <!-- TOP NAVIGATION HEADER -->
+  <header class="bg-surface-900 border-b border-gray-800 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <!-- Logo & Branding -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-purple-500 flex items-center justify-center shadow-lg shadow-brand-500/20">
+          <i data-lucide="clapperboard" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg text-white tracking-wide flex items-center gap-2">
+            MUSE AI STUDIO
+            <span class="text-xs bg-brand-500/20 text-brand-400 border border-brand-500/30 px-2 py-0.5 rounded-full font-mono">v2.0 MV Pro</span>
+          </h1>
+          <p class="text-xs text-gray-400">Đạo diễn MV AI & Xưởng Render Đa Tài Khoản</p>
+        </div>
+      </div>
+
+      <!-- Quick Status Badges -->
+      <div class="hidden md:flex items-center gap-4 text-xs">
+        <div class="flex items-center gap-2 bg-surface-800 px-3 py-1.5 rounded-lg border border-gray-800">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-gray-400">Tài khoản Muse:</span>
+          <span id="header-acc-count" class="font-semibold text-white">0 Live</span>
+        </div>
+        <div class="flex items-center gap-2 bg-surface-800 px-3 py-1.5 rounded-lg border border-gray-800">
+          <i data-lucide="cpu" class="w-3.5 h-3.5 text-brand-400"></i>
+          <span class="text-gray-400">Đang Render:</span>
+          <span id="header-task-count" class="font-semibold text-white">0 tác vụ</span>
+        </div>
+      </div>
+
+      <!-- Main Navigation Tabs -->
+      <nav class="flex items-center gap-1 bg-surface-850 p-1 rounded-xl border border-gray-800/80">
+        <button onclick="switchTab('director')" id="nav-director" class="nav-btn active flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all text-white bg-brand-600 shadow-sm">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span>AI MV Director</span>
+        </button>
+        <button onclick="switchTab('studio')" id="nav-studio" class="nav-btn flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-surface-800">
+          <i data-lucide="video" class="w-4 h-4"></i>
+          <span>Batch Studio</span>
+        </button>
+        <button onclick="switchTab('accounts')" id="nav-accounts" class="nav-btn flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-surface-800">
+          <i data-lucide="users" class="w-4 h-4"></i>
+          <span>Kho Tài Khoản</span>
+        </button>
+        <button onclick="switchTab('gallery')" id="nav-gallery" class="nav-btn flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-surface-800">
+          <i data-lucide="film" class="w-4 h-4"></i>
+          <span>Thư Viện & CapCut</span>
+        </button>
+        <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-surface-800">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+          <span>Cài Đặt AI</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+
+    <!-- ================================================= TAB 1: AI MV DIRECTOR ================================================= -->
+    <section id="tab-director" class="tab-pane block">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Input Form (Left 5 Cols) -->
+        <div class="lg:col-span-5 bg-surface-900 border border-gray-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-800">
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="music" class="w-5 h-5 text-brand-400"></i>
+                Nhập Thông Số Bài Hát
+              </h2>
+              <p class="text-xs text-gray-400">Kích hoạt bộ quy chuẩn AI MV Director V2</p>
+            </div>
+            <button onclick="openPasteModal()" class="text-xs bg-surface-800 hover:bg-surface-700 text-gray-300 px-2.5 py-1.5 rounded-lg border border-gray-700 flex items-center gap-1.5 transition">
+              <i data-lucide="clipboard-paste" class="w-3.5 h-3.5"></i>
+              Dán kịch bản ngoài
+            </button>
+          </div>
+
+          <div class="space-y-3 text-sm">
+            <div>
+              <label class="block text-xs font-medium text-gray-300 mb-1">Tên bài hát / Dự án MV *</label>
+              <input type="text" id="dir-title" placeholder="VD: Ngày Chưa Giông Bão, Cắt Đôi Nỗi Sầu..." class="w-full bg-surface-950 border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-500 text-sm">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1">Thể loại / Phong cách</label>
+                <select id="dir-genre" class="w-full bg-surface-950 border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-500 text-sm">
+                  <option value="Pop Ballad tự sự bi kịch">Pop Ballad tự sự</option>
+                  <option value="Lofi Chill thư giãn">Lofi Chill nhẹ nhàng</option>
+                  <option value="Acoustic mộc mạc">Acoustic Indie mộc</option>
+                  <option value="Cinematic Dân gian đương đại">Dân gian đương đại / Sử thi</option>
+                  <option value="R&B / Soul lãng đãng">R&B / Soul</option>
+                  <option value="Hiphop / Rap Storytelling">Rap Storytelling</option>
+                  <option value="EDM / Dance dồn dập">EDM / Dance Upbeat</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1">Tiết tấu (BPM)</label>
+                <input type="text" id="dir-bpm" value="85 BPM" placeholder="VD: 75 BPM, 120 BPM" class="w-full bg-surface-950 border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-500 text-sm">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1">Giọng ca (Vocal)</label>
+                <input type="text" id="dir-vocal" value="Nữ trầm ấm, da diết" placeholder="VD: Nam khàn mộc, Nữ cao..." class="w-full bg-surface-950 border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-500 text-sm">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1">Cảm xúc chủ đạo (Mood)</label>
+                <input type="text" id="dir-mood" value="Hoài niệm, cô đơn, chữa lành" placeholder="VD: Bi tráng, ấm áp..." class="w-full bg-surface-950 border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-500 text-sm">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-300 mb-1">Lời bài hát (Lyrics) *</label>
+              <textarea id="dir-lyrics" rows="6" placeholder="Dán toàn bộ lời bài hát vào đây..." class="w-full bg-surface-950 border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-500 text-sm leading-relaxed resize-none"></textarea>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-300 mb-1">Yêu cầu đạo diễn thêm (Tùy chọn)</label>
+              <input type="text" id="dir-notes" placeholder="VD: Nhân vật nữ tóc ngắn mặc áo len xanh, bối cảnh Đà Lạt mù sương..." class="w-full bg-surface-950 border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-500 text-sm">
+            </div>
+          </div>
+
+          <!-- Buttons -->
+          <div class="flex items-center gap-3 pt-2">
+            <button onclick="runDirectorAI()" id="btn-run-director" class="flex-1 bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-medium py-2.5 px-4 rounded-xl shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2 transition text-sm">
+              <i data-lucide="wand-2" class="w-4 h-4"></i>
+              <span>Lập Kế Hoạch MV (AI)</span>
+            </button>
+            <button onclick="copyDirectorPrompt()" title="Sao chép toàn bộ prompt để ném vào ChatGPT/Claude ngoài" class="bg-surface-800 hover:bg-surface-700 text-gray-300 px-3 py-2.5 rounded-xl border border-gray-700 transition">
+              <i data-lucide="copy" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Output Plan & Script (Right 7 Cols) -->
+        <div class="lg:col-span-7 bg-surface-900 border border-gray-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-800">
+            <div class="flex items-center gap-3">
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="file-video" class="w-5 h-5 text-purple-400"></i>
+                Kế Hoạch & Storyboard 7 Bước
+              </h2>
+              <span id="shots-badge" class="hidden text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full font-mono">0 Shots</span>
+            </div>
+            
+            <button onclick="transferShotsToStudio()" id="btn-transfer-shots" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-md shadow-emerald-500/20 flex items-center gap-1.5 transition">
+              <i data-lucide="arrow-right-circle" class="w-4 h-4"></i>
+              <span>Đẩy sang Batch Studio</span>
+            </button>
+          </div>
+
+          <!-- Content display area -->
+          <div id="dir-output-container" class="min-h-[460px] max-h-[620px] overflow-y-auto bg-surface-950 rounded-xl p-4 border border-gray-800/80">
+            <div id="dir-empty-state" class="h-full flex flex-col items-center justify-center text-center p-8 text-gray-500">
+              <div class="w-16 h-16 rounded-2xl bg-surface-850 flex items-center justify-center mb-4 text-gray-400">
+                <i data-lucide="clapperboard" class="w-8 h-8"></i>
+              </div>
+              <h3 class="text-sm font-semibold text-gray-300 mb-1">Chưa có kế hoạch MV nào</h3>
+              <p class="text-xs text-gray-500 max-w-sm">Nhập thông tin bài hát và bấm "Lập Kế Hoạch MV" hoặc dán kịch bản đã sinh từ bên ngoài để bắt đầu.</p>
+            </div>
+            <div id="dir-markdown-view" class="prose prose-invert max-w-none text-sm hidden"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================= TAB 2: BATCH STUDIO ================================================= -->
+    <section id="tab-studio" class="tab-pane hidden space-y-6">
+      
+      <!-- Studio Control Bar -->
+      <div class="bg-surface-900 border border-gray-800 rounded-2xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Chế độ tạo:</span>
+          <div class="flex items-center bg-surface-950 p-1 rounded-xl border border-gray-800 text-xs">
+            <button class="mode-btn px-3 py-1.5 rounded-lg font-medium text-white bg-brand-600" data-mode="text-to-video">Text → Video</button>
+            <button class="mode-btn px-3 py-1.5 rounded-lg font-medium text-gray-400 hover:text-white" data-mode="image-to-video">Image → Video</button>
+            <button class="mode-btn px-3 py-1.5 rounded-lg font-medium text-gray-400 hover:text-white" data-mode="text-to-image">Text → Image</button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4 text-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-gray-400">Tỉ lệ:</span>
+            <select id="studio-aspect" class="bg-surface-950 border border-gray-800 rounded-lg px-2.5 py-1 text-white">
+              <option value="16:9" selected>16:9 (Ngang chuẩn MV)</option>
+              <option value="9:16">9:16 (Dọc TikTok/Shorts)</option>
+              <option value="1:1">1:1 (Vuông)</option>
+              <option value="4:3">4:3</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-gray-400">Thời lượng:</span>
+            <select id="studio-duration" class="bg-surface-950 border border-gray-800 rounded-lg px-2.5 py-1 text-white">
+              <option value="5">5 Giây</option>
+              <option value="7" selected>7 Giây (Khuyên dùng)</option>
+              <option value="10">10 Giây (Tối đa)</option>
+            </select>
+          </div>
+          <button onclick="startBatchRender()" id="btn-start-render" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold px-4 py-2 rounded-xl shadow-lg shadow-emerald-500/20 flex items-center gap-2 transition">
+            <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+            <span>Bắt Đầu Render</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Prompts Queue Table & Input Area -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Batch Input Form (Left 4 Cols) -->
+        <div class="lg:col-span-4 bg-surface-900 border border-gray-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i data-lucide="list-plus" class="w-4 h-4 text-brand-400"></i>
+            Thêm Prompt Thủ Công
+          </h3>
+          <p class="text-xs text-gray-400">Mỗi dòng là một prompt riêng biệt để tạo hàng loạt.</p>
+          
+          <textarea id="batch-prompts-input" rows="8" placeholder="Cinematic slow pan across a rainy street, neon lights reflection...&#10;Close-up of a singer playing acoustic guitar in a cozy wooden studio...&#10;Drone shot of golden wheat fields under sunset clouds..." class="w-full bg-surface-950 border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-500 text-xs leading-relaxed resize-none"></textarea>
+
+          <button onclick="addManualPrompts()" class="bg-surface-800 hover:bg-surface-700 text-white font-medium py-2 rounded-xl border border-gray-700 text-xs flex items-center justify-center gap-2 transition">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Thêm vào Danh Sách Chờ</span>
+          </button>
+        </div>
+
+        <!-- Realtime Tasks Queue (Right 8 Cols) -->
+        <div class="lg:col-span-8 bg-surface-900 border border-gray-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+          <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i data-lucide="loader" class="w-4 h-4 text-brand-400 animate-spin"></i>
+                Hàng Đợi Render Realtime
+              </h3>
+              <span id="queue-count-badge" class="text-xs bg-surface-800 text-gray-400 px-2 py-0.5 rounded-full">0 tác vụ</span>
+            </div>
+            <button onclick="clearAllTasks()" class="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 transition">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              Xóa danh sách
+            </button>
+          </div>
+
+          <!-- Tasks List -->
+          <div id="tasks-container" class="min-h-[380px] max-h-[520px] overflow-y-auto space-y-2 pr-1">
+            <div id="tasks-empty" class="h-64 flex flex-col items-center justify-center text-center text-gray-500">
+              <i data-lucide="inbox" class="w-8 h-8 mb-2"></i>
+              <p class="text-xs">Hàng đợi đang trống. Hãy thêm prompt hoặc đẩy từ AI MV Director sang.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================= TAB 3: ACCOUNT POOL ================================================= -->
+    <section id="tab-accounts" class="tab-pane hidden space-y-6">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Add Accounts Panel (Left 4 Cols) -->
+        <div class="lg:col-span-4 bg-surface-900 border border-gray-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-1">
+              <i data-lucide="user-plus" class="w-4 h-4 text-brand-400"></i>
+              Thêm Tài Khoản Muse AI
+            </h3>
+            <p class="text-xs text-gray-400">Dán danh sách tài khoản theo định dạng <code class="text-brand-300">email|cookie</code> (hoặc chỉ chuỗi cookie).</p>
+          </div>
+
+          <textarea id="bulk-accounts-input" rows="8" placeholder="user1@gmail.com|hatch_sess=abc...; other=...&#10;user2@gmail.com|hatch_sess=def...; other=...&#10;user3@gmail.com|hatch_sess=ghi...; other=..." class="w-full bg-surface-950 border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-500 text-xs font-mono leading-relaxed resize-none"></textarea>
+
+          <div class="bg-surface-850 p-3 rounded-xl border border-gray-800 text-xs text-gray-400 space-y-1">
+            <p class="font-semibold text-gray-300 flex items-center gap-1.5">
+              <i data-lucide="info" class="w-3.5 h-3.5 text-brand-400"></i>
+              Cách lấy Cookie:
+            </p>
+            <p>1. Cài extension <b>Cookie-Editor</b> trên Chrome/Edge.</p>
+            <p>2. Đăng nhập vào <b>muse.ai</b>, mở extension bấm <b>Export → Header String</b>.</p>
+            <p>3. Dán vào ô trên dạng: <code class="text-emerald-400">email@gmail.com|chuỗi_cookie</code></p>
+          </div>
+
+          <button onclick="addBulkAccounts()" class="bg-brand-600 hover:bg-brand-500 text-white font-medium py-2.5 rounded-xl shadow-lg shadow-brand-500/20 text-xs flex items-center justify-center gap-2 transition">
+            <i data-lucide="save" class="w-4 h-4"></i>
+            <span>Lưu & Kích Hoạt Tài Khoản</span>
+          </button>
+        </div>
+
+        <!-- Accounts Table (Right 8 Cols) -->
+        <div class="lg:col-span-8 bg-surface-900 border border-gray-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-800">
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+                Danh Sách Tài Khoản Trong Pool
+              </h3>
+              <p class="text-xs text-gray-400">Hệ thống tự động xoay tua hoặc đổi tài khoản khi hết lượt</p>
+            </div>
+            <button onclick="checkAllAccounts()" class="bg-surface-800 hover:bg-surface-700 text-gray-300 text-xs px-3 py-1.5 rounded-lg border border-gray-700 flex items-center gap-1.5 transition">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              <span>Kiểm Tra Tất Cả</span>
+            </button>
+          </div>
+
+          <!-- Accounts List -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-gray-400 uppercase bg-surface-950/60 border-b border-gray-800">
+                <tr>
+                  <th class="py-2.5 px-3">Tài khoản</th>
+                  <th class="py-2.5 px-3">Trạng thái</th>
+                  <th class="py-2.5 px-3">Đã tạo hôm nay</th>
+                  <th class="py-2.5 px-3">Tổng video</th>
+                  <th class="py-2.5 px-3 text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="accounts-tbody" class="divide-y divide-gray-800/60">
+                <tr>
+                  <td colspan="5" class="py-8 text-center text-gray-500">Chưa có tài khoản nào. Hãy dán cookie ở khung bên trái.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================= TAB 4: GALLERY & CAPCUT ================================================= -->
+    <section id="tab-gallery" class="tab-pane hidden space-y-6">
+      
+      <div class="flex items-center justify-between bg-surface-900 p-4 rounded-2xl border border-gray-800 shadow-xl">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="folder-video" class="w-5 h-5 text-purple-400"></i>
+            Thư Viện Video & Kế Hoạch Dựng CapCut
+          </h2>
+          <p class="text-xs text-gray-400">Các clip render xong tự động lưu về máy. Tải ZIP hoặc mở thư mục để ném vào CapCut.</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button onclick="openFolderInExplorer()" class="bg-surface-800 hover:bg-surface-700 text-gray-200 text-xs font-medium px-3.5 py-2 rounded-xl border border-gray-700 flex items-center gap-2 transition">
+            <i data-lucide="folder-open" class="w-4 h-4 text-amber-400"></i>
+            <span>Mở Thư Mục Downloads</span>
+          </button>
+          <a href="/api/downloads/zip" download class="bg-gradient-to-r from-purple-600 to-brand-600 hover:from-purple-500 hover:to-brand-500 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-lg shadow-purple-500/20 flex items-center gap-2 transition">
+            <i data-lucide="archive" class="w-4 h-4"></i>
+            <span>Tải Trọn Gói ZIP</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CapCut Edit Guide Panel -->
+      <div class="bg-surface-900 border border-gray-800 rounded-2xl p-5 shadow-xl space-y-3">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="scissors" class="w-4 h-4 text-emerald-400"></i>
+          Quy Trình Xếp Layer Trên CapCut (Chuẩn Không Bị Hụt Nhạc)
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div class="bg-surface-950 p-3.5 rounded-xl border border-gray-800 space-y-1.5">
+            <span class="badge bg-brand-500/20 text-brand-400 border border-brand-500/30">Layer 1: Main Track</span>
+            <p class="text-gray-300">Đặt các <b>Shot Lẻ (Shot 1, 3, 5, 7...)</b> nối tiếp nhau trên thanh chính. Thời lượng clip nguồn: 5s - 10s.</p>
+          </div>
+          <div class="bg-surface-950 p-3.5 rounded-xl border border-gray-800 space-y-1.5">
+            <span class="badge bg-purple-500/20 text-purple-300 border border-purple-500/30">Layer 2: Overlay Track</span>
+            <p class="text-gray-300">Đặt các <b>Shot Chẵn (Shot 2, 4, 6...)</b> ở rãnh đè (Overlay). Đặt gối đầu lấn vào Shot trước 0.5s - 1s.</p>
+          </div>
+          <div class="bg-surface-950 p-3.5 rounded-xl border border-gray-800 space-y-1.5">
+            <span class="badge bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Chuyển Cảnh Cross Dissolve</span>
+            <p class="text-gray-300">Thêm hiệu ứng hòa tan <b>(Cross Dissolve / Mờ Dần)</b> tại điểm gối đầu để cảnh chuyển mượt mà không bị giật khung hình.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Completed Videos Grid -->
+      <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <!-- Rendered items will appear here -->
+      </div>
+    </section>
+
+    <!-- ================================================= TAB 5: SETTINGS ================================================= -->
+    <section id="tab-settings" class="tab-pane hidden space-y-6">
+      
+      <div class="max-w-3xl mx-auto bg-surface-900 border border-gray-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="sliders" class="w-5 h-5 text-brand-400"></i>
+            Cài Đặt Kết Nối AI & Proxy
+          </h2>
+          <p class="text-xs text-gray-400">Cấu hình nhà cung cấp AI để chạy AI MV Director V2 (Gemini, DeepSeek, OpenAI, hoặc Reverse Proxy cá nhân).</p>
+        </div>
+
+        <div class="space-y-4 text-sm">
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Nhà Cung Cấp AI</label>
+            <select id="cfg-provider" onchange="onProviderChange()" class="w-full bg-surface-950 border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-500 text-sm">
+              <option value="gemini">Google Gemini (Khuyên dùng - Miễn phí API)</option>
+              <option value="custom_proxy" selected>Custom Proxy / OneAPI / NewAPI / OpenAI-Compatible</option>
+              <option value="openai">OpenAI (Official)</option>
+              <option value="deepseek">DeepSeek (Official)</option>
+              <option value="claude">Anthropic Claude</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Base URL (Endpoint API)</label>
+            <input type="text" id="cfg-base-url" placeholder="VD: https://api.openai.com/v1 hoặc https://your-proxy.com/v1" class="w-full bg-surface-950 border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-500 font-mono text-xs">
+            <p class="text-[11px] text-gray-500 mt-1">Hỗ trợ mọi reverse proxy hoặc trạm chuyển tiếp chuẩn OpenAI.</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">API Key</label>
+            <input type="password" id="cfg-api-key" placeholder="sk-..." class="w-full bg-surface-950 border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-500 font-mono text-xs">
+            <p class="text-[11px] text-gray-500 mt-1">Lưu trữ bảo mật trong file cấu hình nội bộ trên máy bạn.</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Tên Model</label>
+            <input type="text" id="cfg-model" placeholder="VD: gpt-4o, gemini-1.5-flash, deepseek-chat, claude-3-5-sonnet..." class="w-full bg-surface-950 border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-500 font-mono text-xs">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Network Proxy (HTTP/SOCKS5 - Tùy chọn)</label>
+            <input type="text" id="cfg-network-proxy" placeholder="VD: http://127.0.0.1:7890 hoặc để trống nếu không dùng" class="w-full bg-surface-950 border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-500 font-mono text-xs">
+          </div>
+
+          <div class="pt-2 border-t border-gray-800 flex items-center justify-between">
+            <button onclick="testAIConnection()" id="btn-test-ai" class="bg-surface-800 hover:bg-surface-700 text-gray-300 font-medium px-4 py-2 rounded-xl border border-gray-700 text-xs flex items-center gap-2 transition">
+              <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+              <span>Kiểm Tra Kết Nối AI</span>
+            </button>
+            <span id="test-ai-result" class="text-xs"></span>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-gray-800 space-y-4">
+          <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Cấu Hình Engine & Xoay Tua Tài Khoản</h3>
+          <div class="grid grid-cols-2 gap-4 text-xs">
+            <div>
+              <label class="block text-gray-300 mb-1">Số tác vụ render song song (Concurrency):</label>
+              <input type="number" id="cfg-concurrency" min="1" max="10" value="3" class="w-full bg-surface-950 border border-gray-800 rounded-xl px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-gray-300 mb-1">Chế độ phân bổ tài khoản:</label>
+              <select id="cfg-rotation" class="w-full bg-surface-950 border border-gray-800 rounded-xl px-3 py-2 text-white">
+                <option value="round_robin">Xoay vòng đều (Round Robin)</option>
+                <option value="least_used">Ưu tiên tài khoản ít dùng nhất</option>
+              </select>
+            </div>
+          </div>
+          
+          <label class="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
+            <input type="checkbox" id="cfg-failover" checked class="rounded border-gray-800 bg-surface-950 text-brand-600 focus:ring-0">
+            <span>Tự động chuyển tài khoản khác khi tài khoản hiện tại hết hạn mức hoặc lỗi (Auto-Failover)</span>
+          </label>
+        </div>
+
+        <div class="pt-3 flex justify-end">
+          <button onclick="saveAppConfig()" class="bg-brand-600 hover:bg-brand-500 text-white font-medium px-5 py-2.5 rounded-xl shadow-lg shadow-brand-500/25 text-xs flex items-center gap-2 transition">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Lưu Cài Đặt</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: DÁN KỊCH BẢN ĐÃ CÓ -->
+  <div id="modal-paste" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-surface-900 border border-gray-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl flex flex-col gap-4">
+      <div class="flex items-center justify-between pb-3 border-b border-gray-800">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="clipboard-copy" class="w-4 h-4 text-brand-400"></i>
+          Dán Kịch Bản AI MV Director (Sinh từ ChatGPT / Claude / Gemini)
+        </h3>
+        <button onclick="closePasteModal()" class="text-gray-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <p class="text-xs text-gray-400">Nếu bạn sinh kịch bản bên ngoài web, hãy dán toàn bộ văn bản vào đây. Hệ thống sẽ tự động bóc tách các shot và prompt chuẩn.</p>
+      <textarea id="paste-script-content" rows="12" placeholder="Dán toàn bộ kết quả văn bản kịch bản vào đây..." class="w-full bg-surface-950 border border-gray-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-brand-500 font-mono resize-none"></textarea>
+      <div class="flex justify-end gap-3 pt-2">
+        <button onclick="closePasteModal()" class="px-4 py-2 rounded-xl bg-surface-800 hover:bg-surface-700 text-xs text-gray-300">Đóng</button>
+        <button onclick="submitPastedScript()" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-semibold text-white flex items-center gap-1.5">
+          <i data-lucide="filter" class="w-3.5 h-3.5"></i>
+          Bóc Tách & Tải Kịch Bản
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    // State
+    let currentShots = [];
+    let pollingInterval = null;
+
+    // Tab Navigation
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active', 'text-white', 'bg-brand-600');
+        btn.classList.add('text-gray-400');
+      });
+
+      const targetPane = document.getElementById(`tab-${tabId}`);
+      const targetNav = document.getElementById(`nav-${tabId}`);
+      if (targetPane) targetPane.classList.remove('hidden');
+      if (targetNav) {
+        targetNav.classList.add('active', 'text-white', 'bg-brand-600');
+        targetNav.classList.remove('text-gray-400');
+      }
+
+      if (tabId === 'accounts') loadAccounts();
+      if (tabId === 'studio') loadTasks();
+      if (tabId === 'gallery') loadGallery();
+      if (tabId === 'settings') loadSettings();
+    }
+
+    // Modal Controls
+    function openPasteModal() { document.getElementById('modal-paste').classList.remove('hidden'); }
+    function closePasteModal() { document.getElementById('modal-paste').classList.add('hidden'); }
+
+    // Init Lucide
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      loadSettings();
+      loadAccounts();
+      loadTasks();
+      
+      // Start task poller
+      pollingInterval = setInterval(loadTasks, 3000);
+    });
+
+    // ================= AI MV DIRECTOR LOGIC =================
+    async function runDirectorAI() {
+      const title = document.getElementById('dir-title').value.trim();
+      const lyrics = document.getElementById('dir-lyrics').value.trim();
+      if (!title || !lyrics) {
+        alert('Vui lòng nhập Tên bài hát và Lời bài hát (Lyrics)!');
+        return;
+      }
+
+      const btn = document.getElementById('btn-run-director');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> <span>Đang suy nghĩ & đạo diễn...</span>`;
+      lucide.createIcons();
+
+      const payload = {
+        song_title: title,
+        lyrics: lyrics,
+        genre_style: document.getElementById('dir-genre').value,
+        bpm: document.getElementById('dir-bpm').value,
+        vocal: document.getElementById('dir-vocal').value,
+        mood: document.getElementById('dir-mood').value,
+        extra_notes: document.getElementById('dir-notes').value
+      };
+
+      try {
+        const res = await fetch('/api/director/generate', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.error || 'Lỗi gọi AI');
+
+        displayDirectorScript(data.script_markdown, data.shots);
+      } catch (err) {
+        alert('Lỗi: ' + err.message + '\n\n(Mẹo: Bạn có thể vào tab Cài Đặt AI để kiểm tra API Key hoặc dùng nút "Dán kịch bản ngoài")');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        lucide.createIcons();
+      }
+    }
+
+    function displayDirectorScript(markdown, shots) {
+      currentShots = shots || [];
+      document.getElementById('dir-empty-state').classList.add('hidden');
+      const view = document.getElementById('dir-markdown-view');
+      view.classList.remove('hidden');
+      view.innerHTML = marked.parse(markdown);
+
+      const badge = document.getElementById('shots-badge');
+      const transferBtn = document.getElementById('btn-transfer-shots');
+      if (currentShots.length > 0) {
+        badge.textContent = `${currentShots.length} Shots`;
+        badge.classList.remove('hidden');
+        transferBtn.classList.remove('hidden');
+      }
+    }
+
+    function copyDirectorPrompt() {
+      const title = document.getElementById('dir-title').value.trim() || 'Bài hát chưa đặt tên';
+      const lyrics = document.getElementById('dir-lyrics').value.trim() || '(Lời bài hát)';
+      const genre = document.getElementById('dir-genre').value;
+      const bpm = document.getElementById('dir-bpm').value;
+      const mood = document.getElementById('dir-mood').value;
+      const vocal = document.getElementById('dir-vocal').value;
+
+      const fullPrompt = `Hãy đóng vai AI MV Director V2, đạo diễn kế hoạch sản xuất MV cho bài hát sau:
+
+- Tên bài hát: ${title}
+- Thể loại: ${genre}
+- BPM: ${bpm}
+- Giọng ca: ${vocal}
+- Mood: ${mood}
+
+Lời bài hát:
+"""
+${lyrics}
+"""
+
+Xuất trọn vẹn 7 bước chuẩn:
+1. Phân tích & Lyric Evidence Map (Chọn 1 format tối ưu)
+2. Visual Bible (Style, Character, Wardrobe, Location Lock)
+3. Reference Pack (Prompt tiếng Anh trong code block)
+4. Storyboard Sheet (Thời lượng 5s - 10s linh hoạt)
+5. Bộ Prompt Video (FLOW / VEO / MUSE PROMPT & NEGATIVE PROMPT)
+6. Kế hoạch dựng CapCut (Layer 1 Main Track, Layer 2 Overlay, Cross Dissolve)
+7. Quality Check`;
+
+      navigator.clipboard.writeText(fullPrompt).then(() => {
+        alert('Đã sao chép prompt! Bạn hãy mở ChatGPT hoặc Claude web lên dán vào để sinh kịch bản, sau đó copy kết quả bấm "Dán kịch bản ngoài".');
+      });
+    }
+
+    async function submitPastedScript() {
+      const text = document.getElementById('paste-script-content').value.trim();
+      if (!text) return;
+      try {
+        const res = await fetch('/api/director/parse', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({raw_script: text})
+        });
+        const data = await res.json();
+        closePasteModal();
+        displayDirectorScript(text, data.shots);
+      } catch (e) {
+        alert('Lỗi bóc tách: ' + e.message);
+      }
+    }
+
+    function transferShotsToStudio() {
+      if (!currentShots || currentShots.length === 0) {
+        alert('Chưa có Shot nào được trích xuất.');
+        return;
+      }
+
+      const tasks = currentShots.map(s => ({
+        prompt: s.prompt,
+        negative_prompt: s.negative_prompt || "",
+        aspect: s.aspect || "16:9",
+        duration: s.duration || 7,
+        mode: "text-to-video"
+      }));
+
+      fetch('/api/tasks', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({tasks: tasks})
+      }).then(r => r.json()).then(res => {
+        alert(`Đã chuyển thành công ${res.count} Shots sang Batch Studio!`);
+        switchTab('studio');
+      }).catch(err => alert('Lỗi chuyển shot: ' + err.message));
+    }
+
+    // ================= BATCH STUDIO LOGIC =================
+    async function loadTasks() {
+      try {
+        const res = await fetch('/api/tasks');
+        const tasks = await res.json();
+
+        // Update header count
+        const running = tasks.filter(t => t.status === 'running').length;
+        document.getElementById('header-task-count').textContent = `${running} tác vụ`;
+        document.getElementById('queue-count-badge').textContent = `${tasks.length} tác vụ`;
+
+        const container = document.getElementById('tasks-container');
+        if (tasks.length === 0) {
+          container.innerHTML = `
+            <div id="tasks-empty" class="h-64 flex flex-col items-center justify-center text-center text-gray-500">
+              <i data-lucide="inbox" class="w-8 h-8 mb-2"></i>
+              <p class="text-xs">Hàng đợi đang trống. Hãy thêm prompt hoặc đẩy từ AI MV Director sang.</p>
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+
+        container.innerHTML = tasks.slice().reverse().map(t => {
+          let badgeClass = "bg-amber-500/20 text-amber-300 border-amber-500/30";
+          let badgeText = "Đang chờ";
+          if (t.status === 'running') {
+            badgeClass = "bg-brand-500/20 text-brand-300 border-brand-500/30 animate-pulse";
+            badgeText = `Đang chạy (${t.progress}%)`;
+          } else if (t.status === 'completed') {
+            badgeClass = "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+            badgeText = "Hoàn tất";
+          } else if (t.status === 'failed') {
+            badgeClass = "bg-rose-500/20 text-rose-300 border-rose-500/30";
+            badgeText = "Lỗi";
+          }
+
+          return `
+            <div class="bg-surface-950 p-3 rounded-xl border border-gray-800/80 flex flex-col gap-2">
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2">
+                  <span class="badge ${badgeClass}">${badgeText}</span>
+                  <span class="text-gray-400 font-mono">ID: ${t.id}</span>
+                  ${t.account_email ? `<span class="text-purple-400 font-mono text-[11px]"><i data-lucide="user" class="inline w-3 h-3"></i> ${t.account_email}</span>` : ''}
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-gray-500 text-[11px]">${t.duration}s · ${t.aspect}</span>
+                  ${t.status === 'failed' ? `<button onclick="retryTask('${t.id}')" class="text-brand-400 hover:text-brand-300 text-[11px]">Thử lại</button>` : ''}
+                  <button onclick="deleteTask('${t.id}')" class="text-gray-500 hover:text-rose-400 text-[11px]">Xóa</button>
+                </div>
+              </div>
+
+              <p class="text-xs text-gray-200 line-clamp-2 font-mono bg-surface-900/60 p-2 rounded-lg border border-gray-800/50">${t.prompt}</p>
+
+              <!-- Progress bar -->
+              <div class="w-full bg-surface-900 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-gradient-to-r from-brand-500 to-emerald-400 h-full transition-all duration-300" style="width: ${t.progress}%"></div>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-gray-400">
+                <span>${t.status_message || ''}</span>
+                ${t.result_url ? `<a href="${t.result_url}" target="_blank" class="text-emerald-400 hover:underline flex items-center gap-1 font-semibold">Xem video <i data-lucide="external-link" class="w-3 h-3"></i></a>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+        lucide.createIcons();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function addManualPrompts() {
+      const text = document.getElementById('batch-prompts-input').value.trim();
+      if (!text) return;
+
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      const aspect = document.getElementById('studio-aspect').value;
+      const duration = parseInt(document.getElementById('studio-duration').value);
+
+      const tasks = lines.map(p => ({
+        prompt: p,
+        aspect: aspect,
+        duration: duration,
+        mode: "text-to-video"
+      }));
+
+      fetch('/api/tasks', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({tasks: tasks})
+      }).then(() => {
+        document.getElementById('batch-prompts-input').value = '';
+        loadTasks();
+      });
+    }
+
+    function deleteTask(id) {
+      fetch(`/api/tasks/${id}`, {method: 'DELETE'}).then(loadTasks);
+    }
+
+    function retryTask(id) {
+      fetch(`/api/tasks/retry/${id}`, {method: 'POST'}).then(loadTasks);
+    }
+
+    function clearAllTasks() {
+      if (confirm('Bạn có chắc muốn xóa toàn bộ hàng đợi?')) {
+        fetch('/api/tasks/clear', {method: 'POST'}).then(loadTasks);
+      }
+    }
+
+    function startBatchRender() {
+      alert('Hàng đợi đang chạy tự động trong nền theo số luồng Concurrency đã cấu hình!');
+    }
+
+    // ================= ACCOUNT POOL LOGIC =================
+    async function loadAccounts() {
+      try {
+        const res = await fetch('/api/accounts');
+        const accounts = await res.json();
+
+        const activeCount = accounts.filter(a => a.status === 'active').length;
+        document.getElementById('header-acc-count').textContent = `${activeCount} Live`;
+
+        const tbody = document.getElementById('accounts-tbody');
+        if (accounts.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-gray-500">Chưa có tài khoản nào. Hãy dán cookie ở khung bên trái.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = accounts.map(a => {
+          let statusBadge = `<span class="badge bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Active</span>`;
+          if (a.status === 'expired') statusBadge = `<span class="badge bg-rose-500/20 text-rose-400 border border-rose-500/30">Expired</span>`;
+          if (a.status === 'quota_limit') statusBadge = `<span class="badge bg-amber-500/20 text-amber-400 border border-amber-500/30">Quota Limit</span>`;
+          if (a.status === 'disabled') statusBadge = `<span class="badge bg-gray-500/20 text-gray-400 border border-gray-500/30">Disabled</span>`;
+
+          return `
+            <tr class="hover:bg-surface-950/40">
+              <td class="py-2.5 px-3">
+                <div class="font-medium text-white">${a.email}</div>
+                <div class="text-[11px] text-gray-500 font-mono truncate max-w-xs">${a.cookie.slice(0, 35)}...</div>
+              </td>
+              <td class="py-2.5 px-3">${statusBadge}</td>
+              <td class="py-2.5 px-3 font-mono">${a.used_today}</td>
+              <td class="py-2.5 px-3 font-mono">${a.total_used}</td>
+              <td class="py-2.5 px-3 text-right space-x-2">
+                <button onclick="checkAccount('${a.id}')" class="text-xs text-brand-400 hover:text-brand-300">Test</button>
+                <button onclick="toggleAccount('${a.id}')" class="text-xs text-gray-400 hover:text-white">${a.status === 'disabled' ? 'Bật' : 'Tắt'}</button>
+                <button onclick="deleteAccount('${a.id}')" class="text-xs text-rose-400 hover:text-rose-300">Xóa</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function addBulkAccounts() {
+      const text = document.getElementById('bulk-accounts-input').value.trim();
+      if (!text) return;
+
+      const res = await fetch('/api/accounts/bulk', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({raw_text: text})
+      });
+      const data = await res.json();
+      alert(`Đã thêm thành công: ${data.added} tài khoản (Bỏ qua trùng lặp: ${data.skipped})`);
+      document.getElementById('bulk-accounts-input').value = '';
+      loadAccounts();
+    }
+
+    async function checkAccount(id) {
+      const res = await fetch(`/api/accounts/${id}/check`, {method: 'POST'});
+      const data = await res.json();
+      if (data.success) {
+        alert('Tài khoản hợp lệ! Trạng thái: Live');
+      } else {
+        alert('Lỗi: ' + (data.error || 'Phiên hết hạn'));
+      }
+      loadAccounts();
+    }
+
+    async function checkAllAccounts() {
+      const res = await fetch('/api/accounts');
+      const accounts = await res.json();
+      for (const a of accounts) {
+        await fetch(`/api/accounts/${a.id}/check`, {method: 'POST'});
+      }
+      loadAccounts();
+    }
+
+    async function toggleAccount(id) {
+      await fetch(`/api/accounts/${id}/toggle`, {method: 'POST'});
+      loadAccounts();
+    }
+
+    async function deleteAccount(id) {
+      if (confirm('Xóa tài khoản này?')) {
+        await fetch(`/api/accounts/${id}`, {method: 'DELETE'});
+        loadAccounts();
+      }
+    }
+
+    // ================= GALLERY & DOWNLOADS LOGIC =================
+    async function loadGallery() {
+      try {
+        const res = await fetch('/api/tasks');
+        const tasks = await res.json();
+        const completed = tasks.filter(t => t.status === 'completed' && t.result_url);
+
+        const grid = document.getElementById('gallery-grid');
+        if (completed.length === 0) {
+          grid.innerHTML = `<div class="col-span-full py-12 text-center text-gray-500">Chưa có clip nào hoàn tất. Hãy chạy render trong Studio.</div>`;
+          return;
+        }
+
+        grid.innerHTML = completed.map(t => `
+          <div class="bg-surface-900 border border-gray-800 rounded-xl overflow-hidden shadow-lg flex flex-col">
+            <div class="aspect-video bg-black flex items-center justify-center relative group">
+              <video src="${t.result_url}" controls class="w-full h-full object-cover"></video>
+            </div>
+            <div class="p-3 flex flex-col gap-1.5 flex-1 justify-between text-xs">
+              <p class="text-gray-300 font-mono line-clamp-2">${t.prompt}</p>
+              <div class="flex items-center justify-between text-gray-500 pt-2 border-t border-gray-800 text-[11px]">
+                <span>${t.duration}s · ${t.aspect}</span>
+                <a href="${t.result_url}" download class="text-brand-400 hover:underline">Tải file MP4</a>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function openFolderInExplorer() {
+      await fetch('/api/open-downloads', {method: 'POST'});
+    }
+
+    // ================= SETTINGS LOGIC =================
+    function onProviderChange() {
+      const p = document.getElementById('cfg-provider').value;
+      const baseUrl = document.getElementById('cfg-base-url');
+      const model = document.getElementById('cfg-model');
+
+      if (p === 'gemini') {
+        baseUrl.value = 'https://generativelanguage.googleapis.com/v1beta';
+        model.value = 'gemini-1.5-flash';
+      } else if (p === 'openai') {
+        baseUrl.value = 'https://api.openai.com/v1';
+        model.value = 'gpt-4o';
+      } else if (p === 'deepseek') {
+        baseUrl.value = 'https://api.deepseek.com/v1';
+        model.value = 'deepseek-chat';
+      } else if (p === 'claude') {
+        baseUrl.value = 'https://api.anthropic.com/v1';
+        model.value = 'claude-3-5-sonnet-20241022';
+      }
+    }
+
+    async function loadSettings() {
+      try {
+        const res = await fetch('/api/config');
+        const cfg = await res.json();
+        document.getElementById('cfg-provider').value = cfg.ai_provider || 'custom_proxy';
+        document.getElementById('cfg-base-url').value = cfg.ai_base_url || '';
+        document.getElementById('cfg-api-key').value = cfg.ai_api_key || '';
+        document.getElementById('cfg-model').value = cfg.ai_model || '';
+        document.getElementById('cfg-network-proxy').value = cfg.ai_network_proxy || '';
+        document.getElementById('cfg-concurrency').value = cfg.concurrency || 3;
+        document.getElementById('cfg-rotation').value = cfg.rotation_mode || 'round_robin';
+        document.getElementById('cfg-failover').checked = cfg.auto_failover !== false;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function saveAppConfig() {
+      const payload = {
+        ai_provider: document.getElementById('cfg-provider').value,
+        ai_base_url: document.getElementById('cfg-base-url').value,
+        ai_api_key: document.getElementById('cfg-api-key').value,
+        ai_model: document.getElementById('cfg-model').value,
+        ai_network_proxy: document.getElementById('cfg-network-proxy').value || null,
+        concurrency: parseInt(document.getElementById('cfg-concurrency').value) || 3,
+        rotation_mode: document.getElementById('cfg-rotation').value,
+        auto_failover: document.getElementById('cfg-failover').checked
+      };
+
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        alert('Đã lưu cấu hình thành công!');
+      } else {
+        alert('Lưu cấu hình thất bại.');
+      }
+    }
+
+    async function testAIConnection() {
+      const btn = document.getElementById('btn-test-ai');
+      const result = document.getElementById('test-ai-result');
+      btn.disabled = true;
+      result.className = "text-xs text-amber-400";
+      result.textContent = "Đang kiểm tra kết nối...";
+
+      const payload = {
+        provider: document.getElementById('cfg-provider').value,
+        base_url: document.getElementById('cfg-base-url').value,
+        api_key: document.getElementById('cfg-api-key').value,
+        model: document.getElementById('cfg-model').value,
+        network_proxy: document.getElementById('cfg-network-proxy').value || null
+      };
+
+      try {
+        const res = await fetch('/api/test-ai', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          result.className = "text-xs text-emerald-400 font-semibold";
+          result.textContent = "✓ " + data.message;
+        } else {
+          result.className = "text-xs text-rose-400 font-semibold";
+          result.textContent = "✗ " + (data.error || 'Kết nối thất bại');
+        }
+      } catch (e) {
+        result.className = "text-xs text-rose-400 font-semibold";
+        result.textContent = "✗ Lỗi: " + e.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
