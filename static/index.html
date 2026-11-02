@@ -2,70 +2,154 @@
 <html lang="vi" class="dark">
 <head>
 
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MUSE AI STUDIO - AI Music Video Director Suite</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace'],
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MUSE AI STUDIO - Cinematic AI Video Suite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<!-- Official Google Material Symbols Outlined Font -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace'],
+        },
+        colors: {
+          brand: {
+            obsidian: '#0A0B10',
+            panel: '#12141F',
+            panelLight: '#181B2B',
+            surface: '#1E2238',
+            accent: '#8B5CF6',
+            accentHover: '#7C3AED',
+            indigo: '#6366F1',
+            emerald: '#10B981',
+            amber: '#F59E0B',
+            rose: '#F43F5E',
+            cyan: '#06B6D4'
           },
-          colors: {
-            brand: {
-              obsidian: '#0A0B10',
-              panel: '#12141F',
-              panelLight: '#181B2B',
-              surface: '#1E2238',
-              accent: '#8B5CF6',
-              accentHover: '#7C3AED',
-              indigo: '#6366F1',
-              emerald: '#10B981',
-              amber: '#F59E0B',
-              rose: '#F43F5E',
-              cyan: '#06B6D4'
-            }
-          }
+          // Material 3 Dark Tokens mapped to Stitch Obsidian/Charcoal
+          'surface': '#0D0F18',
+          'surface-dim': '#090A10',
+          'surface-bright': '#181B2B',
+          'surface-variant': '#1E2238',
+          'surface-container-lowest': '#12141F',
+          'surface-container-low': '#151827',
+          'surface-container': '#181B2B',
+          'surface-container-high': '#1E2238',
+          'surface-container-highest': '#252A42',
+          'on-surface': '#F1F5F9',
+          'on-surface-variant': '#94A3B8',
+          'outline': '#334155',
+          'outline-variant': 'rgba(255, 255, 255, 0.08)',
+          'primary': '#8B5CF6',
+          'on-primary': '#FFFFFF',
+          'primary-container': 'rgba(139, 92, 246, 0.2)',
+          'on-primary-container': '#C4B5FD',
+          'on-primary-fixed-variant': '#7C3AED',
+          'secondary': '#10B981',
+          'on-secondary': '#FFFFFF',
+          'secondary-container': 'rgba(16, 185, 129, 0.2)',
+          'on-secondary-container': '#6EE7B7',
+          'secondary-fixed': '#10B981',
+          'secondary-fixed-dim': '#34D399',
+          'on-secondary-fixed': '#064E3B',
+          'on-secondary-fixed-variant': '#047857',
+          'tertiary': '#06B6D4',
+          'on-tertiary': '#FFFFFF',
+          'tertiary-container': 'rgba(6, 182, 212, 0.2)',
+          'on-tertiary-container': '#67E8F9',
+          'error': '#F43F5E',
+          'on-error': '#FFFFFF',
+          'error-container': 'rgba(244, 63, 94, 0.2)',
+          'on-error-container': '#FDA4AF'
+        },
+        spacing: {
+          'space-xs': '0.25rem',
+          'space-sm': '0.5rem',
+          'space-md': '1rem',
+          'space-lg': '1.5rem',
+          'space-xl': '2rem'
+        },
+        fontSize: {
+          'headline-lg': ['32px', { lineHeight: '40px' }],
+          'headline-md': ['24px', { lineHeight: '32px' }],
+          'headline-sm': ['20px', { lineHeight: '28px' }],
+          'body-lg': ['16px', { lineHeight: '24px' }],
+          'body-md': ['14px', { lineHeight: '20px' }],
+          'body-sm': ['12px', { lineHeight: '16px' }],
+          'label-lg': ['14px', { lineHeight: '20px' }],
+          'label-md': ['12px', { lineHeight: '16px' }],
+          'label-sm': ['11px', { lineHeight: '14px' }]
         }
       }
     }
-  </script>
-  <style>
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #0D0F18;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #252A40;
-      border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #3B4263;
-    }
-    .hairline-border {
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .hairline-border-focus:focus-within {
-      border-color: rgba(139, 92, 246, 0.5);
-    }
-    .glow-subtle {
-      box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.15);
-    }
-    .glow-emerald {
-      box-shadow: 0 0 20px -3px rgba(16, 185, 129, 0.25);
-    }
-  </style>
+  }
+</script>
+<style>
+  /* Official Material Symbols Outlined rendering fix */
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined' !important;
+    font-weight: normal;
+    font-style: normal;
+    font-size: 20px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    vertical-align: middle;
+  }
+
+  /* Material 3 typography fallback classes */
+  .font-headline-lg { font-size: 32px; line-height: 40px; font-weight: 700; }
+  .font-headline-md { font-size: 24px; line-height: 32px; font-weight: 700; }
+  .font-headline-sm { font-size: 20px; line-height: 28px; font-weight: 600; }
+  .font-body-lg { font-size: 16px; line-height: 24px; }
+  .font-body-md { font-size: 14px; line-height: 20px; }
+  .font-body-sm { font-size: 12px; line-height: 16px; }
+  .font-label-lg { font-size: 14px; line-height: 20px; font-weight: 600; }
+  .font-label-md { font-size: 12px; line-height: 16px; font-weight: 500; }
+  .font-label-sm { font-size: 11px; line-height: 14px; font-weight: 500; }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0D0F18;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #252A40;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3B4263;
+  }
+  .hairline-border {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .hairline-border-focus:focus-within {
+    border-color: rgba(139, 92, 246, 0.5);
+  }
+  .glow-subtle {
+    box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.15);
+  }
+  .glow-emerald {
+    box-shadow: 0 0 20px -3px rgba(16, 185, 129, 0.25);
+  }
+</style>
 
 </head>
 <body class="bg-[#0A0B10] text-slate-200 font-sans antialiased h-screen flex flex-col selection:bg-brand-indigo/30 selection:text-white overflow-hidden">
@@ -121,20 +205,25 @@
     <!-- Center: Primary Tab Navigation -->
     
 <nav class="flex items-center space-x-1 bg-black/40 p-1 rounded-xl border border-white/5 text-xs font-medium">
-  <button id="nav-director" onclick="switchTab('director')" class="nav-tab active px-3.5 py-1.5 rounded-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow-sm transition-all">
-    🎬 AI MV Director
+  <button id="nav-director" onclick="switchTab('director')" class="nav-tab active px-3.5 py-1.5 rounded-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow-sm transition-all flex items-center gap-1.5">
+    <span class="material-symbols-outlined text-[16px]">movie_filter</span>
+    <span>AI MV Director</span>
   </button>
-  <button id="nav-studio" onclick="switchTab('studio')" class="nav-tab px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-    ⚡ Batch Studio
+  <button id="nav-studio" onclick="switchTab('studio')" class="nav-tab px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-1.5">
+    <span class="material-symbols-outlined text-[16px]">videocam</span>
+    <span>Batch Studio</span>
   </button>
-  <button id="nav-accounts" onclick="switchTab('accounts')" class="nav-tab px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-    👥 Account Pool
+  <button id="nav-accounts" onclick="switchTab('accounts')" class="nav-tab px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-1.5">
+    <span class="material-symbols-outlined text-[16px]">group</span>
+    <span>Account Pool</span>
   </button>
-  <button id="nav-gallery" onclick="switchTab('gallery')" class="nav-tab px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-    🎞️ CapCut Gallery
+  <button id="nav-gallery" onclick="switchTab('gallery')" class="nav-tab px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-1.5">
+    <span class="material-symbols-outlined text-[16px]">movie</span>
+    <span>CapCut Gallery</span>
   </button>
-  <button id="nav-settings" onclick="switchTab('settings')" class="nav-tab px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-    ⚙️ Settings
+  <button id="nav-settings" onclick="switchTab('settings')" class="nav-tab px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-1.5">
+    <span class="material-symbols-outlined text-[16px]">settings</span>
+    <span>Settings</span>
   </button>
 </nav>
 
@@ -155,7 +244,7 @@
   
   </header>
 
-  <!-- TAB 1: AI MV DIRECTOR (SIDE BY SIDE 40% / 60%) -->
+  <!-- TAB 1: AI MV DIRECTOR (HORIZONTAL SPLIT 40% / 60%) -->
   <section id="tab-director" class="tab-pane flex-1 flex overflow-hidden max-w-[1720px] w-full mx-auto p-4 gap-4">
 <!-- LEFT COLUMN: INPUT FORM & LYRICS (40% width) -->
     <section class="w-[40%] flex flex-col bg-[#12141F] rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
@@ -332,7 +421,7 @@
 
         <!-- Floating Green CTA Button -->
         <div class="flex flex-col items-end gap-1 flex-shrink-0">
-          <button class="py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs tracking-wide shadow-lg shadow-emerald-500/25 flex items-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0 transition-all glow-emerald">
+          <button id="btn-push-studio" onclick="transferShotsToStudio()" class="py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs tracking-wide shadow-lg shadow-emerald-500/25 flex items-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0 transition-all glow-emerald">
             <span>➡️ Push All 8 Shots to Batch Studio</span>
             <span class="w-5 h-5 rounded-lg bg-black/20 flex items-center justify-center text-slate-900 font-mono text-[10px]">8</span>
           </button>
@@ -343,7 +432,7 @@
       </div>
 
       <!-- Tabbed / Accordion Sections Container -->
-      <div class="flex-1 overflow-y-auto p-4 space-y-4">
+      <div id="director-plan-output" class="flex-1 overflow-y-auto p-4 space-y-4">
 
         <!-- SECTION 1: VISUAL BIBLE -->
         <div class="rounded-xl bg-[#151827] border border-white/10 overflow-hidden">
@@ -732,8 +821,8 @@
     </section>
   </section>
 
-  <!-- TAB 2: BATCH STUDIO (SIDE BY SIDE) -->
-  <section id="tab-studio" class="tab-pane flex-1 flex overflow-hidden max-w-[1720px] w-full mx-auto p-4 gap-4 hidden">
+  <!-- TAB 2: BATCH STUDIO (SCROLLABLE W-FULL) -->
+  <section id="tab-studio" class="tab-pane flex-1 overflow-y-auto max-w-[1720px] w-full mx-auto p-4 hidden">
 <div class="flex flex-col w-full">
 <!-- TOP CONTROL TOOLBAR -->
 <div class="w-full bg-surface-container-lowest shadow-md rounded-xl p-space-md mb-space-md flex flex-wrap items-center justify-between gap-space-md">
@@ -798,7 +887,7 @@
 <span class="material-symbols-outlined text-on-surface-variant text-sm ml-1">expand_more</span>
 </div>
 <!-- Primary Action: Start Batch Render -->
-<button class="bg-secondary text-on-secondary hover:bg-on-secondary-container font-label-lg text-label-lg px-space-lg py-2 rounded-lg shadow-md flex items-center gap-2 transition-all">
+<button id="btn-start-batch" onclick="startBatchRender()" class="bg-secondary text-on-secondary hover:bg-on-secondary-container font-label-md text-label-md px-space-md py-2 rounded-lg shadow-md flex items-center gap-2 font-semibold transition-all">
 <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
 <span>Start Batch Render</span>
 <span class="bg-secondary-container text-on-secondary-fixed-variant font-label-sm text-label-sm px-2 py-0.5 rounded-full">(8 Tasks)</span>
@@ -889,51 +978,12 @@
             </span>
 <span class="bg-surface-container-low px-1.5 py-0.5 rounded font-label-sm text-[10px] text-on-surface-variant">LoRA Key: &lt;linh_v2&gt;</span>
 </div>
-<div class="flex bg-surface-container-low rounded-lg p-2 font-label-md text-label-md overflow-x-auto text-on-surface">
-<!-- Line Numbers -->
-<div class="flex flex-col text-on-surface-variant select-none pr-3 text-right">
-<span>01</span>
-<span>02</span>
-<span>03</span>
-<span>04</span>
-<span>05</span>
-<span>06</span>
-<span>07</span>
-<span>08</span>
-</div>
-<!-- Prompt Token Lines -->
-<div class="flex flex-col gap-0.5 text-on-surface whitespace-nowrap min-w-0">
-<div>
-<span class="text-primary font-label-sm">[Dolly 35mm]</span>
-<span class="text-on-surface">cinematic slow dolly shot of Linh walking through mist, cold grading --ar 16:9</span>
-</div>
-<div>
-<span class="text-secondary font-label-sm">[Macro Focus]</span>
-<span class="text-on-surface">extreme close-up on delicate trembling hands on wet railing, shallow DOF</span>
-</div>
-<div>
-<span class="text-tertiary font-label-sm">[Drone Rise]</span>
-<span class="text-on-surface">wide crane shot revealing dark stormy mountain lake, hyperrealistic water reflections</span>
-</div>
-<div>
-<span class="text-primary font-label-sm">[Low Orbit]</span>
-<span class="text-on-surface">360 orbit around Linh turning back toward camera, wind blowing dark hair</span>
-</div>
-<div>
-<span class="text-secondary font-label-sm">[Anamorphic]</span>
-<span class="text-on-surface">horizontal blue streak lens flare cutting across melancholic horizon</span>
-</div>
-<div>
-<span class="text-primary font-label-sm">[Slow Motion]</span>
-<span class="text-on-surface">120fps droplets hitting puddle with neon city lights in reflection</span>
-</div>
-<div>
-<span class="text-tertiary font-label-sm">[Push-In]</span>
-<span class="text-on-surface">Minh stepping out from fog, leather texture detail, dramatic rim light</span>
-</div>
-<div>
-<span class="text-primary font-label-sm">[Master Shot]</span>
-<span class="text-on-surface">both figures meeting at crossroad cliffside at dusk, cinematic smoke haze</span>
+<div class="flex flex-col bg-surface-container-low rounded-lg p-2 border border-white/10">
+  <textarea id="studio-prompt-input" rows="8" class="w-full bg-transparent text-on-surface font-mono text-body-sm leading-relaxed p-1.5 outline-none resize-none placeholder:text-outline" placeholder="Nhập prompt video (mỗi dòng 1 prompt hoặc shot)...&#10;Shot 01: [Dolly 35mm] cinematic slow dolly shot of Linh walking through mist, cold grading --ar 16:9&#10;Shot 02: [Macro Focus] extreme close-up on delicate trembling hands on wet railing, shallow DOF&#10;Shot 03: [Drone Rise] wide crane shot revealing dark stormy mountain lake, hyperrealistic water reflections"></textarea>
+  <div class="flex items-center justify-between pt-2 border-t border-white/5 text-[11px] text-on-surface-variant font-mono">
+    <span id="studio-line-counter">3 lines detected</span>
+    <button type="button" onclick="clearStudioPrompts()" class="text-error hover:underline">Xóa tất cả</button>
+  </div>
 </div>
 </div>
 </div>
@@ -996,7 +1046,7 @@
 </div>
 </div>
 <!-- Submit to Queue Button -->
-<button class="w-full bg-primary hover:bg-on-primary-fixed-variant text-on-primary font-label-lg text-label-lg py-2.5 rounded-lg shadow-md flex items-center justify-center gap-2 transition-all">
+<button id="btn-add-queue" onclick="addManualPrompts()" class="w-full bg-primary hover:bg-on-primary-fixed-variant text-on-primary font-label-lg text-label-lg py-2.5 rounded-lg shadow-md flex items-center justify-center gap-2 transition-all">
 <span class="material-symbols-outlined text-lg">playlist_add_check</span>
 <span>Add to Render Queue (8 Shots)</span>
 </button>
@@ -1046,7 +1096,7 @@
 </div>
 </div>
 <!-- Task Cards Stack -->
-<div class="flex flex-col gap-space-sm">
+<div id="tasks-container" class="flex flex-col gap-space-sm">
 <!-- CARD 1: RENDERING -->
 <div class="bg-surface-container-lowest rounded-xl shadow-md p-space-md flex flex-col md:flex-row gap-space-md transition-all">
 <div class="relative w-full md:w-44 h-28 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container">
@@ -1177,7 +1227,7 @@
 <div class="flex items-center justify-between mt-3 pt-2">
 <span class="font-label-sm text-label-sm text-on-surface-variant">Ready for timeline integration</span>
 <div class="flex items-center gap-2">
-<button class="bg-secondary text-on-secondary hover:bg-on-secondary-container font-label-sm text-label-sm px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition-colors">
+<button id="btn-start-batch" onclick="startBatchRender()" class="bg-secondary text-on-secondary hover:bg-on-secondary-container font-label-md text-label-md px-space-md py-2 rounded-lg shadow-md flex items-center gap-2 font-semibold transition-all">
 <span class="material-symbols-outlined text-sm">ios_share</span>
                   Export to CapCut
                 </button>
@@ -1272,8 +1322,8 @@
 </div>
   </section>
 
-  <!-- TAB 3: ACCOUNT POOL (SIDE BY SIDE) -->
-  <section id="tab-accounts" class="tab-pane flex-1 flex overflow-hidden max-w-[1720px] w-full mx-auto p-4 gap-4 hidden">
+  <!-- TAB 3: ACCOUNT POOL (SCROLLABLE W-FULL) -->
+  <section id="tab-accounts" class="tab-pane flex-1 overflow-y-auto max-w-[1720px] w-full mx-auto p-4 hidden">
 <div class="flex flex-col w-full gap-space-lg">
 <!-- DASHBOARD HEADER & REAL-TIME CONTROLS -->
 <div class="bg-surface-container-low rounded-xl p-space-lg shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
@@ -1303,7 +1353,7 @@
 <span class="material-symbols-outlined text-[18px] text-primary">tune</span>
           Auto-Rotate Settings
         </button>
-<button class="px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md shadow-md hover:bg-on-secondary-container transition-all flex items-center gap-2 active:scale-95" id="pingAllBtn">
+<button id="pingAllBtn" onclick="checkAllAccounts()" class="px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md shadow-md hover:bg-on-secondary-container transition-all flex items-center gap-2 active:scale-95">
 <span class="material-symbols-outlined text-[18px] animate-pulse">radar</span>
 <span>Health Ping (12 Nodes)</span>
 </button>
@@ -1455,10 +1505,10 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 </div>
 <!-- Action CTAs -->
 <div class="flex flex-col sm:flex-row gap-space-sm pt-2">
-<button class="flex-1 py-2.5 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors text-center" id="validateBtn">
+<button id="validateBtn" onclick="validateSyntax()" class="flex-1 py-2.5 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors text-center">
             Validate Syntax
           </button>
-<button class="flex-[1.5] py-2.5 px-4 rounded-lg bg-secondary text-on-secondary hover:bg-on-secondary-container font-label-md text-label-md font-semibold transition-all shadow-md flex items-center justify-center gap-2" id="savePoolBtn">
+<button id="savePoolBtn" onclick="addBulkAccounts()" class="flex-[1.5] py-2.5 px-4 rounded-lg bg-secondary text-on-secondary hover:bg-on-secondary-container font-label-md text-label-md font-semibold transition-all shadow-md flex items-center justify-center gap-2">
 <span class="material-symbols-outlined text-[18px]">publish</span>
             Save &amp; Activate Pool
           </button>
@@ -1522,7 +1572,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 <th class="py-3 px-4 text-right">Node Actions</th>
 </tr>
 </thead>
-<tbody id="accounts-tbody" class="divide-y divide-white/5 text-xs"><tr><td colspan="6" class="py-8 text-center text-slate-500">Đang tải danh sách tài khoản...</td></tr></tbody>
+<tbody id="accounts-tbody" class="divide-y divide-surface-container text-body-sm"><tr><td colspan="6" class="py-8 text-center text-on-surface-variant">Đang tải danh sách tài khoản...</td></tr></tbody>
 </table>
 </div>
 <!-- Matrix Footer / Efficiency Diagnostics -->
@@ -1600,8 +1650,8 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 </script>
   </section>
 
-  <!-- TAB 4: CAPCUT GALLERY (SIDE BY SIDE / FULL) -->
-  <section id="tab-gallery" class="tab-pane flex-1 flex overflow-hidden max-w-[1720px] w-full mx-auto p-4 gap-4 hidden">
+  <!-- TAB 4: CAPCUT GALLERY (SCROLLABLE W-FULL) -->
+  <section id="tab-gallery" class="tab-pane flex-1 overflow-y-auto max-w-[1720px] w-full mx-auto p-4 hidden">
 <div class="flex flex-col w-full text-on-surface">
 <!-- PAGE HEADER & ACTION CONTROLS -->
 <header class="flex flex-col lg:flex-row lg:items-center justify-between pb-6 border-b border-white/10 gap-4">
@@ -1632,16 +1682,15 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 <button class="px-2.5 py-1 text-label-sm font-label-sm rounded text-slate-400 hover:text-white transition" id="fmt-edl">EDL</button>
 </div>
 <!-- Secondary: Open Explorer -->
-<button class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#181B2B] hover:bg-[#1E2238] border border-white/10 text-label-sm font-label-sm text-slate-200 transition shadow-sm">
+<button onclick="openFolderInExplorer()" class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#181B2B] hover:bg-[#1E2238] border border-white/10 text-label-sm font-label-sm text-slate-200 transition shadow-sm">
 <span class="material-symbols-outlined text-base text-slate-400">folder_open</span>
 <span>Open Downloads Folder</span>
 </button>
 <!-- Primary Highlight: CapCut ZIP -->
-<button class="group relative flex items-center gap-2.5 px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-500 hover:from-indigo-500 hover:to-purple-500 text-white font-label-md text-label-md shadow-lg shadow-purple-600/20 border border-white/20 transition-all">
+<a href="/api/downloads/zip" download class="group relative flex items-center gap-2.5 px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-500 hover:from-indigo-500 hover:to-purple-500 text-white font-label-md text-label-md shadow-lg shadow-purple-600/20 border border-white/20 transition-all">
 <span class="material-symbols-outlined text-lg group-hover:translate-y-0.5 transition-transform">archive</span>
 <span>Download CapCut Ready ZIP</span>
-<span class="px-2 py-0.5 text-[10px] font-mono rounded bg-white/20 text-white font-semibold">8 Clips + Draft XML</span>
-</button>
+<span class="px-2 py-0.5 text-[10px] font-mono rounded bg-white/20 text-white font-semibold">8 Clips + Draft XML</span></a>
 </div>
 </header>
 <!-- SECTION 1: CAPCUT MULTI-TRACK TIMELINE SIMULATOR -->
@@ -2323,7 +2372,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 </div>
   </section>
 
-  <!-- TAB 5: SETTINGS (SCROLLABLE) -->
+  <!-- TAB 5: SETTINGS (SCROLLABLE W-FULL) -->
   <section id="tab-settings" class="tab-pane flex-1 overflow-y-auto max-w-[1720px] w-full mx-auto p-4 hidden">
 <div class="flex flex-col w-full">
 <div class="max-w-[880px] w-full mx-auto px-4 py-6 flex flex-col space-y-6">
@@ -2500,7 +2549,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 <h3 class="font-headline-sm text-headline-sm text-on-surface">Connection Health Check</h3>
 <p class="font-body-sm text-body-sm text-on-surface-variant">Verify SSL certificates, model capabilities, and latency handshake.</p>
 </div>
-<button class="px-4 py-2.5 rounded-lg bg-primary hover:bg-on-primary-container text-on-primary font-label-md text-label-md shadow-md flex items-center gap-2 transition-all" id="ping-test-btn" type="button">
+<button class="px-4 py-2.5 rounded-lg bg-primary hover:bg-on-primary-container text-on-primary font-label-md text-label-md shadow-md flex items-center gap-2 transition-all" id="ping-test-btn" onclick="testAIConnection()" type="button">
 <span class="material-symbols-outlined text-[18px] animate-spin hidden" id="ping-spinner">progress_activity</span>
 <span class="material-symbols-outlined text-[18px]" id="ping-icon">bolt</span>
 <span>Test AI Connection (Ping Test)</span>
@@ -2610,7 +2659,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 <button class="px-4 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md transition-colors" type="button">
             Cancel
           </button>
-<button class="px-5 py-2.5 rounded-lg bg-primary hover:bg-on-primary-container text-on-primary font-label-md text-label-md shadow-md flex items-center gap-2 transition-all" id="save-settings-btn" type="button">
+<button class="px-5 py-2.5 rounded-lg bg-primary hover:bg-on-primary-container text-on-primary font-label-md text-label-md shadow-md flex items-center gap-2 transition-all" id="save-settings-btn" onclick="saveAppConfig()" type="button">
 <span class="material-symbols-outlined text-[18px]">check</span>
 <span>Save Settings</span>
 </button>
@@ -2695,11 +2744,11 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
   <div class="bg-[#12141F] border border-white/10 rounded-2xl max-w-2xl w-full p-6 shadow-2xl flex flex-col space-y-4">
     <div class="flex items-center justify-between pb-3 border-b border-white/10">
       <h3 class="text-sm font-bold text-white flex items-center space-x-2">
-        <svg class="w-4 h-4 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+        <span class="material-symbols-outlined text-primary text-base">content_paste</span>
         <span>Dán Kịch Bản AI MV Director (Từ ChatGPT / Claude / Gemini)</span>
       </h3>
       <button onclick="closePasteModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/5">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        <span class="material-symbols-outlined text-base">close</span>
       </button>
     </div>
     <p class="text-xs text-slate-400">Nếu bạn sinh kịch bản bên ngoài, hãy dán toàn bộ văn bản vào đây. Hệ thống sẽ tự động bóc tách từng Shot, thời lượng và prompt chuẩn để đưa vào Render Studio.</p>
@@ -2707,7 +2756,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
     <div class="flex justify-end space-x-3 pt-2">
       <button onclick="closePasteModal()" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs text-slate-300">Đóng</button>
       <button onclick="submitPastedScript()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-xs font-semibold text-white flex items-center space-x-1.5 shadow-lg shadow-indigo-600/25">
-        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+        <span class="material-symbols-outlined text-sm">auto_fix_high</span>
         <span>Bóc Tách &amp; Tải Kịch Bản</span>
       </button>
     </div>
@@ -2745,221 +2794,138 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
   function openPasteModal() { document.getElementById('modal-paste').classList.remove('hidden'); }
   function closePasteModal() { document.getElementById('modal-paste').classList.add('hidden'); }
 
-  // Init
-  document.addEventListener('DOMContentLoaded', () => {
-    loadSettings();
-    loadAccounts();
-    loadTasks();
-    pollingInterval = setInterval(loadTasks, 3000);
-  });
-
-  // AI MV Director
+  // --------------------------------------------------------------------------
+  // AI MV Director Functions
+  // --------------------------------------------------------------------------
   async function runDirectorAI() {
-    const title = document.getElementById('dir-title') ? document.getElementById('dir-title').value.trim() : 'MV Mới';
+    const title = document.getElementById('dir-title') ? document.getElementById('dir-title').value.trim() : '';
     const lyrics = document.getElementById('dir-lyrics') ? document.getElementById('dir-lyrics').value.trim() : '';
-    if (!title || !lyrics) {
-      alert('Vui lòng nhập Tên bài hát và Lời bài hát (Lyrics)!');
+    const btn = document.getElementById('btn-run-director');
+
+    if (!lyrics) {
+      alert('Vui lòng nhập lời bài hát để AI phân tích!');
       return;
     }
 
-    const btn = document.getElementById('btn-run-director');
-    const originalText = btn.innerHTML;
+    const origHtml = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = `<span class="animate-pulse">Đang đạo diễn & lập kế hoạch 7 bước...</span>`;
-
-    const payload = {
-      song_title: title,
-      lyrics: lyrics,
-      genre_style: "Pop Ballad",
-      bpm: "85 BPM",
-      vocal: "Nữ trầm ấm",
-      mood: "Hoài niệm, tự sự"
-    };
+    btn.innerHTML = `<span class="material-symbols-outlined text-base animate-spin">progress_activity</span><span>Đang phân tích kịch bản &amp; tạo kế hoạch sản xuất...</span>`;
 
     try {
       const res = await fetch('/api/director/generate', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          title: title || 'Music Video',
+          lyrics: lyrics,
+          genre: 'Pop / Ballad',
+          mood: 'Nostalgic & Melancholic',
+          tempo: '85 BPM'
+        })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error || 'Lỗi gọi AI');
 
-      currentShots = data.shots || [];
-      alert(`Đã đạo diễn thành công! Trích xuất được ${currentShots.length} Shots sẵn sàng render.`);
-      
-      const pushBtn = document.getElementById('btn-push-studio');
-      if (pushBtn) {
-        pushBtn.innerHTML = `<span>➡️ ĐẨY TOÀN BỘ ${currentShots.length} SHOTS SANG STUDIO</span>`;
-      }
-    } catch (err) {
-      alert('Lỗi: ' + err.message + '\n(Gợi ý: Kiểm tra API Key trong tab Settings hoặc dùng nút dán kịch bản ngoài)');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Lỗi tạo kịch bản');
+
+      renderDirectorResult(data);
+    } catch(err) {
+      alert('Lỗi tạo kịch bản AI: ' + err.message);
     } finally {
       btn.disabled = false;
-      btn.innerHTML = originalText;
+      btn.innerHTML = origHtml;
+    }
+  }
+
+  function renderDirectorResult(data) {
+    currentShots = data.shots || [];
+    const container = document.getElementById('director-plan-output');
+    if (!container) return;
+
+    let html = '';
+    if (data.raw_markdown) {
+      html = `<div class="prose prose-invert max-w-none text-xs leading-relaxed bg-[#151827] p-5 rounded-2xl border border-white/10 space-y-3 font-sans">${marked.parse(data.raw_markdown)}</div>`;
+    }
+
+    container.innerHTML = html;
+
+    // Update push button text
+    const pushBtn = document.getElementById('btn-push-studio');
+    if (pushBtn) {
+      pushBtn.innerHTML = `<span>➡️ Push All ${currentShots.length || 8} Shots to Batch Studio</span><span class="w-5 h-5 rounded-lg bg-black/20 flex items-center justify-center text-slate-900 font-mono text-[10px]">${currentShots.length || 8}</span>`;
     }
   }
 
   function copyDirectorPrompt() {
-    const title = document.getElementById('dir-title') ? document.getElementById('dir-title').value.trim() : 'Bài hát';
-    const lyrics = document.getElementById('dir-lyrics') ? document.getElementById('dir-lyrics').value.trim() : '(Lời)';
-    const text = `Hãy đóng vai AI MV Director V2, lập kế hoạch sản xuất MV cho bài: ${title}\n\nLyrics:\n"""\n${lyrics}\n"""\n\nXuất trọn 7 bước chuẩn kèm Flow/Veo/Muse Prompts từng Shot (5s-10s) và CapCut Timeline Plan.`;
-    navigator.clipboard.writeText(text).then(() => {
-      alert('Đã copy prompt đạo diễn! Bạn hãy mở ChatGPT hoặc Claude web dán vào, sau đó copy kết quả về bấm "Dán kịch bản ngoài".');
-    });
+    const lyrics = document.getElementById('dir-lyrics') ? document.getElementById('dir-lyrics').value : '';
+    const title = document.getElementById('dir-title') ? document.getElementById('dir-title').value : '';
+    const text = `Bạn là đạo diễn MV chuyên nghiệp. Hãy phân tích bài hát: "${title}". Lời bài hát:
+${lyrics}`;
+    navigator.clipboard.writeText(text);
+    alert('Đã sao chép prompt vào Clipboard!');
   }
 
   async function submitPastedScript() {
-    const text = document.getElementById('paste-script-content').value.trim();
-    if (!text) return;
+    const content = document.getElementById('paste-script-content').value.trim();
+    if (!content) return;
+
     try {
       const res = await fetch('/api/director/parse', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({raw_script: text})
+        body: JSON.stringify({text: content})
       });
       const data = await res.json();
       closePasteModal();
-      currentShots = data.shots || [];
-      alert(`Đã bóc tách thành công ${currentShots.length} Shots!`);
-      const pushBtn = document.getElementById('btn-push-studio');
-      if (pushBtn) {
-        pushBtn.innerHTML = `<span>➡️ ĐẨY TOÀN BỘ ${currentShots.length} SHOTS SANG STUDIO</span>`;
-      }
-    } catch (e) {
-      alert('Lỗi: ' + e.message);
+      renderDirectorResult(data);
+      alert(`Đã bóc tách thành công ${data.shots ? data.shots.length : 0} shots từ kịch bản bên ngoài!`);
+    } catch(e) {
+      alert('Lỗi bóc tách kịch bản: ' + e.message);
     }
   }
 
   function transferShotsToStudio() {
     if (!currentShots || currentShots.length === 0) {
-      alert('Chưa có Shot nào. Hãy bấm "Lập Kế Hoạch MV" trước.');
-      return;
+      currentShots = [
+        {shot_number: 1, prompt: "[Dolly 35mm] cinematic slow dolly shot of Linh walking through mist, cold grading --ar 16:9"},
+        {shot_number: 2, prompt: "[Macro Focus] extreme close-up on delicate trembling hands on wet railing, shallow DOF"},
+        {shot_number: 3, prompt: "[Drone Rise] wide crane shot revealing dark stormy mountain lake, hyperrealistic water reflections"},
+        {shot_number: 4, prompt: "[Low Orbit] 360 orbit around Linh turning back toward camera, wind blowing dark hair"},
+        {shot_number: 5, prompt: "[Anamorphic] horizontal blue streak lens flare cutting across melancholic horizon"},
+        {shot_number: 6, prompt: "[Slow Motion] 120fps droplets hitting puddle with neon city lights in reflection"},
+        {shot_number: 7, prompt: "[Push-In] Minh stepping out from fog, leather texture detail, dramatic rim light"},
+        {shot_number: 8, prompt: "[Master Shot] both figures meeting at crossroad cliffside at dusk, cinematic smoke haze"}
+      ];
     }
-    const tasks = currentShots.map(s => ({
-      prompt: s.prompt,
-      negative_prompt: s.negative_prompt || "",
-      aspect: s.aspect || "16:9",
-      duration: s.duration || 7,
-      mode: "text-to-video"
-    }));
 
-    fetch('/api/tasks', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({tasks: tasks})
-    }).then(r => r.json()).then(res => {
-      alert(`Đã chuyển thành công ${res.count} Shots sang Batch Studio!`);
-      switchTab('studio');
-    });
-  }
-
-  // Account Pool
-  async function loadAccounts() {
-    try {
-      const res = await fetch('/api/accounts');
-      const accounts = await res.json();
-
-      const activeCount = accounts.filter(a => a.status === 'active').length;
-      const badge = document.getElementById('header-acc-badge');
-      if (badge) badge.textContent = `${activeCount}/${accounts.length} Live`;
-
-      const tbody = document.getElementById('accounts-tbody');
-      if (!tbody) return;
-
-      if (accounts.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">Chưa có tài khoản Muse nào. Hãy dán cookie ở khung bên trái.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = accounts.map(a => {
-        let statusPill = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">● LIVE</span>`;
-        if (a.status === 'expired') statusPill = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30">● EXPIRED</span>`;
-        if (a.status === 'quota_limit') statusPill = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30">● QUOTA LIMIT</span>`;
-
-        return `
-          <tr class="hover:bg-white/[0.02] transition-colors">
-            <td class="py-3 px-4">
-              <div class="font-medium text-white">${a.email}</div>
-              <div class="text-[10px] text-slate-500 font-mono truncate max-w-xs">${a.cookie.slice(0, 30)}...</div>
-            </td>
-            <td class="py-3 px-4">${statusPill}</td>
-            <td class="py-3 px-4 font-mono">${a.used_today} video</td>
-            <td class="py-3 px-4 font-mono">${a.total_used} video</td>
-            <td class="py-3 px-4 text-right space-x-2">
-              <button onclick="checkAccount('${a.id}')" class="text-xs text-indigo-400 hover:text-indigo-300">Test</button>
-              <button onclick="toggleAccount('${a.id}')" class="text-xs text-slate-400 hover:text-white">${a.status === 'disabled' ? 'Bật' : 'Tắt'}</button>
-              <button onclick="deleteAccount('${a.id}')" class="text-xs text-rose-400 hover:text-rose-300">Xóa</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    } catch (e) {
-      console.error(e);
+    const lines = currentShots.map(s => s.prompt || s).filter(p => p && p.trim().length > 0);
+    const studioInput = document.getElementById('studio-prompt-input');
+    if (studioInput) {
+      studioInput.value = lines.join('\n');
+      const counter = document.getElementById('studio-line-counter');
+      if (counter) counter.textContent = `${lines.length} lines detected`;
     }
+
+    switchTab('studio');
   }
 
-  async function addBulkAccounts() {
-    const input = document.getElementById('bulk-accounts-input');
-    if (!input) return;
-    const text = input.value.trim();
-    if (!text) return;
-
-    const res = await fetch('/api/accounts/bulk', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({raw_text: text})
-    });
-    const data = await res.json();
-    alert(`Đã thêm thành công: ${data.added} tài khoản!`);
-    input.value = '';
-    loadAccounts();
+  // --------------------------------------------------------------------------
+  // Batch Studio Functions
+  // --------------------------------------------------------------------------
+  function clearStudioPrompts() {
+    const input = document.getElementById('studio-prompt-input');
+    if (input) input.value = '';
+    const counter = document.getElementById('studio-line-counter');
+    if (counter) counter.textContent = '0 lines detected';
   }
 
-  async function checkAccount(id) {
-    const res = await fetch(`/api/accounts/${id}/check`, {method: 'POST'});
-    const data = await res.json();
-    alert(data.success ? 'Tài khoản Live hợp lệ!' : 'Lỗi: ' + (data.error || 'Hết hạn'));
-    loadAccounts();
-  }
-
-  async function checkAllAccounts() {
-    const res = await fetch('/api/accounts');
-    const accounts = await res.json();
-    for (const a of accounts) {
-      await fetch(`/api/accounts/${a.id}/check`, {method: 'POST'});
-    }
-    loadAccounts();
-  }
-
-  async function toggleAccount(id) {
-    await fetch(`/api/accounts/${id}/toggle`, {method: 'POST'});
-    loadAccounts();
-  }
-
-  async function deleteAccount(id) {
-    if (confirm('Xóa tài khoản này khỏi pool?')) {
-      await fetch(`/api/accounts/${id}`, {method: 'DELETE'});
-      loadAccounts();
-    }
-  }
-
-  // Tasks & Batch Studio
-  async function loadTasks() {
-    try {
-      const res = await fetch('/api/tasks');
-      const tasks = await res.json();
-      const running = tasks.filter(t => t.status === 'running').length;
-      const taskBadge = document.getElementById('header-task-badge');
-      if (taskBadge) taskBadge.textContent = `${running} Đang chạy`;
-    } catch(e) {}
-  }
-
-  function addManualPrompts() {
+  async function addManualPrompts() {
     const input = document.getElementById('studio-prompt-input');
     if (!input) return;
     const text = input.value.trim();
-    if (!text) return;
+    if (!text) {
+      alert('Vui lòng nhập ít nhất 1 prompt!');
+      return;
+    }
 
     const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     const tasks = lines.map(p => ({
@@ -2969,70 +2935,304 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
       mode: "text-to-video"
     }));
 
-    fetch('/api/tasks', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({tasks: tasks})
-    }).then(() => {
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({tasks: tasks})
+      });
+      const data = await res.json();
       input.value = '';
+      const counter = document.getElementById('studio-line-counter');
+      if (counter) counter.textContent = '0 lines detected';
       alert(`Đã thêm ${tasks.length} prompt vào hàng đợi render!`);
-    });
+      loadTasks();
+    } catch(e) {
+      alert('Lỗi thêm tasks: ' + e.message);
+    }
   }
 
   function startBatchRender() {
-    alert('Hàng đợi tự động xử lý các tác vụ theo chế độ xoay vòng tài khoản!');
+    alert('Hệ thống tự động kích hoạt điều phối cụm tài khoản xoay vòng để render hàng đợi!');
   }
 
+  async function loadTasks() {
+    try {
+      const res = await fetch('/api/tasks');
+      const tasks = await res.json();
+      const running = tasks.filter(t => t.status === 'running').length;
+      const taskBadge = document.getElementById('header-task-badge');
+      if (taskBadge) taskBadge.textContent = `${running} Đang chạy`;
+
+      const container = document.getElementById('tasks-container');
+      if (!container) return;
+
+      if (tasks.length === 0) {
+        container.innerHTML = `
+          <div class="bg-surface-container-lowest rounded-xl p-8 text-center text-on-surface-variant flex flex-col items-center justify-center space-y-3">
+            <span class="material-symbols-outlined text-4xl text-primary/60">queue_play_next</span>
+            <div class="font-headline-sm text-headline-sm text-on-surface">Hàng đợi trống</div>
+            <p class="text-body-sm max-w-md">Nhập danh sách Prompt bên trái hoặc nhấn "Push All Shots to Batch Studio" từ AI Director để bắt đầu tạo video.</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      tasks.forEach((t, i) => {
+        const isRunning = t.status === 'running';
+        const isDone = t.status === 'completed';
+        const isFailed = t.status === 'failed';
+
+        const statusBadge = isRunning
+          ? `<span class="bg-primary-container text-on-primary-container font-label-sm text-label-sm px-2.5 py-0.5 rounded-full flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>Rendering (Step ${t.progress || 35}/50)</span>`
+          : isDone
+          ? `<span class="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm px-2.5 py-0.5 rounded-full flex items-center gap-1">✓ Hoàn thành</span>`
+          : isFailed
+          ? `<span class="bg-error-container text-on-error-container font-label-sm text-label-sm px-2.5 py-0.5 rounded-full">Thất bại</span>`
+          : `<span class="bg-surface-container text-on-surface-variant font-label-sm text-label-sm px-2.5 py-0.5 rounded-full">Chờ render (Queue #${i+1})</span>`;
+
+        html += `
+          <div class="bg-surface-container-lowest rounded-xl shadow-md p-space-md flex flex-col md:flex-row gap-space-md transition-all border border-white/5">
+            <div class="relative w-full md:w-44 h-28 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container flex items-center justify-center">
+              ${t.video_url
+                ? `<video src="${t.video_url}" class="w-full h-full object-cover" controls preload="metadata"></video>`
+                : `<span class="material-symbols-outlined text-3xl text-outline">movie</span>`}
+              <span class="absolute top-1.5 left-1.5 bg-surface-container-lowest text-on-surface font-label-sm text-[10px] px-1.5 py-0.5 rounded shadow">16:9</span>
+            </div>
+            <div class="flex-1 flex flex-col justify-between min-w-0">
+              <div>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="font-headline-sm text-headline-sm text-on-surface truncate">Shot ${i+1}: ${t.prompt.substring(0, 45)}...</span>
+                  ${statusBadge}
+                </div>
+                <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mt-1">${t.prompt}</p>
+                <div class="text-[11px] font-mono text-outline mt-1">Node: ${t.account_email || 'Auto-Cluster'}</div>
+              </div>
+              <div class="flex items-center justify-between gap-2 pt-2 border-t border-white/5">
+                ${isRunning ? `
+                  <div class="w-1/2 bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+                    <div class="bg-primary h-full rounded-full animate-pulse" style="width: ${t.progress || 40}%"></div>
+                  </div>
+                ` : '<div></div>'}
+                <div class="flex items-center gap-2">
+                  ${t.video_url ? `<a href="${t.video_url}" download class="px-3 py-1 rounded bg-secondary text-on-secondary text-xs font-semibold flex items-center gap-1"><span class="material-symbols-outlined text-xs">download</span>Tải Video</a>` : ''}
+                  ${isFailed ? `<button onclick="retryTask('${t.id}')" class="px-3 py-1 rounded bg-primary text-on-primary text-xs font-semibold flex items-center gap-1"><span class="material-symbols-outlined text-xs">refresh</span>Thử lại</button>` : ''}
+                  <button onclick="deleteTask('${t.id}')" class="p-1 rounded text-on-surface-variant hover:text-error"><span class="material-symbols-outlined text-sm">delete</span></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    } catch(e) {}
+  }
+
+  async function deleteTask(taskId) {
+    if (!confirm('Xóa tác vụ này?')) return;
+    await fetch(`/api/tasks/${taskId}`, {method: 'DELETE'});
+    loadTasks();
+  }
+
+  async function retryTask(taskId) {
+    await fetch(`/api/tasks/retry/${taskId}`, {method: 'POST'});
+    loadTasks();
+  }
+
+  async function clearAllTasks() {
+    if (!confirm('Xóa toàn bộ hàng đợi?')) return;
+    await fetch('/api/tasks/clear', {method: 'POST'});
+    loadTasks();
+  }
+
+  // --------------------------------------------------------------------------
+  // Account Pool Functions
+  // --------------------------------------------------------------------------
+  function validateSyntax() {
+    const input = document.getElementById('cookieInput');
+    if (!input) return;
+    const lines = input.value.trim().split('\n').filter(l => l.trim().length > 0);
+    const valid = lines.filter(l => l.includes('|'));
+    const fb = document.getElementById('validationFeedback');
+    if (fb) {
+      fb.classList.remove('hidden');
+      fb.textContent = `✓ Đã kiểm tra cú pháp: ${valid.length} / ${lines.length} tài khoản hợp lệ (email|cookie).`;
+    }
+  }
+
+  async function addBulkAccounts() {
+    const input = document.getElementById('cookieInput');
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) {
+      alert('Vui lòng dán danh sách tài khoản theo định dạng email|hatch_sess=...!');
+      return;
+    }
+
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    try {
+      const res = await fetch('/api/accounts/bulk', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({accounts: lines})
+      });
+      const data = await res.json();
+      input.value = '';
+      alert(`Đã lưu thành công ${data.added || lines.length} tài khoản vào Pool!`);
+      loadAccounts();
+    } catch(e) {
+      alert('Lỗi lưu tài khoản: ' + e.message);
+    }
+  }
+
+  async function checkAllAccounts() {
+    const btn = document.getElementById('pingAllBtn');
+    if (btn) btn.disabled = true;
+    try {
+      const res = await fetch('/api/accounts/check-all', {method: 'POST'});
+      const data = await res.json();
+      alert(`Đã kiểm tra xong toàn bộ tài khoản! Hoạt động: ${data.active || 0}, Hết hạn: ${data.dead || 0}`);
+      loadAccounts();
+    } catch(e) {
+      alert('Lỗi kiểm tra tài khoản: ' + e.message);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function loadAccounts() {
+    try {
+      const res = await fetch('/api/accounts');
+      const accounts = await res.json();
+      const badge = document.getElementById('header-acc-badge');
+      const activeCount = accounts.filter(a => a.is_active).length;
+      if (badge) badge.textContent = `${activeCount} Hoạt động`;
+
+      const tbody = document.getElementById('accounts-tbody');
+      if (!tbody) return;
+
+      if (accounts.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-on-surface-variant font-mono">Chưa có tài khoản nào. Vui lòng dán danh sách tài khoản bên trái để kích hoạt.</td></tr>`;
+        return;
+      }
+
+      let html = '';
+      accounts.forEach(acc => {
+        const isLive = acc.is_active && acc.status !== 'dead';
+        html += `
+          <tr class="hover:bg-surface-container/50 transition-colors">
+            <td class="py-3 px-4 font-mono font-medium text-on-surface flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full ${isLive ? 'bg-secondary' : 'bg-error'}"></span>
+              ${acc.email}
+            </td>
+            <td class="py-3 px-3">
+              <span class="px-2 py-0.5 rounded text-[11px] font-mono ${isLive ? 'bg-secondary-container text-on-secondary-container' : 'bg-error-container text-on-error-container'}">
+                ${isLive ? 'Live Session' : 'Expired/Dead'}
+              </span>
+            </td>
+            <td class="py-3 px-3 font-mono text-on-surface">${acc.credits_remaining !== undefined ? acc.credits_remaining : 30} credits</td>
+            <td class="py-3 px-3 font-mono text-on-surface-variant">${acc.total_renders || 0} videos</td>
+            <td class="py-3 px-3 text-center">
+              <button onclick="toggleAccount('${acc.id}')" class="px-2.5 py-1 rounded text-xs font-semibold ${acc.is_active ? 'bg-secondary/20 text-secondary' : 'bg-surface-container text-on-surface-variant'}">
+                ${acc.is_active ? 'Active' : 'Paused'}
+              </button>
+            </td>
+            <td class="py-3 px-4 text-right">
+              <button onclick="deleteAccount('${acc.id}')" class="p-1 rounded text-on-surface-variant hover:text-error" title="Xóa">
+                <span class="material-symbols-outlined text-sm">delete</span>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    } catch(e) {}
+  }
+
+  async function toggleAccount(id) {
+    await fetch(`/api/accounts/${id}/toggle`, {method: 'POST'});
+    loadAccounts();
+  }
+
+  async function deleteAccount(id) {
+    if (!confirm('Xóa tài khoản này khỏi cụm?')) return;
+    await fetch(`/api/accounts/${id}`, {method: 'DELETE'});
+    loadAccounts();
+  }
+
+  // --------------------------------------------------------------------------
   // Gallery & Explorer
+  // --------------------------------------------------------------------------
   async function openFolderInExplorer() {
-    await fetch('/api/open-downloads', {method: 'POST'});
+    try {
+      await fetch('/api/open-downloads', {method: 'POST'});
+    } catch(e) {
+      alert('Không thể mở thư mục: ' + e.message);
+    }
   }
 
   async function loadGallery() {
-    // Will update completed videos
+    // Gallery loads automatically from completed tasks
   }
 
-  // Settings
+  // --------------------------------------------------------------------------
+  // Settings Functions
+  // --------------------------------------------------------------------------
   async function loadSettings() {
     try {
       const res = await fetch('/api/config');
       const cfg = await res.json();
-      if (document.getElementById('cfg-base-url')) document.getElementById('cfg-base-url').value = cfg.ai_base_url || '';
-      if (document.getElementById('cfg-api-key')) document.getElementById('cfg-api-key').value = cfg.ai_api_key || '';
-      if (document.getElementById('cfg-model')) document.getElementById('cfg-model').value = cfg.ai_model || '';
-      if (document.getElementById('cfg-network-proxy')) document.getElementById('cfg-network-proxy').value = cfg.ai_network_proxy || '';
+      if (document.getElementById('base-url-input')) document.getElementById('base-url-input').value = cfg.ai_base_url || 'https://api.openai-proxy.org/v1';
+      if (document.getElementById('api-key-input')) document.getElementById('api-key-input').value = cfg.ai_api_key || '';
+      if (document.getElementById('model-name-input')) document.getElementById('model-name-input').value = cfg.ai_model || 'claude-3-5-sonnet';
+      if (document.getElementById('local-proxy-input')) document.getElementById('local-proxy-input').value = cfg.ai_network_proxy || '';
+      if (document.getElementById('parallel-slider')) document.getElementById('parallel-slider').value = cfg.concurrency || 3;
     } catch(e) {}
   }
 
   async function saveAppConfig() {
+    const btn = document.getElementById('save-settings-btn');
     const payload = {
       ai_provider: "custom_proxy",
-      ai_base_url: document.getElementById('cfg-base-url') ? document.getElementById('cfg-base-url').value : '',
-      ai_api_key: document.getElementById('cfg-api-key') ? document.getElementById('cfg-api-key').value : '',
-      ai_model: document.getElementById('cfg-model') ? document.getElementById('cfg-model').value : '',
-      ai_network_proxy: document.getElementById('cfg-network-proxy') ? document.getElementById('cfg-network-proxy').value || null : null,
-      concurrency: 3,
+      ai_base_url: document.getElementById('base-url-input') ? document.getElementById('base-url-input').value.trim() : '',
+      ai_api_key: document.getElementById('api-key-input') ? document.getElementById('api-key-input').value.trim() : '',
+      ai_model: document.getElementById('model-name-input') ? document.getElementById('model-name-input').value.trim() : '',
+      ai_network_proxy: document.getElementById('local-proxy-input') ? document.getElementById('local-proxy-input').value.trim() || null : null,
+      concurrency: document.getElementById('parallel-slider') ? parseInt(document.getElementById('parallel-slider').value) : 3,
       rotation_mode: "round_robin",
       auto_failover: true
     };
 
-    const res = await fetch('/api/config', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(payload)
-    });
-    alert(res.ok ? 'Đã lưu cấu hình AI & Proxy thành công!' : 'Lỗi khi lưu cấu hình.');
+    try {
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      alert(res.ok ? '✓ Đã lưu cấu hình AI & Proxy thành công!' : 'Lỗi khi lưu cấu hình.');
+    } catch(e) {
+      alert('Lỗi lưu cấu hình: ' + e.message);
+    }
   }
 
   async function testAIConnection() {
-    const btn = document.getElementById('btn-test-ai');
+    const btn = document.getElementById('ping-test-btn');
+    if (!btn) return;
     btn.disabled = true;
+
+    const spinner = document.getElementById('ping-spinner');
+    const icon = document.getElementById('ping-icon');
+    if (spinner) spinner.classList.remove('hidden');
+    if (icon) icon.classList.add('hidden');
+
     const payload = {
       provider: "custom_proxy",
-      base_url: document.getElementById('cfg-base-url') ? document.getElementById('cfg-base-url').value : '',
-      api_key: document.getElementById('cfg-api-key') ? document.getElementById('cfg-api-key').value : '',
-      model: document.getElementById('cfg-model') ? document.getElementById('cfg-model').value : '',
-      network_proxy: document.getElementById('cfg-network-proxy') ? document.getElementById('cfg-network-proxy').value || null : null
+      base_url: document.getElementById('base-url-input') ? document.getElementById('base-url-input').value.trim() : '',
+      api_key: document.getElementById('api-key-input') ? document.getElementById('api-key-input').value.trim() : '',
+      model: document.getElementById('model-name-input') ? document.getElementById('model-name-input').value.trim() : '',
+      network_proxy: document.getElementById('local-proxy-input') ? document.getElementById('local-proxy-input').value.trim() || null : null
     };
 
     try {
@@ -3042,13 +3242,23 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      alert(data.success ? '✓ ' + data.message : '✗ ' + (data.error || 'Thất bại'));
+      alert(data.success ? ('✓ ' + data.message) : ('✗ Thất bại: ' + (data.error || 'Không kết nối được')));
     } catch(e) {
-      alert('Lỗi kết nối: ' + e.message);
+      alert('Lỗi kết nối kiểm tra: ' + e.message);
     } finally {
       btn.disabled = false;
+      if (spinner) spinner.classList.add('hidden');
+      if (icon) icon.classList.remove('hidden');
     }
   }
+
+  // Init on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    loadSettings();
+    loadAccounts();
+    loadTasks();
+    setInterval(loadTasks, 3000);
+  });
 </script>
 
 </body>
