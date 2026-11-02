@@ -1739,7 +1739,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 <div class="relative w-full overflow-x-auto bg-[#0B0C13] select-none">
 <div class="min-w-[1240px] flex flex-col relative pb-3">
 <!-- Scrubber Line with Playhead (At 28s / ~48% mark) -->
-<div class="absolute top-0 bottom-0 left-[48.2%] w-0.5 bg-rose-500 z-30 pointer-events-none shadow-[0_0_12px_rgba(244,63,94,0.8)]">
+<div id="timelineScrubber" class="absolute top-0 bottom-0 left-[0%] w-0.5 bg-rose-500 z-30 pointer-events-none shadow-[0_0_12px_rgba(244,63,94,0.8)] transition-[left] duration-100 ease-linear">
 <div class="w-3.5 h-3.5 bg-rose-500 rounded-sm rotate-45 -translate-x-[6px] -translate-y-1 shadow-md"></div>
 </div>
 <!-- 1. Ruler Header -->
@@ -1780,7 +1780,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 <!-- Track Lane (Even Shots) -->
 <div class="flex-1 relative flex items-center px-2 py-1.5 bg-[#0B0C13]">
 <!-- Shot 02 (starts ~00:07, 7s duration ~ 12% width) -->
-<div class="absolute left-[12%] w-[13%] h-12 rounded-lg bg-gradient-to-r from-purple-700/80 to-purple-900/80 border border-purple-400/40 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-purple-300 transition group/clip">
+<div class="absolute left-[12%] onclick="seekTimelineTo(12, 7)" w-[13%] h-12 rounded-lg bg-gradient-to-r from-purple-700/80 to-purple-900/80 border border-purple-400/40 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-purple-300 transition group/clip">
 <div class="flex items-center justify-between text-[11px] font-medium text-white truncate">
 <span class="truncate font-semibold">Shot 02: Trembling Hands</span>
 <span class="font-mono text-[9px] text-purple-200">7s</span>
@@ -1791,11 +1791,11 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 </div>
 </div>
 <!-- Transition 1 Badge -->
-<div class="absolute left-[24.5%] top-1/2 -translate-y-1/2 z-20 px-1.5 py-0.5 rounded bg-black/80 border border-purple-500/60 text-[9px] font-mono text-purple-300 flex items-center gap-1 shadow-sm">
+<div class="absolute left-[26.5%] -translate-x-1/2 top-1/2 -translate-y-1/2 z-20 px-2 py-0.5 rounded-full bg-purple-950/95 border border-purple-400 text-[8px] font-mono text-purple-200 flex items-center gap-1 shadow-md whitespace-nowrap">
 <span>✦ 0.8s Dissolve</span>
 </div>
-<!-- Shot 04 (starts ~00:23, 8s duration ~ 14%) -->
-<div class="absolute left-[27%] w-[14%] h-12 rounded-lg bg-gradient-to-r from-purple-700/80 to-purple-900/80 border border-purple-400/40 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-purple-300 transition">
+<!-- Shot 04 (starts ~00:24, 8s duration ~ 13.5%) -->
+<div class="absolute left-[28.5%] w-[13.5%]" onclick="seekTimelineTo(28.5, 24)"  h-12 rounded-lg bg-gradient-to-r from-purple-700/80 to-purple-900/80 border border-purple-400/40 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-purple-300 transition">
 <div class="flex items-center justify-between text-[11px] font-medium text-white truncate">
 <span class="truncate font-semibold">Shot 04: Melancholy Horizon</span>
 <span class="font-mono text-[9px] text-purple-200">8s</span>
@@ -1806,11 +1806,11 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 </div>
 </div>
 <!-- Transition 2 Badge -->
-<div class="absolute left-[49%] top-1/2 -translate-y-1/2 z-20 px-1.5 py-0.5 rounded bg-black/80 border border-purple-500/60 text-[9px] font-mono text-purple-300 flex items-center gap-1 shadow-sm">
+<div class="absolute left-[46.5%] -translate-x-1/2 top-1/2 -translate-y-1/2 z-20 px-2 py-0.5 rounded-full bg-purple-950/95 border border-purple-400 text-[8px] font-mono text-purple-200 flex items-center gap-1 shadow-md whitespace-nowrap">
 <span>✦ 0.8s Dissolve</span>
 </div>
 <!-- Shot 06 (starts ~00:41, 7s duration ~ 12%) -->
-<div class="absolute left-[52%] w-[13%] h-12 rounded-lg bg-gradient-to-r from-purple-700/80 to-purple-900/80 border border-purple-400/40 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-purple-300 transition">
+<div class="absolute left-[52%] onclick="seekTimelineTo(52, 37)" w-[13%] h-12 rounded-lg bg-gradient-to-r from-purple-700/80 to-purple-900/80 border border-purple-400/40 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-purple-300 transition">
 <div class="flex items-center justify-between text-[11px] font-medium text-white truncate">
 <span class="truncate font-semibold">Shot 06: Rain Neon Bokeh</span>
 <span class="font-mono text-[9px] text-purple-200">7s</span>
@@ -1844,7 +1844,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 <!-- Track Lane (Odd Shots) -->
 <div class="flex-1 relative flex items-center px-2 py-1.5 bg-[#0B0C13]">
 <!-- Shot 01 (00:00 - 00:07) -->
-<div class="absolute left-[0%] w-[12%] h-12 rounded-lg bg-gradient-to-r from-indigo-700/80 to-blue-900/80 border border-indigo-400/40 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-indigo-300 transition">
+<div class="absolute left-[0%] onclick="seekTimelineTo(0, 0)" w-[12%] h-12 rounded-lg bg-gradient-to-r from-indigo-700/80 to-blue-900/80 border border-indigo-400/40 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-indigo-300 transition">
 <div class="flex items-center justify-between text-[11px] font-medium text-white truncate">
 <span class="truncate font-semibold">Shot 01: Pine Forest</span>
 <span class="font-mono text-[9px] text-indigo-200">7s</span>
@@ -1855,7 +1855,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 </div>
 </div>
 <!-- Shot 03 (00:15 - 00:23) -->
-<div class="absolute left-[20%] w-[14%] h-12 rounded-lg bg-gradient-to-r from-indigo-700/80 to-blue-900/80 border border-indigo-400/40 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-indigo-300 transition">
+<div class="absolute left-[20%] onclick="seekTimelineTo(20, 15)" w-[14%] h-12 rounded-lg bg-gradient-to-r from-indigo-700/80 to-blue-900/80 border border-indigo-400/40 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-indigo-300 transition">
 <div class="flex items-center justify-between text-[11px] font-medium text-white truncate">
 <span class="truncate font-semibold">Shot 03: Da Lat Street Fog</span>
 <span class="font-mono text-[9px] text-indigo-200">8s</span>
@@ -2002,7 +2002,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 <div class="group bg-[#12141F] rounded-xl border border-white/10 hover:border-indigo-500/50 shadow-lg hover:shadow-indigo-500/10 transition-all flex flex-col overflow-hidden">
 <!-- 16:9 Thumbnail -->
 <div class="relative aspect-video w-full overflow-hidden bg-slate-900">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Cinematic wide dolly shot through a dense misty pine forest in Da Lat Vietnam with early morning volumetric fog, sun rays piercing through tall trees, 35mm anamorphic camera lens, moody cinematic atmosphere with cool teal shadows and warm golden light highlights, photorealistic 8k render." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDABH7g1qsL1d5gf8sfZhYExVMQSpeAerMy2encj1litsuChsUT5x6qieoO3_FpZgc4qpUVsd3VBhrq7LoEHaw9IPSyqlBq-ZIY_L1Plfv-yUlNgJXNv4BMPtyXLL-Mt2jXkU1u0QViunLZ89i8l9Cq0k8AktcrITF_8MVNjtroXMKFWhDE3-AP02z2JMtFjGaxwVSsk5nJIgvrIcJEcg7SDfwVApkK1PJktr10EQ"/>
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" style="object-position: center bottom; transform: scale(1.12); transform-origin: center bottom;" data-alt="Cinematic wide dolly shot through a dense misty pine forest in Da Lat Vietnam with early morning volumetric fog, sun rays piercing through tall trees, 35mm anamorphic camera lens, moody cinematic atmosphere with cool teal shadows and warm golden light highlights, photorealistic 8k render." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDABH7g1qsL1d5gf8sfZhYExVMQSpeAerMy2encj1litsuChsUT5x6qieoO3_FpZgc4qpUVsd3VBhrq7LoEHaw9IPSyqlBq-ZIY_L1Plfv-yUlNgJXNv4BMPtyXLL-Mt2jXkU1u0QViunLZ89i8l9Cq0k8AktcrITF_8MVNjtroXMKFWhDE3-AP02z2JMtFjGaxwVSsk5nJIgvrIcJEcg7SDfwVApkK1PJktr10EQ"/>
 <div class="absolute inset-0 bg-gradient-to-t from-[#12141F] via-transparent to-transparent opacity-80"></div>
 <!-- Badges -->
 <div class="absolute top-2 left-2 flex items-center gap-1.5">
@@ -2049,7 +2049,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 <div class="group bg-[#12141F] rounded-xl border border-white/10 hover:border-purple-500/50 shadow-lg hover:shadow-purple-500/10 transition-all flex flex-col overflow-hidden">
 <!-- 16:9 Thumbnail -->
 <div class="relative aspect-video w-full overflow-hidden bg-slate-900">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Extreme macro cinematic close-up of a delicate female hand trembling in cold mountain air, touching a damp weathered dark wood balcony railing in the rain, hyperdetailed water droplets clinging to skin, moody cold blue tones with soft warm ambient glow, 85mm macro cine lens." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4xPn-S344da7Q2eby7z6DCZvo41AJwurgjQW9GXdJpt1rQ9zOA5PjQTXbnn1G_uy_JdSqJb_NQ5QCzot0peWZpdTdBdjkx7uNfB1T3SidTo-ZCyHBKHF2tUBSfKnz_eI-QMG5f-ldo9RTNnod5EBszWMsAnwCAwmsoZ9NY5RckHWf84QOixt6pj-mFEyUXtjTshE1a4TWiOZ0Y0neZmfEfUv9Oe19GnYCX_1wKg"/>
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" style="object-position: center bottom; transform: scale(1.12); transform-origin: center bottom;" data-alt="Extreme macro cinematic close-up of a delicate female hand trembling in cold mountain air, touching a damp weathered dark wood balcony railing in the rain, hyperdetailed water droplets clinging to skin, moody cold blue tones with soft warm ambient glow, 85mm macro cine lens." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4xPn-S344da7Q2eby7z6DCZvo41AJwurgjQW9GXdJpt1rQ9zOA5PjQTXbnn1G_uy_JdSqJb_NQ5QCzot0peWZpdTdBdjkx7uNfB1T3SidTo-ZCyHBKHF2tUBSfKnz_eI-QMG5f-ldo9RTNnod5EBszWMsAnwCAwmsoZ9NY5RckHWf84QOixt6pj-mFEyUXtjTshE1a4TWiOZ0Y0neZmfEfUv9Oe19GnYCX_1wKg"/>
 <div class="absolute inset-0 bg-gradient-to-t from-[#12141F] via-transparent to-transparent opacity-80"></div>
 <div class="absolute top-2 left-2 flex items-center gap-1.5">
 <span class="px-1.5 py-0.5 rounded bg-purple-600/80 backdrop-blur-md text-[10px] font-mono font-semibold text-white border border-purple-400/30">Track V2</span>
@@ -2087,7 +2087,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 <div class="group bg-[#12141F] rounded-xl border border-white/10 hover:border-indigo-500/50 shadow-lg hover:shadow-indigo-500/10 transition-all flex flex-col overflow-hidden">
 <!-- 16:9 Thumbnail -->
 <div class="relative aspect-video w-full overflow-hidden bg-slate-900">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Atmospheric medium shot of a young Vietnamese woman standing on an old French colonial Da Lat street at dusk, wrapped in a dark vintage coat, thick mist swirling around vintage street lamps, puddle reflections showing blurred neon amber and emerald signs, 35mm film grain." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1exFWYIctLN-rXjlTztU_BNDqLa38tmygt_QYS4SB-fElzBCjiQHrGNjnNMa1skyT5LrWAwRuGF-PfQfKpGOdUh7H1rqqpIQNrByNZ5dXo5b5US_HqbLu7tmVBsCSaimJaoL2u3KFrCsYgwuNCKbA2ETwO6h2A4iLbIJ8TegOVxqRxqBq31rNlmOwBcHJhoHs9FG-ohlTi60nfBekUZPPtwA1zChmXDAB2TkYIA"/>
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" style="object-position: center bottom; transform: scale(1.12); transform-origin: center bottom;" data-alt="Atmospheric medium shot of a young Vietnamese woman standing on an old French colonial Da Lat street at dusk, wrapped in a dark vintage coat, thick mist swirling around vintage street lamps, puddle reflections showing blurred neon amber and emerald signs, 35mm film grain." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1exFWYIctLN-rXjlTztU_BNDqLa38tmygt_QYS4SB-fElzBCjiQHrGNjnNMa1skyT5LrWAwRuGF-PfQfKpGOdUh7H1rqqpIQNrByNZ5dXo5b5US_HqbLu7tmVBsCSaimJaoL2u3KFrCsYgwuNCKbA2ETwO6h2A4iLbIJ8TegOVxqRxqBq31rNlmOwBcHJhoHs9FG-ohlTi60nfBekUZPPtwA1zChmXDAB2TkYIA"/>
 <div class="absolute inset-0 bg-gradient-to-t from-[#12141F] via-transparent to-transparent opacity-80"></div>
 <div class="absolute top-2 left-2 flex items-center gap-1.5">
 <span class="px-1.5 py-0.5 rounded bg-indigo-600/80 backdrop-blur-md text-[10px] font-mono font-semibold text-white border border-indigo-400/30">Track V1</span>
@@ -2124,7 +2124,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 <div class="group bg-[#12141F] rounded-xl border border-white/10 hover:border-purple-500/50 shadow-lg hover:shadow-purple-500/10 transition-all flex flex-col overflow-hidden">
 <!-- 16:9 Thumbnail -->
 <div class="relative aspect-video w-full overflow-hidden bg-slate-900">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Moody cinematic portrait of a young woman gazing into a rainy mountain horizon, delicate tear glistening on cheek, dark hair windswept across her face, cinematic soft focus background with distant cloudy valley, soft diffused overcast lighting, highly emotive cinematic framing." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfygZOmffZbhHQLQoEtCCHHzlOREUQNb4oBM5ddN3ah87QQyl7GaJ0LnJkMvLE1wTEOsivelCT9nirUOgtMuOou25atntvy5BlBUWZD_D1SBViwX3cuD9X2WOvplWBTLZnXj5KDgwgJVWH2o9r61Yf_XW9bVX3tjMHW6pDwfdKGCvCh8zSSWivUVpBNitsw7u_AFO9PiWzYnA4ehK5ikhIPTiUn_NyBDI87Hxbcw"/>
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" style="object-position: center bottom; transform: scale(1.12); transform-origin: center bottom;" data-alt="Moody cinematic portrait of a young woman gazing into a rainy mountain horizon, delicate tear glistening on cheek, dark hair windswept across her face, cinematic soft focus background with distant cloudy valley, soft diffused overcast lighting, highly emotive cinematic framing." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfygZOmffZbhHQLQoEtCCHHzlOREUQNb4oBM5ddN3ah87QQyl7GaJ0LnJkMvLE1wTEOsivelCT9nirUOgtMuOou25atntvy5BlBUWZD_D1SBViwX3cuD9X2WOvplWBTLZnXj5KDgwgJVWH2o9r61Yf_XW9bVX3tjMHW6pDwfdKGCvCh8zSSWivUVpBNitsw7u_AFO9PiWzYnA4ehK5ikhIPTiUn_NyBDI87Hxbcw"/>
 <div class="absolute inset-0 bg-gradient-to-t from-[#12141F] via-transparent to-transparent opacity-80"></div>
 <div class="absolute top-2 left-2 flex items-center gap-1.5">
 <span class="px-1.5 py-0.5 rounded bg-purple-600/80 backdrop-blur-md text-[10px] font-mono font-semibold text-white border border-purple-400/30">Track V2</span>
@@ -2162,7 +2162,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 <div class="group bg-[#12141F] rounded-xl border border-white/10 hover:border-cyan-500/50 shadow-lg hover:shadow-cyan-500/10 transition-all flex flex-col overflow-hidden">
 <!-- 16:9 Thumbnail -->
 <div class="relative aspect-video w-full overflow-hidden bg-slate-900">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Dramatic wide drone crane establishing shot of Tuyen Lam mountain lake just before an intense thunderstorm, dark swirling purple-gray storm clouds gathering, ripples and whitecaps on deep emerald water, distant pine ridge silhouettes, hyperrealistic cinematic lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBu_vZCQNhUxQNS-9s-OUZcfglUUc6kKv-UGzcLc8_kjMNNIJzkyrX0xsYTyShzLI6K6Bqrafo86hSfrw3tQhemLCsmNDoWeY5CXCbEbZTxb5zClINgYm8ClrPfs_PaJk3KkZY-wrMKJ_uwXbtJ7W1RpVMJ9Fj4ZhB5Ikhdj0mYtHZPuYnIxizPbJ20kzAbc1FU-d6risgATE9JAr4aBDfHql7l2CFwnstuTq_22g"/>
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" style="object-position: center bottom; transform: scale(1.12); transform-origin: center bottom;" data-alt="Dramatic wide drone crane establishing shot of Tuyen Lam mountain lake just before an intense thunderstorm, dark swirling purple-gray storm clouds gathering, ripples and whitecaps on deep emerald water, distant pine ridge silhouettes, hyperrealistic cinematic lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBu_vZCQNhUxQNS-9s-OUZcfglUUc6kKv-UGzcLc8_kjMNNIJzkyrX0xsYTyShzLI6K6Bqrafo86hSfrw3tQhemLCsmNDoWeY5CXCbEbZTxb5zClINgYm8ClrPfs_PaJk3KkZY-wrMKJ_uwXbtJ7W1RpVMJ9Fj4ZhB5Ikhdj0mYtHZPuYnIxizPbJ20kzAbc1FU-d6risgATE9JAr4aBDfHql7l2CFwnstuTq_22g"/>
 <div class="absolute inset-0 bg-gradient-to-t from-[#12141F] via-transparent to-transparent opacity-80"></div>
 <div class="absolute top-2 left-2 flex items-center gap-1.5">
 <span class="px-1.5 py-0.5 rounded bg-indigo-600/80 backdrop-blur-md text-[10px] font-mono font-semibold text-white border border-indigo-400/30">Track V1</span>
@@ -2200,7 +2200,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 <div class="group bg-[#12141F] rounded-xl border border-white/10 hover:border-purple-500/50 shadow-lg hover:shadow-purple-500/10 transition-all flex flex-col overflow-hidden">
 <!-- 16:9 Thumbnail -->
 <div class="relative aspect-video w-full overflow-hidden bg-slate-900">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="High frame rate slow motion shot of heavy raindrops falling into a dark asphalt street puddle, vibrant neon reflections of deep magenta and cyan signage glowing in the water ripples, empty quiet city intersection at midnight, cinematic noir aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdU7xj2Ps5yQWJsQOMbHJCFCMn5n8KbRRjTvBP6E_fU685ZQVfkjpr7uUFxn8fWqjT9OWHW54pVdR-n-0OjAr1ZIjIKT6GJ8PyetudX0dQhQ4c-JowphoDT28ReGoqIw_SCL0I8uHRVkeEWlckgt0U6QeyFo0FXk9Y79h4pHVRtE5HRemmjxVXZGSxaAfi8KXFENE8uHitX-QQSNyA1nZBH7JSwOvr1H0GXEM0Uw"/>
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" style="object-position: center bottom; transform: scale(1.12); transform-origin: center bottom;" data-alt="High frame rate slow motion shot of heavy raindrops falling into a dark asphalt street puddle, vibrant neon reflections of deep magenta and cyan signage glowing in the water ripples, empty quiet city intersection at midnight, cinematic noir aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdU7xj2Ps5yQWJsQOMbHJCFCMn5n8KbRRjTvBP6E_fU685ZQVfkjpr7uUFxn8fWqjT9OWHW54pVdR-n-0OjAr1ZIjIKT6GJ8PyetudX0dQhQ4c-JowphoDT28ReGoqIw_SCL0I8uHRVkeEWlckgt0U6QeyFo0FXk9Y79h4pHVRtE5HRemmjxVXZGSxaAfi8KXFENE8uHitX-QQSNyA1nZBH7JSwOvr1H0GXEM0Uw"/>
 <div class="absolute inset-0 bg-gradient-to-t from-[#12141F] via-transparent to-transparent opacity-80"></div>
 <div class="absolute top-2 left-2 flex items-center gap-1.5">
 <span class="px-1.5 py-0.5 rounded bg-purple-600/80 backdrop-blur-md text-[10px] font-mono font-semibold text-white border border-purple-400/30">Track V2</span>
@@ -2238,7 +2238,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 <div class="group bg-[#12141F] rounded-xl border border-white/10 hover:border-indigo-500/50 shadow-lg hover:shadow-indigo-500/10 transition-all flex flex-col overflow-hidden">
 <!-- 16:9 Thumbnail -->
 <div class="relative aspect-video w-full overflow-hidden bg-slate-900">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Poetic medium shot of a handwritten folded paper letter slipping out of trembling fingers and fluttering away in a sudden gust of wind across a rainy pine ridge at dusk, shallow depth of field, ink slightly blurred by rain, poignant bittersweet film aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpvSBqcpMD1ZjPkJGNxeAV-KWo0iAPhpSdaYuTHSlLYQOIoCgjhn1JKAFuI3Ahlv8F38bXcrxWSPkT5UWI3NGELNqNDsRU-14wdMtyOTWKsAdSoBV9hbA1rMuL1c2oahjoxLXTJkdAQlMHWiiVhznc6_hykeK4cdTSzNjOS8Fep5pRbpxzHexB_5Z8bjyj6cXy3FfPQFEH309sR2qHplTDOa-ARSSaG3sxZsCh0g"/>
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" style="object-position: center bottom; transform: scale(1.12); transform-origin: center bottom;" data-alt="Poetic medium shot of a handwritten folded paper letter slipping out of trembling fingers and fluttering away in a sudden gust of wind across a rainy pine ridge at dusk, shallow depth of field, ink slightly blurred by rain, poignant bittersweet film aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpvSBqcpMD1ZjPkJGNxeAV-KWo0iAPhpSdaYuTHSlLYQOIoCgjhn1JKAFuI3Ahlv8F38bXcrxWSPkT5UWI3NGELNqNDsRU-14wdMtyOTWKsAdSoBV9hbA1rMuL1c2oahjoxLXTJkdAQlMHWiiVhznc6_hykeK4cdTSzNjOS8Fep5pRbpxzHexB_5Z8bjyj6cXy3FfPQFEH309sR2qHplTDOa-ARSSaG3sxZsCh0g"/>
 <div class="absolute inset-0 bg-gradient-to-t from-[#12141F] via-transparent to-transparent opacity-80"></div>
 <div class="absolute top-2 left-2 flex items-center gap-1.5">
 <span class="px-1.5 py-0.5 rounded bg-indigo-600/80 backdrop-blur-md text-[10px] font-mono font-semibold text-white border border-indigo-400/30">Track V1</span>
@@ -2275,7 +2275,7 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 <div class="group bg-[#12141F] rounded-xl border border-white/10 hover:border-indigo-500/50 shadow-lg hover:shadow-indigo-500/10 transition-all flex flex-col overflow-hidden">
 <!-- 16:9 Thumbnail -->
 <div class="relative aspect-video w-full overflow-hidden bg-slate-900">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Breathtaking extreme wide aerial shot pulling backwards over a vast misty mountain cliff, a single silhouette of a woman standing at the edge as massive storm clouds roll across the sky, epic cinematic scale, mist rising from valley floor, 4k master final frame." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTprRQ4p3GyNpdHKlOWxZ7VqjsdJx2WF21P34C0Wf9uNM8hLrspm43cu8ZpEQx9SvXFXXOssuJKqsdvhNhTeUqcGPaLjcMx8L0MFoxDAsL6FQGJmzYdH9uj-n1xxy9OIVJ4I4Ikcit9-SomWKxLZZMKfow6RWa_L-RFXTWMYBsd3gJdudmPDcMcH4lKTn2GMBS7VZ4y5bTxyGgn9rKYAhlpWuxd9aJrb3HWg8Wlg"/>
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" style="object-position: center bottom; transform: scale(1.12); transform-origin: center bottom;" data-alt="Breathtaking extreme wide aerial shot pulling backwards over a vast misty mountain cliff, a single silhouette of a woman standing at the edge as massive storm clouds roll across the sky, epic cinematic scale, mist rising from valley floor, 4k master final frame." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTprRQ4p3GyNpdHKlOWxZ7VqjsdJx2WF21P34C0Wf9uNM8hLrspm43cu8ZpEQx9SvXFXXOssuJKqsdvhNhTeUqcGPaLjcMx8L0MFoxDAsL6FQGJmzYdH9uj-n1xxy9OIVJ4I4Ikcit9-SomWKxLZZMKfow6RWa_L-RFXTWMYBsd3gJdudmPDcMcH4lKTn2GMBS7VZ4y5bTxyGgn9rKYAhlpWuxd9aJrb3HWg8Wlg"/>
 <div class="absolute inset-0 bg-gradient-to-t from-[#12141F] via-transparent to-transparent opacity-80"></div>
 <div class="absolute top-2 left-2 flex items-center gap-1.5">
 <span class="px-1.5 py-0.5 rounded bg-indigo-600/80 backdrop-blur-md text-[10px] font-mono font-semibold text-white border border-indigo-400/30">Track V1</span>
@@ -2848,7 +2848,6 @@ vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6
 
     container.innerHTML = html;
 
-    // Update push button text
     const pushBtn = document.getElementById('btn-push-studio');
     if (pushBtn) {
       pushBtn.innerHTML = `<span>➡️ Push All ${currentShots.length || 8} Shots to Batch Studio</span><span class="w-5 h-5 rounded-lg bg-black/20 flex items-center justify-center text-slate-900 font-mono text-[10px]">${currentShots.length || 8}</span>`;
@@ -3163,8 +3162,54 @@ ${lyrics}`;
   }
 
   // --------------------------------------------------------------------------
-  // Gallery & Explorer
+  // Gallery & Timeline Animation Functions
   // --------------------------------------------------------------------------
+  let playheadPos = 0;
+  let playheadInterval = null;
+
+  function toggleTimelinePlay() {
+    const playIcon = document.getElementById('playIcon');
+    const scrubber = document.getElementById('timelineScrubber');
+    const timecode = document.getElementById('curTimecode');
+
+    if (playheadInterval) {
+      clearInterval(playheadInterval);
+      playheadInterval = null;
+      if (playIcon) playIcon.textContent = 'play_arrow';
+    } else {
+      if (playIcon) playIcon.textContent = 'pause';
+      playheadInterval = setInterval(() => {
+        playheadPos += 0.35;
+        if (playheadPos > 100) {
+          playheadPos = 0;
+          clearInterval(playheadInterval);
+          playheadInterval = null;
+          if (playIcon) playIcon.textContent = 'play_arrow';
+        }
+        if (scrubber) scrubber.style.left = `${playheadPos}%`;
+
+        // Calculate timecode based on 58s duration
+        const totalSecs = (playheadPos / 100) * 58;
+        const mm = String(Math.floor(totalSecs / 60)).padStart(2, '0');
+        const ss = String(Math.floor(totalSecs % 60)).padStart(2, '0');
+        const ff = String(Math.floor((totalSecs % 1) * 24)).padStart(2, '0');
+        if (timecode) timecode.textContent = `00:${mm}:${ss}:${ff}`;
+      }, 50);
+    }
+  }
+
+  function seekTimelineTo(pct, sec) {
+    playheadPos = pct;
+    const scrubber = document.getElementById('timelineScrubber');
+    const timecode = document.getElementById('curTimecode');
+    if (scrubber) scrubber.style.left = `${pct}%`;
+    if (timecode) {
+      const mm = String(Math.floor(sec / 60)).padStart(2, '0');
+      const ss = String(Math.floor(sec % 60)).padStart(2, '0');
+      timecode.textContent = `00:${mm}:${ss}:00`;
+    }
+  }
+
   async function openFolderInExplorer() {
     try {
       await fetch('/api/open-downloads', {method: 'POST'});
@@ -3174,7 +3219,7 @@ ${lyrics}`;
   }
 
   async function loadGallery() {
-    // Gallery loads automatically from completed tasks
+    // Gallery ready
   }
 
   // --------------------------------------------------------------------------
