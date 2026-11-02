@@ -16,6 +16,9 @@ data/*.json
 downloads/*
 !downloads/.gitkeep
 
+# Backup & Old files
+*.old.html
+
 # Logs & Temp
 *.log
 *.zip
