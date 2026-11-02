@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MUSE AI STUDIO - AI Music Video Director Suite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              obsidian: '#0A0B10',
+              panel: '#12141F',
+              panelLight: '#181B2B',
+              surface: '#1E2238',
+              accent: '#8B5CF6',
+              accentHover: '#7C3AED',
+              indigo: '#6366F1',
+              emerald: '#10B981',
+              amber: '#F59E0B',
+              rose: '#F43F5E',
+              cyan: '#06B6D4'
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0D0F18;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #252A40;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3B4263;
+    }
+    .hairline-border {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .hairline-border-focus:focus-within {
+      border-color: rgba(139, 92, 246, 0.5);
+    }
+    .glow-subtle {
+      box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.15);
+    }
+    .glow-emerald {
+      box-shadow: 0 0 20px -3px rgba(16, 185, 129, 0.25);
+    }
+  </style>
+<meta content="web_standard" name="shell-type"/></head>
+<body class="bg-[#0A0B10] text-slate-200 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-indigo/30 selection:text-white">
+<!-- TOPBAR NAVIGATION -->
+<header class="h-16 border-b border-white/10 bg-[#0C0E17]/90 backdrop-blur-md sticky top-0 z-50 px-6 flex items-center justify-between flex-shrink-0">
+<!-- Left: Brand & Project Name -->
+<div class="flex items-center space-x-6">
+<div class="flex items-center space-x-3">
+<div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-600/30 ring-1 ring-white/20">
+<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24">
+<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+<path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+<path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+</svg>
+</div>
+<div>
+<span class="font-extrabold tracking-wider text-base bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent flex items-center gap-1.5">
+            MUSE AI STUDIO
+            <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-brand-accent/20 text-brand-accent border border-brand-accent/30 font-semibold">Pro v2.4</span>
+</span>
+</div>
+</div>
+<div class="h-5 w-px bg-white/10"></div>
+<!-- Project Badge -->
+<div class="flex items-center space-x-2.5 bg-[#141724] px-3 py-1.5 rounded-lg border border-white/10">
+<span class="w-2 h-2 rounded-full bg-brand-accent animate-pulse"></span>
+<span class="text-xs text-slate-400">Project:</span>
+<span class="text-xs font-semibold text-white tracking-wide">MV: Ngày Chưa Giông Bão</span>
+<button class="text-slate-400 hover:text-white transition-colors" title="Rename Project">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+<!-- Live Cluster & Render Status Badges -->
+<div class="flex items-center space-x-2">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span>
+          8 Accounts Active
+        </span>
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 animate-ping"></span>
+          2 Tasks Rendering (GPU #4)
+        </span>
+</div>
+</div>
+<!-- Center: Primary Tab Navigation -->
+<nav class="flex items-center space-x-1 bg-[#12141F] p-1 rounded-xl border border-white/5">
+<button class="px-4 py-1.5 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-indigo-600 to-brand-accent shadow-sm flex items-center gap-1.5">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+        AI MV Director
+      </button>
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+        Batch Studio
+      </button>
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+        Account Pool
+      </button>
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+        CapCut Gallery
+      </button>
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+        Settings
+      </button>
+</nav>
+<!-- Right: Quick Actions & User -->
+<div class="flex items-center space-x-3">
+<div class="flex items-center bg-[#151827] border border-white/10 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-300">
+<span class="text-slate-500 mr-2">VRAM</span>
+<span class="text-indigo-400 font-bold">22.4 / 24 GB</span>
+</div>
+<button class="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition-colors" title="Export Plan JSON">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white ring-2 ring-white/10">
+        DA
+      </div>
+</div>
+</header>
+<!-- MAIN 2-COLUMN SPLIT STUDIO LAYOUT (1440px optimized) -->
+<main class="flex-1 flex overflow-hidden max-w-[1720px] w-full mx-auto p-4 gap-4"><div class="flex flex-col w-full">
+<!-- TOP CONTROL TOOLBAR -->
+<div class="w-full bg-surface-container-lowest shadow-md rounded-xl p-space-md mb-space-md flex flex-wrap items-center justify-between gap-space-md">
+<!-- Generation Mode Segmented Control -->
+<div class="flex items-center gap-space-xs bg-surface-container-low p-1 rounded-lg">
+<button class="bg-primary text-on-primary font-label-md text-label-md px-space-md py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">
+<span class="material-symbols-outlined text-base">movie_filter</span>
+        Text → Video
+      </button>
+<button class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md px-space-md py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+<span class="material-symbols-outlined text-base">image</span>
+        Image → Video
+      </button>
+<button class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md px-space-md py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+<span class="material-symbols-outlined text-base">palette</span>
+        Text → Image
+      </button>
+</div>
+<!-- Aspect Ratio Selector -->
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider hidden xl:inline">Aspect:</span>
+<div class="flex items-center gap-1.5">
+<!-- 16:9 Selected -->
+<button class="bg-primary-container text-on-primary-container px-2.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-all">
+<span class="material-symbols-outlined text-sm">aspect_ratio</span>
+<span class="font-label-md text-label-md">16:9</span>
+<span class="bg-surface-container-lowest px-1 py-0.2 rounded text-[10px] font-label-sm text-on-primary-container">Landscape</span>
+</button>
+<!-- 9:16 -->
+<button class="bg-surface-container text-on-surface-variant hover:text-on-surface px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-sm">stay_current_portrait</span>
+<span class="font-label-md text-label-md">9:16</span>
+</button>
+<!-- 1:1 -->
+<button class="bg-surface-container text-on-surface-variant hover:text-on-surface px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-sm">crop_square</span>
+<span class="font-label-md text-label-md">1:1</span>
+</button>
+<!-- 4:3 -->
+<button class="bg-surface-container text-on-surface-variant hover:text-on-surface px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-sm">crop_7_5</span>
+<span class="font-label-md text-label-md">4:3</span>
+</button>
+</div>
+</div>
+<!-- Duration & Account Cluster Dropdowns -->
+<div class="flex items-center gap-space-sm flex-wrap">
+<!-- Duration Dropdown -->
+<div class="bg-surface-container px-3 py-1.5 rounded-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-base">timer</span>
+<span class="font-label-md text-label-md text-on-surface">7s Duration</span>
+<span class="bg-surface-container-high text-on-primary-fixed-variant px-1.5 py-0.2 rounded font-label-sm text-label-sm">HQ</span>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">expand_more</span>
+</div>
+<!-- Account Allocation -->
+<div class="bg-surface-container px-3 py-1.5 rounded-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-base">lan</span>
+<div class="flex flex-col text-left">
+<span class="font-label-sm text-label-sm text-on-surface-variant leading-none">Auto-Rotate Pool</span>
+<span class="font-label-md text-label-md text-secondary leading-tight">8 Accounts Active</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-sm ml-1">expand_more</span>
+</div>
+<!-- Primary Action: Start Batch Render -->
+<button class="bg-secondary text-on-secondary hover:bg-on-secondary-container font-label-lg text-label-lg px-space-lg py-2 rounded-lg shadow-md flex items-center gap-2 transition-all">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+<span>Start Batch Render</span>
+<span class="bg-secondary-container text-on-secondary-fixed-variant font-label-sm text-label-sm px-2 py-0.5 rounded-full">(8 Tasks)</span>
+</button>
+</div>
+</div>
+<!-- CHARACTER CONSISTENCY BIBLE (SUB-HEADER HORIZONTAL STRIP) -->
+<div class="w-full bg-surface-container-low shadow-sm rounded-xl p-space-md mb-space-md flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md">
+<div class="flex items-center gap-3">
+<div class="bg-tertiary-container text-on-tertiary-container p-2 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">face</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface">Character Consistency Bible</span>
+<span class="bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm px-2 py-0.5 rounded">v2.4 Latent Lock</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Maintains deep face embeddings &amp; LoRA identity weights across all prompt lines</p>
+</div>
+</div>
+<!-- 4 Character Avatar Slots & Toggle -->
+<div class="flex items-center gap-space-sm flex-wrap w-full md:w-auto justify-start md:justify-end">
+<!-- Slot 1: Protagonist Linh -->
+<div class="bg-surface-container-lowest p-1.5 pr-3 rounded-lg shadow-sm flex items-center gap-2">
+<img class="w-8 h-8 rounded-lg object-cover" data-alt="Close up cinematic portrait of protagonist Linh, a young East Asian female character with subtle dark highlights, wearing a soft blue knit sweater in moody rain atmosphere, highly detailed hyperrealistic lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMCCKmAWtDikV-bFCng2ryxVJwIlmOgtPLQkGjW761XC3UbkbttIL07xUCM4A-Na8mQqzcbqphy36iJBXv5vqWbSOx7l4YjAxHjFgk3lM7daWWAigOyVRAlAoPrIguM1izaMuyumWBVfxOjR7L70_vqnKJuuEgl7DY-dWLjSMQ3XU8ETYP1DPF79FGGDCJrxqZZ_4mdQVEML0gcmy94WpO_BBNdGPxePQR0zF8Sw"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface leading-tight">Protagonist Linh</span>
+<div class="flex items-center gap-1">
+<span class="font-label-sm text-label-sm text-primary">Blue knit</span>
+<span class="bg-secondary-container text-on-secondary-fixed-variant px-1 rounded text-[9px] font-label-sm">Locked</span>
+</div>
+</div>
+</div>
+<!-- Slot 2: Minh (Co-star) -->
+<div class="bg-surface-container-lowest p-1.5 pr-3 rounded-lg shadow-sm flex items-center gap-2">
+<img class="w-8 h-8 rounded-lg object-cover" data-alt="Cinematic studio portrait of Minh, male co-star in sharp black leather jacket, dramatic side-lighting with cold blue and emerald rim light, hyperrealistic feature details." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6DlnpK_-HRqSz-2CADQ__n6leqtSYaj45UxixNbXvPFzDunHzyf3XVc5Me10xuvrQkZR5j9pFewamTWBgGQzIYJaan6wJAMsidd525eeqEP_91kkcOOIY7oDGGcZvGdPWdnJdSynMnn8Rz4DUGVZlP5TgcUbVpMesUElggvgjsNwJ2FudVu_wLIy0B9wvGPur6_wE6chuwRcPr_pbKE61ZEW4vOdvr7sRDHLLVg"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface leading-tight">Minh (Co-star)</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Leather jacket</span>
+</div>
+</div>
+<!-- Slot 3: Antagonist -->
+<div class="bg-surface-container-lowest p-1.5 pr-3 rounded-lg shadow-sm flex items-center gap-2">
+<img class="w-8 h-8 rounded-lg object-cover" data-alt="Cinematic atmospheric portrait of the antagonist character wearing a dark charcoal tailored suit, intense dramatic shadows, mysterious mist background, cinema grade 8k." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMUGH0VD3Uc34-Sj7Y7fqTLqCyyb2F_gy8BLx3J0ISx3kb23mdmw8CJPCeGTMiLpMTBEvO3LieGDq1tlXhejB32PbaUQWDJQD246JRCLhUy7ce8STVpyD91wn3dZxn7ZmQEvV1QdsA33rXytKeA1z7ukbsS6iDDlKe6cY-cd2EJKi3xP2RsT6JZsZ-uH4XTaXBKREnqOp_y3PGyxLTXMzEKfB1k-h26bXLGxI6xw"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface leading-tight">Antagonist</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Charcoal suit</span>
+</div>
+</div>
+<!-- Slot 4: Add Face Token -->
+<button class="bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-on-surface p-2 rounded-lg flex items-center gap-1.5 transition-colors font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-base">add_circle</span>
+<span>Drop Token</span>
+</button>
+<!-- Active Switch Toggle -->
+<div class="bg-surface-container-lowest px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-2 ml-1">
+<div class="w-2.5 h-2.5 rounded-full bg-secondary animate-pulse"></div>
+<div class="flex flex-col text-left">
+<span class="font-label-sm text-label-sm text-secondary leading-none">InsightFace Active</span>
+<span class="font-label-sm text-[10px] text-on-surface-variant">Latent Guard ON</span>
+</div>
+</div>
+</div>
+</div>
+<!-- MAIN WORKSPACE: 2-COLUMN GRID (42% Left / 58% Right) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-md w-full items-start">
+<!-- LEFT PANEL: INPUT QUEUE (42% ~ col-span-5) -->
+<div class="lg:col-span-5 flex flex-col gap-space-md">
+<!-- Staging Header & Code Editor Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-md p-space-md flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">tune</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Batch Prompt Staging</span>
+<span class="bg-primary-container text-on-primary-container font-label-sm text-label-sm px-2 py-0.5 rounded-full">8 Loaded</span>
+</div>
+<button class="text-on-surface-variant hover:text-error font-label-sm text-label-sm flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-sm">delete_sweep</span>
+            Clear All
+          </button>
+</div>
+<!-- Code-like Syntax Highlighted Textarea Area -->
+<div class="bg-surface-container-highest rounded-lg p-space-sm flex flex-col">
+<div class="flex items-center justify-between pb-1.5 mb-1.5 text-on-surface-variant font-label-sm text-label-sm">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">terminal</span>
+              Prompt Script Matrix (JSONL / Raw Multiline)
+            </span>
+<span class="bg-surface-container-low px-1.5 py-0.5 rounded font-label-sm text-[10px] text-on-surface-variant">LoRA Key: &lt;linh_v2&gt;</span>
+</div>
+<div class="flex bg-surface-container-low rounded-lg p-2 font-label-md text-label-md overflow-x-auto text-on-surface">
+<!-- Line Numbers -->
+<div class="flex flex-col text-on-surface-variant select-none pr-3 text-right">
+<span>01</span>
+<span>02</span>
+<span>03</span>
+<span>04</span>
+<span>05</span>
+<span>06</span>
+<span>07</span>
+<span>08</span>
+</div>
+<!-- Prompt Token Lines -->
+<div class="flex flex-col gap-0.5 text-on-surface whitespace-nowrap min-w-0">
+<div>
+<span class="text-primary font-label-sm">[Dolly 35mm]</span>
+<span class="text-on-surface">cinematic slow dolly shot of Linh walking through mist, cold grading --ar 16:9</span>
+</div>
+<div>
+<span class="text-secondary font-label-sm">[Macro Focus]</span>
+<span class="text-on-surface">extreme close-up on delicate trembling hands on wet railing, shallow DOF</span>
+</div>
+<div>
+<span class="text-tertiary font-label-sm">[Drone Rise]</span>
+<span class="text-on-surface">wide crane shot revealing dark stormy mountain lake, hyperrealistic water reflections</span>
+</div>
+<div>
+<span class="text-primary font-label-sm">[Low Orbit]</span>
+<span class="text-on-surface">360 orbit around Linh turning back toward camera, wind blowing dark hair</span>
+</div>
+<div>
+<span class="text-secondary font-label-sm">[Anamorphic]</span>
+<span class="text-on-surface">horizontal blue streak lens flare cutting across melancholic horizon</span>
+</div>
+<div>
+<span class="text-primary font-label-sm">[Slow Motion]</span>
+<span class="text-on-surface">120fps droplets hitting puddle with neon city lights in reflection</span>
+</div>
+<div>
+<span class="text-tertiary font-label-sm">[Push-In]</span>
+<span class="text-on-surface">Minh stepping out from fog, leather texture detail, dramatic rim light</span>
+</div>
+<div>
+<span class="text-primary font-label-sm">[Master Shot]</span>
+<span class="text-on-surface">both figures meeting at crossroad cliffside at dusk, cinematic smoke haze</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Drag & Drop Reference Faces Zone -->
+<div class="bg-surface-container-low rounded-lg p-space-md flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-base">cloud_upload</span>
+              Face Reference Embeddings
+            </span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">InsightFace v2.4</span>
+</div>
+<div class="flex items-center gap-2 flex-wrap">
+<!-- Chip 1 -->
+<div class="bg-surface-container-lowest px-2.5 py-1 rounded-lg shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-sm">attachment</span>
+<span class="font-label-sm text-label-sm text-on-surface">Linh_Hero_Front.png</span>
+<span class="font-label-sm text-[10px] text-on-surface-variant">1.2 MB</span>
+<button class="text-on-surface-variant hover:text-error ml-1 transition-colors">
+<span class="material-symbols-outlined text-xs">close</span>
+</button>
+</div>
+<!-- Chip 2 -->
+<div class="bg-surface-container-lowest px-2.5 py-1 rounded-lg shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-sm">attachment</span>
+<span class="font-label-sm text-label-sm text-on-surface">Linh_Profile_Rain.png</span>
+<span class="font-label-sm text-[10px] text-on-surface-variant">980 KB</span>
+<button class="text-on-surface-variant hover:text-error ml-1 transition-colors">
+<span class="material-symbols-outlined text-xs">close</span>
+</button>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-center py-1">
+            Drop additional face reference vectors or click to browse files
+          </p>
+</div>
+<!-- Quick Parameter Settings -->
+<div class="grid grid-cols-3 gap-space-sm">
+<div class="bg-surface-container p-2.5 rounded-lg flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Seed Lock</span>
+<div class="flex items-center justify-between mt-1">
+<span class="font-label-md text-label-md text-on-surface">#8491024</span>
+<span class="material-symbols-outlined text-primary text-xs">lock</span>
+</div>
+</div>
+<div class="bg-surface-container p-2.5 rounded-lg flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">CFG Scale</span>
+<div class="flex items-center justify-between mt-1">
+<span class="font-label-md text-label-md text-on-surface">7.5</span>
+<span class="bg-surface-container-high px-1 rounded text-[10px] font-label-sm text-on-primary-container">Precise</span>
+</div>
+</div>
+<div class="bg-surface-container p-2.5 rounded-lg flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Motion Bucket</span>
+<div class="flex items-center justify-between mt-1">
+<span class="font-label-md text-label-md text-on-surface">128</span>
+<span class="bg-secondary-container px-1 rounded text-[10px] font-label-sm text-on-secondary-fixed-variant">Smooth</span>
+</div>
+</div>
+</div>
+<!-- Submit to Queue Button -->
+<button class="w-full bg-primary hover:bg-on-primary-fixed-variant text-on-primary font-label-lg text-label-lg py-2.5 rounded-lg shadow-md flex items-center justify-center gap-2 transition-all">
+<span class="material-symbols-outlined text-lg">playlist_add_check</span>
+<span>Add to Render Queue (8 Shots)</span>
+</button>
+</div>
+<!-- Quick Tips Card -->
+<div class="bg-surface-container-high rounded-xl p-space-md shadow-sm flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-xl">auto_awesome</span>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface">Director Co-Pilot Tip</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            All 8 accounts share the latent face embedding cache. Re-renders will reuse pre-calculated noise vectors to eliminate facial flicker.
+          </p>
+</div>
+</div>
+</div>
+<!-- RIGHT PANEL: REALTIME GPU TASK MATRIX (58% ~ col-span-7) -->
+<div class="lg:col-span-7 flex flex-col gap-space-md">
+<!-- Matrix Header & Live Stats Banner -->
+<div class="bg-surface-container-lowest rounded-xl shadow-md p-space-md flex flex-col gap-space-md">
+<div class="flex flex-wrap items-center justify-between gap-space-sm">
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface">Realtime GPU Task Matrix</span>
+<span class="bg-secondary-container text-on-secondary-fixed-variant font-label-sm text-label-sm px-2 py-0.5 rounded-full">Cluster v4.8</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Cluster dispatch distributed over 8 active enterprise render accounts</p>
+</div>
+<!-- Live Metrics Pills -->
+<div class="flex items-center gap-space-xs">
+<div class="bg-surface-container px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+<span class="font-label-sm text-label-sm text-on-surface-variant">VRAM Load:</span>
+<span class="font-label-md text-label-md text-primary">82%</span>
+</div>
+<div class="bg-surface-container px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Est. Left:</span>
+<span class="font-label-md text-label-md text-secondary">2m 45s</span>
+</div>
+</div>
+</div>
+<!-- Filter Tabs -->
+<div class="flex items-center gap-1.5 overflow-x-auto pb-1">
+<button class="bg-primary text-on-primary font-label-sm text-label-sm px-3 py-1 rounded-lg shadow-sm">All (8)</button>
+<button class="bg-surface-container text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm px-3 py-1 rounded-lg transition-colors">Rendering (2)</button>
+<button class="bg-surface-container text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm px-3 py-1 rounded-lg transition-colors">Queued (4)</button>
+<button class="bg-surface-container text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm px-3 py-1 rounded-lg transition-colors">Completed (1)</button>
+<button class="bg-surface-container text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm px-3 py-1 rounded-lg transition-colors">Failed (1)</button>
+</div>
+</div>
+<!-- Task Cards Stack -->
+<div class="flex flex-col gap-space-sm">
+<!-- CARD 1: RENDERING -->
+<div class="bg-surface-container-lowest rounded-xl shadow-md p-space-md flex flex-col md:flex-row gap-space-md transition-all">
+<div class="relative w-full md:w-44 h-28 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Cinematic shot in high resolution: misty dark pine forest with atmospheric dusk fog, soft cinematic rain droplets and mood, cinematic 16:9 ratio, ultra wide angle." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD49mQKg5qYfAyclzNOJWmDv_9mh8LZUZrtsbNauLFGEAOWvhCgEsq1uThUzmkakWNeoFbIIl859yZJyE-d0nNdlmbNBNYUGzqSONMFxzu4nBeA9sh0LeRjgS4-FsJmFjo2YVGlnUM9PivErzqfnTjqzVudsJpx3eU1ECYd_YdEdNenPy2q81qMgoHbBRA7G5lSIESp2xSAcJAWZ8cCbmFUbcOz3TwLF4oODvM98A"/>
+<span class="absolute top-1.5 left-1.5 bg-surface-container-lowest text-on-surface font-label-sm text-[10px] px-1.5 py-0.5 rounded shadow">16:9 4K</span>
+<div class="absolute bottom-1.5 right-1.5 bg-surface-container-highest px-1.5 py-0.5 rounded text-[10px] font-label-sm text-on-surface-variant">Step 32/50</div>
+</div>
+<div class="flex-1 flex flex-col justify-between min-w-0">
+<div>
+<div class="flex items-center justify-between gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">Shot 01: Dolly through Pine Forest</span>
+<span class="bg-primary-container text-on-primary-container font-label-sm text-label-sm px-2.5 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                  Rendering
+                </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate mt-0.5">
+                slow forward cinematic dolly shot through dense pine forest under rainy dusk...
+              </p>
+<div class="flex items-center gap-2 mt-1">
+<span class="bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm px-2 py-0.2 rounded truncate">
+                  acc_vip01@gmail.com (GPU #1 - H100)
+                </span>
+</div>
+</div>
+<!-- Progress Bar -->
+<div class="mt-2 flex flex-col gap-1">
+<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span>65% Rendered • Step 32/50</span>
+<span class="font-label-md text-primary">ETA 14s</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full transition-all" style="width: 65%;"></div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex items-center justify-end gap-1 mt-2">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface" title="Pause Render">
+<span class="material-symbols-outlined text-base">pause</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface" title="Live Preview Frame">
+<span class="material-symbols-outlined text-base">visibility</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-error" title="Cancel Task">
+<span class="material-symbols-outlined text-base">close</span>
+</button>
+</div>
+</div>
+</div>
+<!-- CARD 2: RENDERING -->
+<div class="bg-surface-container-lowest rounded-xl shadow-md p-space-md flex flex-col md:flex-row gap-space-md transition-all">
+<div class="relative w-full md:w-44 h-28 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Macro close-up shot of delicate female hands trembling slightly in cold evening air, touching a wet metal railing covered with rain droplets, cinematic lighting, 8k resolution." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5bf-Pz0woqNsiwu2nmuy2dQGcpCZhDrKXuDShQKnAYFZ6vuJKd8A2SLOWidmrbY8uVHXzQ3W-8eFSVXE0Q_BlpmL-E2VbpXgQQNn2WHoESB6ShtSCpmzpqu7h-3VtSHMlsugjb5BAjti9EkuOJ39ZVMf1Jg2pKjvSyaF5F1F4BMAazzX5NqP9WEhW5D0o021gYkmW5vpoBbbDfnEpMGjW75fPJ6rX9ljTUMV-DQ"/>
+<span class="absolute top-1.5 left-1.5 bg-surface-container-lowest text-on-surface font-label-sm text-[10px] px-1.5 py-0.5 rounded shadow">16:9 4K</span>
+<div class="absolute bottom-1.5 right-1.5 bg-surface-container-highest px-1.5 py-0.5 rounded text-[10px] font-label-sm text-on-surface-variant">Step 19/50</div>
+</div>
+<div class="flex-1 flex flex-col justify-between min-w-0">
+<div>
+<div class="flex items-center justify-between gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">Shot 02: Macro Trembling Hands</span>
+<span class="bg-primary-container text-on-primary-container font-label-sm text-label-sm px-2.5 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                  Rendering
+                </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate mt-0.5">
+                extreme macro close-up of delicate female hands trembling in cold air, touching wet railing...
+              </p>
+<div class="flex items-center gap-2 mt-1">
+<span class="bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm px-2 py-0.2 rounded truncate">
+                  acc_vip02@gmail.com (GPU #2 - RTX 4090)
+                </span>
+</div>
+</div>
+<!-- Progress Bar -->
+<div class="mt-2 flex flex-col gap-1">
+<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span>38% Rendered • Step 19/50</span>
+<span class="font-label-md text-primary">ETA 26s</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full transition-all" style="width: 38%;"></div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex items-center justify-end gap-1 mt-2">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface" title="Pause Render">
+<span class="material-symbols-outlined text-base">pause</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface" title="Live Preview Frame">
+<span class="material-symbols-outlined text-base">visibility</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-error" title="Cancel Task">
+<span class="material-symbols-outlined text-base">close</span>
+</button>
+</div>
+</div>
+</div>
+<!-- CARD 3: COMPLETED -->
+<div class="bg-surface-container-lowest rounded-xl shadow-md p-space-md flex flex-col md:flex-row gap-space-md transition-all">
+<div class="relative w-full md:w-44 h-28 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container group cursor-pointer">
+<img class="w-full h-full object-cover" data-alt="Wide majestic establishing shot of dark stormy mountain lake, hyperrealistic water ripple reflections, moody grey cloud cover, cinema film still quality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBetsMNXxoclG45vs1ZhKBaV2Tx677E1U1ShgokUngW4CowfD2BF9kMKuzR4n5YRvS-YnpJFjByKl8eyi6fY-HRQxUZ6dun8dCgLvY5dcNzzSB1z-7Wd_ke1VQDQe7rTUIfIzN3EuCg1oYbs3sRTDgPU8jk5RvbN9UA4Y4S-RrqHugzKHTiUN702znxMVg5AQt7MzmohxJ-G591OW_iaNG1-mdr3VYKrXKCLlox4g"/>
+<div class="absolute inset-0 bg-surface-container-highest/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+</div>
+<span class="absolute top-1.5 left-1.5 bg-surface-container-lowest text-on-surface font-label-sm text-[10px] px-1.5 py-0.5 rounded shadow">ProRes 422</span>
+<span class="absolute bottom-1.5 right-1.5 bg-secondary text-on-secondary px-1.5 py-0.5 rounded text-[10px] font-label-sm">7.0s Done</span>
+</div>
+<div class="flex-1 flex flex-col justify-between min-w-0">
+<div>
+<div class="flex items-center justify-between gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">Shot 05: Establishing Stormy Lake</span>
+<span class="bg-secondary-container text-on-secondary-fixed-variant font-label-sm text-label-sm px-2.5 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+                  Completed (7.0s)
+                </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate mt-0.5">
+                wide crane shot revealing dark stormy mountain lake, hyperrealistic water reflections...
+              </p>
+<div class="flex items-center gap-2 mt-1">
+<span class="bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm px-2 py-0.2 rounded truncate">
+                  acc_vip03@gmail.com
+                </span>
+</div>
+</div>
+<!-- Export / CapCut Actions -->
+<div class="flex items-center justify-between mt-3 pt-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Ready for timeline integration</span>
+<div class="flex items-center gap-2">
+<button class="bg-secondary text-on-secondary hover:bg-on-secondary-container font-label-sm text-label-sm px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition-colors">
+<span class="material-symbols-outlined text-sm">ios_share</span>
+                  Export to CapCut
+                </button>
+<button class="bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-label-sm p-1.5 rounded-lg transition-colors" title="Download ProRes">
+<span class="material-symbols-outlined text-base">download</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- CARD 4: QUEUED -->
+<div class="bg-surface-container-lowest rounded-xl shadow-md p-space-md flex flex-col md:flex-row gap-space-md opacity-90 transition-all">
+<div class="relative w-full md:w-44 h-28 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-3xl animate-spin">hourglass_empty</span>
+<span class="absolute top-1.5 left-1.5 bg-surface-container-lowest text-on-surface-variant font-label-sm text-[10px] px-1.5 py-0.5 rounded shadow">16:9 Planned</span>
+</div>
+<div class="flex-1 flex flex-col justify-between min-w-0">
+<div>
+<div class="flex items-center justify-between gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">Shot 03: Melancholy Horizon Gaze</span>
+<span class="bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm px-2.5 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0">
+<span class="material-symbols-outlined text-sm">schedule</span>
+                  Queued #1
+                </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate mt-0.5">
+                360 orbit around Linh turning back toward camera, wind blowing dark hair...
+              </p>
+<div class="flex items-center gap-2 mt-1">
+<span class="bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm px-2 py-0.2 rounded truncate">
+                  acc_vip04@gmail.com (Allocated • Waiting GPU #1)
+                </span>
+</div>
+</div>
+<!-- Queue Actions -->
+<div class="flex items-center justify-end gap-1 mt-3">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface" title="Move to Top">
+<span class="material-symbols-outlined text-base">vertical_align_top</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface" title="Edit Prompt">
+<span class="material-symbols-outlined text-base">edit</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-error" title="Delete Shot">
+<span class="material-symbols-outlined text-base">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- CARD 5: FAILED WITH AUTO-RETRY -->
+<div class="bg-surface-container-lowest rounded-xl shadow-md p-space-md flex flex-col md:flex-row gap-space-md transition-all">
+<div class="relative w-full md:w-44 h-28 rounded-lg overflow-hidden flex-shrink-0 bg-error-container flex items-center justify-center">
+<span class="material-symbols-outlined text-error text-3xl">warning</span>
+<span class="absolute top-1.5 left-1.5 bg-error text-on-error font-label-sm text-[10px] px-1.5 py-0.5 rounded shadow">Error</span>
+</div>
+<div class="flex-1 flex flex-col justify-between min-w-0">
+<div>
+<div class="flex items-center justify-between gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">Shot 06: Rain Neon Reflection</span>
+<span class="bg-error-container text-on-error-container font-label-sm text-label-sm px-2.5 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0">
+<span class="material-symbols-outlined text-sm">error</span>
+                  CUDA OOM (&gt;24GB)
+                </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate mt-0.5">
+                120fps droplets hitting puddle with neon city lights in reflection...
+              </p>
+<div class="flex items-center gap-2 mt-1">
+<span class="bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm px-2 py-0.2 rounded truncate">
+                  acc_vip06@gmail.com
+                </span>
+</div>
+</div>
+<!-- Failure Resolution Buttons -->
+<div class="flex items-center justify-between mt-3 pt-2">
+<span class="font-label-sm text-label-sm text-error">VRAM threshold exceeded on node #6</span>
+<div class="flex items-center gap-2">
+<button class="bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-label-sm px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">article</span>
+                  View Log
+                </button>
+<button class="bg-primary hover:bg-on-primary-fixed-variant text-on-primary font-label-sm text-label-sm px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-sm">refresh</span>
+                  Auto-Retry on GPU #3 (H100)
+                </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div></main>
+</body></html>

@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MUSE AI STUDIO - AI Music Video Director Suite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              obsidian: '#0A0B10',
+              panel: '#12141F',
+              panelLight: '#181B2B',
+              surface: '#1E2238',
+              accent: '#8B5CF6',
+              accentHover: '#7C3AED',
+              indigo: '#6366F1',
+              emerald: '#10B981',
+              amber: '#F59E0B',
+              rose: '#F43F5E',
+              cyan: '#06B6D4'
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0D0F18;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #252A40;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3B4263;
+    }
+    .hairline-border {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .hairline-border-focus:focus-within {
+      border-color: rgba(139, 92, 246, 0.5);
+    }
+    .glow-subtle {
+      box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.15);
+    }
+    .glow-emerald {
+      box-shadow: 0 0 20px -3px rgba(16, 185, 129, 0.25);
+    }
+  </style>
+<meta content="web_standard" name="shell-type"/></head>
+<body class="bg-[#0A0B10] text-slate-200 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-indigo/30 selection:text-white">
+<!-- TOPBAR NAVIGATION -->
+<header class="h-16 border-b border-white/10 bg-[#0C0E17]/90 backdrop-blur-md sticky top-0 z-50 px-6 flex items-center justify-between flex-shrink-0">
+<!-- Left: Brand & Project Name -->
+<div class="flex items-center space-x-6">
+<div class="flex items-center space-x-3">
+<div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-600/30 ring-1 ring-white/20">
+<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24">
+<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+<path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+<path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+</svg>
+</div>
+<div>
+<span class="font-extrabold tracking-wider text-base bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent flex items-center gap-1.5">
+            MUSE AI STUDIO
+            <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-brand-accent/20 text-brand-accent border border-brand-accent/30 font-semibold">Pro v2.4</span>
+</span>
+</div>
+</div>
+<div class="h-5 w-px bg-white/10"></div>
+<!-- Project Badge -->
+<div class="flex items-center space-x-2.5 bg-[#141724] px-3 py-1.5 rounded-lg border border-white/10">
+<span class="w-2 h-2 rounded-full bg-brand-accent animate-pulse"></span>
+<span class="text-xs text-slate-400">Project:</span>
+<span class="text-xs font-semibold text-white tracking-wide">MV: Ngày Chưa Giông Bão</span>
+<button class="text-slate-400 hover:text-white transition-colors" title="Rename Project">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+<!-- Live Cluster & Render Status Badges -->
+<div class="flex items-center space-x-2">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span>
+          8 Accounts Active
+        </span>
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 animate-ping"></span>
+          2 Tasks Rendering (GPU #4)
+        </span>
+</div>
+</div>
+<!-- Center: Primary Tab Navigation -->
+<nav class="flex items-center space-x-1 bg-[#12141F] p-1 rounded-xl border border-white/5">
+<button class="px-4 py-1.5 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-indigo-600 to-brand-accent shadow-sm flex items-center gap-1.5">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+        AI MV Director
+      </button>
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+        Batch Studio
+      </button>
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+        Account Pool
+      </button>
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+        CapCut Gallery
+      </button>
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+        Settings
+      </button>
+</nav>
+<!-- Right: Quick Actions & User -->
+<div class="flex items-center space-x-3">
+<div class="flex items-center bg-[#151827] border border-white/10 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-300">
+<span class="text-slate-500 mr-2">VRAM</span>
+<span class="text-indigo-400 font-bold">22.4 / 24 GB</span>
+</div>
+<button class="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition-colors" title="Export Plan JSON">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white ring-2 ring-white/10">
+        DA
+      </div>
+</div>
+</header>
+<!-- MAIN 2-COLUMN SPLIT STUDIO LAYOUT (1440px optimized) -->
+<main class="flex-1 flex overflow-hidden max-w-[1720px] w-full mx-auto p-4 gap-4"><div class="flex flex-col w-full gap-space-lg">
+<!-- DASHBOARD HEADER & REAL-TIME CONTROLS -->
+<div class="bg-surface-container-low rounded-xl p-space-lg shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<div class="space-y-1">
+<div class="flex items-center gap-space-sm flex-wrap">
+<h1 class="font-headline-md text-headline-md text-on-surface">Muse AI Account Pool &amp; Load Balancer</h1>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-primary-container text-on-primary-container">
+<span class="material-symbols-outlined text-[13px] text-tertiary">hub</span>
+          Multi-Tenant Cluster v2.4
+        </span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+        Distribute video generation across multiple accounts with auto-rotation, latency scoring, and quota failover.
+      </p>
+</div>
+<!-- Right Action Bar -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center gap-space-md">
+<div class="text-right">
+<div class="flex items-center gap-1.5 text-label-sm font-label-sm text-on-surface-variant font-mono">
+<span class="w-2 h-2 rounded-full bg-secondary animate-ping"></span>
+          Last Ping: 12s ago • Latency: 42ms
+        </div>
+<span class="text-label-sm font-label-sm text-primary">Proxy Mesh: Active (US-East pool)</span>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md shadow-sm transition-all flex items-center gap-1.5 active:scale-95" id="healthPingBtn">
+<span class="material-symbols-outlined text-[18px] text-primary">tune</span>
+          Auto-Rotate Settings
+        </button>
+<button class="px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md shadow-md hover:bg-on-secondary-container transition-all flex items-center gap-2 active:scale-95" id="pingAllBtn">
+<span class="material-symbols-outlined text-[18px] animate-pulse">radar</span>
+<span>Health Ping (12 Nodes)</span>
+</button>
+</div>
+</div>
+</div>
+<!-- TOP 4 KPI METRICS CARDS -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md">
+<!-- Card 1: Total Accounts -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between relative overflow-hidden group">
+<div class="flex items-start justify-between">
+<div>
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-on-surface-variant font-mono">Total Nodes</span>
+<div class="font-headline-lg text-headline-lg text-on-surface mt-1">12</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">supervised_user_circle</span>
+</div>
+</div>
+<div class="flex items-center gap-2 mt-4 pt-3 bg-surface-container-low -mx-4 -mb-4 px-4 py-2.5 rounded-b-xl">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-secondary-fixed text-on-secondary-fixed font-mono font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> 10 Live
+        </span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-error-container text-on-error-container font-mono font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span> 2 Expired
+        </span>
+</div>
+</div>
+<!-- Card 2: Today's Render Quota -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between relative">
+<div class="flex items-start justify-between">
+<div>
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-on-surface-variant font-mono">Today's Render Quota</span>
+<div class="font-headline-lg text-headline-lg text-on-surface mt-1 font-mono">68 <span class="text-headline-sm text-on-surface-variant">/ 120</span></div>
+</div>
+<!-- Progress Ring Visual (Inline SVG) -->
+<div class="relative w-12 h-12 flex items-center justify-center">
+<svg class="w-12 h-12 -rotate-90" viewbox="0 0 36 36">
+<path class="text-surface-container" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.5"></path>
+<path class="text-tertiary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="56.7, 100" stroke-linecap="round" stroke-width="3.5"></path>
+</svg>
+<span class="absolute font-label-sm text-label-sm font-mono font-bold text-on-surface">57%</span>
+</div>
+</div>
+<div class="mt-4 pt-3 bg-surface-container-low -mx-4 -mb-4 px-4 py-2.5 rounded-b-xl flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+<span>52 renders remaining today</span>
+<span class="font-mono text-tertiary font-medium">8 slots/hr avg</span>
+</div>
+</div>
+<!-- Card 3: Success Rate & Sparkline -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div>
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-on-surface-variant font-mono">Generation Reliability</span>
+<div class="font-headline-lg text-headline-lg text-on-surface mt-1 font-mono">98.4%</div>
+</div>
+<!-- Mini Sparkline inline SVG -->
+<div class="w-16 h-8 flex items-center">
+<svg class="w-full h-full text-secondary" fill="none" viewbox="0 0 64 24">
+<path d="M2 18 L12 16 L22 20 L32 10 L42 12 L52 4 L62 2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+<circle cx="62" cy="2" fill="currentColor" r="2.5"></circle>
+</svg>
+</div>
+</div>
+<div class="mt-4 pt-3 bg-surface-container-low -mx-4 -mb-4 px-4 py-2.5 rounded-b-xl flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+<span class="text-secondary font-medium">+1.2% vs yesterday</span>
+<span class="font-mono text-on-surface-variant">1 auto-retry</span>
+</div>
+</div>
+<!-- Card 4: Daily Reset Countdown -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between relative">
+<div class="flex items-start justify-between">
+<div>
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-on-surface-variant font-mono">Quota Reset In</span>
+<div class="font-headline-lg text-headline-lg text-tertiary font-mono tracking-wider mt-1" id="resetCountdown">01:16:30</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container text-on-surface flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">hourglass_top</span>
+</div>
+</div>
+<div class="mt-4 pt-3 bg-surface-container-low -mx-4 -mb-4 px-4 py-2.5 rounded-b-xl flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+<span>Cycle resets at 00:00 VN</span>
+<span class="font-mono text-primary font-medium">UTC+7</span>
+</div>
+</div>
+</div>
+<!-- MAIN DUAL-COLUMN WORKSPACE: 35% LEFT / 65% RIGHT -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- LEFT PANEL: Batch Account Ingestion (4 cols = ~35%) -->
+<section class="lg:col-span-4 flex flex-col gap-space-md">
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<!-- Title & Icon -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[22px] text-primary">add_to_queue</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Add Muse Accounts</h2>
+</div>
+<span class="text-label-sm font-label-sm font-mono px-2 py-0.5 rounded bg-surface-container text-on-surface-variant">Pipe Format</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+          Batch inject multiple authenticated session credentials into the automatic round-robin scheduler.
+        </p>
+<!-- Monospace Syntax Textarea -->
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+<span>Payload Input (email|cookie)</span>
+<span class="font-mono text-[11px]" id="lineCountIndicator">3 lines detected</span>
+</div>
+<div class="relative bg-surface-container rounded-lg p-3">
+<textarea class="w-full bg-transparent text-on-surface font-mono text-body-sm resize-none outline-none leading-relaxed placeholder:text-outline" id="cookieInput" placeholder="user1@gmail.com|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+user2@gmail.com|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+vip_director@muse.ai|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." rows="6"></textarea>
+</div>
+</div>
+<!-- Instructional Callout Box -->
+<div class="bg-surface-container-low rounded-lg p-3.5 flex items-start gap-3">
+<span class="material-symbols-outlined text-[20px] text-tertiary flex-shrink-0 mt-0.5">lightbulb</span>
+<div class="space-y-1">
+<div class="font-label-md text-label-md text-on-surface font-semibold">How to export Cookie String</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              Install <strong>Cookie-Editor</strong> on Chrome, sign in to <span class="font-mono text-[12px] bg-surface-container px-1 py-0.5 rounded text-on-surface">muse.ai</span>, click <em>Export → Header String</em>, extract the <code class="font-mono text-tertiary">hatch_sess</code> token, and separate from email with a pipe (<code class="font-mono font-bold">|</code>).
+            </p>
+</div>
+</div>
+<!-- Proxy & Rate-limit Options -->
+<div class="space-y-2.5 pt-1">
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-on-surface-variant font-mono">Cluster Safety Policies</span>
+<label class="flex items-center justify-between p-2.5 bg-surface-container-low rounded-lg cursor-pointer hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-primary">lan</span>
+<span class="font-label-md text-label-md text-on-surface">Attach Rotating Residential Proxy</span>
+</div>
+<input checked="" class="w-4 h-4 accent-secondary rounded cursor-pointer" type="checkbox"/>
+</label>
+<label class="flex items-center justify-between p-2.5 bg-surface-container-low rounded-lg cursor-pointer hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-primary">timer</span>
+<span class="font-label-md text-label-md text-on-surface">Delay Ping Between Nodes (500ms)</span>
+</div>
+<input checked="" class="w-4 h-4 accent-secondary rounded cursor-pointer" type="checkbox"/>
+</label>
+<label class="flex items-center justify-between p-2.5 bg-surface-container-low rounded-lg cursor-pointer hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-primary">sync_saved_locally</span>
+<span class="font-label-md text-label-md text-on-surface">Auto-Refresh Cookie on Near-Expiry</span>
+</div>
+<input class="w-4 h-4 accent-secondary rounded cursor-pointer" type="checkbox"/>
+</label>
+</div>
+<!-- Action CTAs -->
+<div class="flex flex-col sm:flex-row gap-space-sm pt-2">
+<button class="flex-1 py-2.5 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors text-center" id="validateBtn">
+            Validate Syntax
+          </button>
+<button class="flex-[1.5] py-2.5 px-4 rounded-lg bg-secondary text-on-secondary hover:bg-on-secondary-container font-label-md text-label-md font-semibold transition-all shadow-md flex items-center justify-center gap-2" id="savePoolBtn">
+<span class="material-symbols-outlined text-[18px]">publish</span>
+            Save &amp; Activate Pool
+          </button>
+</div>
+<div class="hidden p-2 rounded text-label-sm font-label-sm bg-secondary-container text-on-secondary-container font-mono text-center" id="validationFeedback">
+          ✓ Syntax Verified: 3 Valid Authentication Keys
+        </div>
+</div>
+<!-- Quick Vault Export Box -->
+<div class="bg-surface-container rounded-xl p-space-md flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[22px] text-primary">lock_reset</span>
+<div>
+<div class="font-label-md text-label-md text-on-surface font-semibold">Token Backup Vault</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant font-mono">12 keys • AES-256 GCM</div>
+</div>
+</div>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-lowest hover:bg-surface-bright text-on-surface text-label-sm font-label-sm font-medium shadow-sm flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[16px]">file_download</span>
+          Export .enc
+        </button>
+</div>
+</section>
+<!-- RIGHT PANEL: Account Matrix Table (8 cols = ~65%) -->
+<section class="lg:col-span-8 flex flex-col gap-space-md">
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+<!-- Table Header & Filter Toolbar -->
+<div class="p-space-lg bg-surface-container-low flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
+<div class="space-y-0.5">
+<div class="flex items-center gap-2">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Account Matrix &amp; Quota Balancer</h2>
+<span class="px-2 py-0.5 rounded-full text-label-sm font-label-sm font-mono bg-primary-container text-on-primary-container font-semibold">12 Nodes</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Live load balancing matrix with automatic failover triggers.</p>
+</div>
+<!-- Quick Filters & Search -->
+<div class="flex flex-wrap items-center gap-2">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2.5 top-2 text-[18px] text-outline">search</span>
+<input class="pl-8 pr-3 py-1.5 rounded-lg bg-surface-container-lowest text-on-surface text-body-sm placeholder:text-outline outline-none w-48 font-mono focus:bg-surface-bright transition-colors" placeholder="Filter node ID or email..." type="text"/>
+</div>
+<!-- Tab Pills -->
+<div class="flex items-center bg-surface-container rounded-lg p-0.5 text-label-sm font-label-sm">
+<button class="px-2.5 py-1 rounded bg-surface-container-lowest text-on-surface shadow-sm font-semibold">All (12)</button>
+<button class="px-2.5 py-1 rounded text-on-surface-variant hover:text-on-surface transition-colors">Live (10)</button>
+<button class="px-2.5 py-1 rounded text-on-surface-variant hover:text-on-surface transition-colors">Capped (1)</button>
+<button class="px-2.5 py-1 rounded text-on-surface-variant hover:text-on-surface transition-colors">Expired (1)</button>
+</div>
+</div>
+</div>
+<!-- MATRIX DATA TABLE -->
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-md text-body-md text-on-surface">
+<thead class="bg-surface-container text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider font-mono">
+<tr>
+<th class="py-3 px-4">Account Identifier</th>
+<th class="py-3 px-3">Session Status</th>
+<th class="py-3 px-3">Today's Usage</th>
+<th class="py-3 px-3">Lifetime Output</th>
+<th class="py-3 px-3 text-center">Balancer State</th>
+<th class="py-3 px-4 text-right">Node Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container">
+<!-- ROW 1: Active Rendering / High Usage -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center font-mono font-bold text-label-sm">
+                      01
+                    </div>
+<div>
+<div class="font-label-md text-label-md text-on-surface font-semibold">acc_vip01@muse.ai</div>
+<div class="font-mono text-label-sm text-outline">hatch_sess=eyJh...89f2 • 34ms</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-label-sm font-mono font-bold bg-secondary-container text-on-secondary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> LIVE
+                  </span>
+</td>
+<td class="py-3.5 px-3">
+<div class="space-y-1 w-32">
+<div class="flex justify-between font-mono text-label-sm">
+<span class="font-medium text-on-surface">8/10 used</span>
+<span class="text-on-surface-variant">80%</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 80%"></div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3 font-mono text-label-sm text-on-surface">
+                  342 clips
+                </td>
+<td class="py-3.5 px-3 text-center">
+<input checked="" class="w-4 h-4 accent-secondary rounded cursor-pointer" title="Toggle node in load balancer" type="checkbox"/>
+</td>
+<td class="py-3.5 px-4 text-right">
+<div class="inline-flex items-center gap-1">
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" title="Ping Account">
+<span class="material-symbols-outlined text-[18px]">favorite</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" title="Edit Token">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-error transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 2: Live Standard -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container text-on-surface flex items-center justify-center font-mono font-bold text-label-sm">
+                      02
+                    </div>
+<div>
+<div class="font-label-md text-label-md text-on-surface font-semibold">direct_render02@gmail.com</div>
+<div class="font-mono text-label-sm text-outline">hatch_sess=eyJh...91a4 • 41ms</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-label-sm font-mono font-bold bg-secondary-container text-on-secondary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> LIVE
+                  </span>
+</td>
+<td class="py-3.5 px-3">
+<div class="space-y-1 w-32">
+<div class="flex justify-between font-mono text-label-sm">
+<span class="font-medium text-on-surface">3/10 used</span>
+<span class="text-on-surface-variant">30%</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 30%"></div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3 font-mono text-label-sm text-on-surface">
+                  189 clips
+                </td>
+<td class="py-3.5 px-3 text-center">
+<input checked="" class="w-4 h-4 accent-secondary rounded cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3.5 px-4 text-right">
+<div class="inline-flex items-center gap-1">
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" title="Ping Account">
+<span class="material-symbols-outlined text-[18px]">favorite</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" title="Edit Token">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-error transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 3: Quota Limit Capped (Amber) -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-low/40">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-tertiary-container text-on-tertiary-container flex items-center justify-center font-mono font-bold text-label-sm">
+                      03
+                    </div>
+<div>
+<div class="font-label-md text-label-md text-on-surface font-semibold">cluster_bot_sg@muse.ai</div>
+<div class="font-mono text-label-sm text-outline">hatch_sess=eyJh...33c9 • 88ms</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-label-sm font-mono font-bold bg-tertiary-container text-on-tertiary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> QUOTA LIMIT
+                  </span>
+</td>
+<td class="py-3.5 px-3">
+<div class="space-y-1 w-32">
+<div class="flex justify-between font-mono text-label-sm">
+<span class="font-medium text-tertiary">10/10 (Max)</span>
+<span class="text-tertiary font-bold">100%</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-tertiary rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3 font-mono text-label-sm text-on-surface">
+                  520 clips
+                </td>
+<td class="py-3.5 px-3 text-center">
+<input checked="" class="w-4 h-4 accent-tertiary rounded cursor-not-allowed opacity-60" disabled="" title="Auto-paused until reset" type="checkbox"/>
+</td>
+<td class="py-3.5 px-4 text-right">
+<div class="inline-flex items-center gap-1">
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" title="Ping Account">
+<span class="material-symbols-outlined text-[18px]">favorite</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" title="Edit Token">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-error transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 4: Live Fresh Node (0/10 used) -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container text-on-surface flex items-center justify-center font-mono font-bold text-label-sm">
+                      04
+                    </div>
+<div>
+<div class="font-label-md text-label-md text-on-surface font-semibold">studio_backup04@gmail.com</div>
+<div class="font-mono text-label-sm text-outline">hatch_sess=eyJh...550a • 29ms</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-label-sm font-mono font-bold bg-secondary-container text-on-secondary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> LIVE
+                  </span>
+</td>
+<td class="py-3.5 px-3">
+<div class="space-y-1 w-32">
+<div class="flex justify-between font-mono text-label-sm">
+<span class="font-medium text-on-surface">0/10 used</span>
+<span class="text-on-surface-variant">0%</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 0%"></div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3 font-mono text-label-sm text-on-surface">
+                  64 clips
+                </td>
+<td class="py-3.5 px-3 text-center">
+<input checked="" class="w-4 h-4 accent-secondary rounded cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3.5 px-4 text-right">
+<div class="inline-flex items-center gap-1">
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" title="Ping Account">
+<span class="material-symbols-outlined text-[18px]">favorite</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" title="Edit Token">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-error transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 5: Expired Token / Re-auth needed (Rose/Error) -->
+<tr class="hover:bg-surface-container-low transition-colors bg-error-container/20">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-error-container text-on-error-container flex items-center justify-center font-mono font-bold text-label-sm">
+                      05
+                    </div>
+<div>
+<div class="font-label-md text-label-md text-on-surface font-semibold">legacy_producer05@muse.ai</div>
+<div class="font-mono text-label-sm text-error">hatch_sess=eyJh...expired • 401 Unauthorized</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-label-sm font-mono font-bold bg-error-container text-on-error-container">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span> EXPIRED
+                  </span>
+</td>
+<td class="py-3.5 px-3">
+<span class="font-mono text-label-sm text-error font-medium">Re-auth needed</span>
+</td>
+<td class="py-3.5 px-3 font-mono text-label-sm text-on-surface">
+                  411 clips
+                </td>
+<td class="py-3.5 px-3 text-center">
+<input class="w-4 h-4 accent-secondary rounded cursor-not-allowed opacity-40" disabled="" type="checkbox"/>
+</td>
+<td class="py-3.5 px-4 text-right">
+<div class="inline-flex items-center gap-1">
+<button class="px-2 py-1 rounded bg-error text-on-error text-label-sm font-label-sm font-medium hover:bg-on-error-container transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">refresh</span>
+                      Fix Key
+                    </button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-error transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 6: Live Normal -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container text-on-surface flex items-center justify-center font-mono font-bold text-label-sm">
+                      06
+                    </div>
+<div>
+<div class="font-label-md text-label-md text-on-surface font-semibold">batch_worker06@gmail.com</div>
+<div class="font-mono text-label-sm text-outline">hatch_sess=eyJh...cc17 • 48ms</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-label-sm font-mono font-bold bg-secondary-container text-on-secondary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> LIVE
+                  </span>
+</td>
+<td class="py-3.5 px-3">
+<div class="space-y-1 w-32">
+<div class="flex justify-between font-mono text-label-sm">
+<span class="font-medium text-on-surface">5/10 used</span>
+<span class="text-on-surface-variant">50%</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 50%"></div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-3 font-mono text-label-sm text-on-surface">
+                  218 clips
+                </td>
+<td class="py-3.5 px-3 text-center">
+<input checked="" class="w-4 h-4 accent-secondary rounded cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3.5 px-4 text-right">
+<div class="inline-flex items-center gap-1">
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" title="Ping Account">
+<span class="material-symbols-outlined text-[18px]">favorite</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" title="Edit Token">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-error transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Matrix Footer / Efficiency Diagnostics -->
+<div class="p-space-md bg-surface-container-low border-t border-surface-container flex flex-col sm:flex-row items-center justify-between text-label-sm font-label-sm text-on-surface-variant gap-space-sm font-mono">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary">alt_route</span>
+<span>Load Balancer Strategy: <strong class="text-on-surface">Round-Robin with Quota Aware Skip</strong></span>
+</div>
+<div class="flex items-center gap-4">
+<span>Average Latency: <strong class="text-secondary">240ms</strong></span>
+<span>•</span>
+<span>Pool Efficiency: <strong class="text-secondary">99.1%</strong></span>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+<script>
+  // Countdown Timer Micro-interaction (VN UTC+7 Daily Reset)
+  let totalSeconds = 1 * 3600 + 16 * 60 + 30;
+  const countdownEl = document.getElementById('resetCountdown');
+
+  setInterval(() => {
+    if (totalSeconds > 0) {
+      totalSeconds--;
+      const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+      const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+      const seconds = String(totalSeconds % 60).padStart(2, '0');
+      if (countdownEl) {
+        countdownEl.textContent = `${hours}:${minutes}:${seconds}`;
+      }
+    }
+  }, 1000);
+
+  // Line count & batch syntax validation micro-interaction
+  const cookieInput = document.getElementById('cookieInput');
+  const lineCountIndicator = document.getElementById('lineCountIndicator');
+  const validateBtn = document.getElementById('validateBtn');
+  const savePoolBtn = document.getElementById('savePoolBtn');
+  const validationFeedback = document.getElementById('validationFeedback');
+
+  if (cookieInput && lineCountIndicator) {
+    cookieInput.addEventListener('input', () => {
+      const lines = cookieInput.value.split('\n').filter(line => line.trim().length > 0);
+      lineCountIndicator.textContent = `${lines.length} lines detected`;
+    });
+  }
+
+  if (validateBtn && validationFeedback) {
+    validateBtn.addEventListener('click', () => {
+      validationFeedback.classList.remove('hidden');
+      setTimeout(() => {
+        validationFeedback.classList.add('hidden');
+      }, 4000);
+    });
+  }
+
+  // Ping button micro-animation feedback
+  const pingAllBtn = document.getElementById('pingAllBtn');
+  if (pingAllBtn) {
+    pingAllBtn.addEventListener('click', () => {
+      const originalText = pingAllBtn.innerHTML;
+      pingAllBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span> Pinging Cluster...';
+      pingAllBtn.disabled = true;
+      setTimeout(() => {
+        pingAllBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check_circle</span> 10/12 Active';
+        setTimeout(() => {
+          pingAllBtn.innerHTML = originalText;
+          pingAllBtn.disabled = false;
+        }, 2000);
+      }, 1200);
+    });
+  }
+</script></main>
+</body></html>

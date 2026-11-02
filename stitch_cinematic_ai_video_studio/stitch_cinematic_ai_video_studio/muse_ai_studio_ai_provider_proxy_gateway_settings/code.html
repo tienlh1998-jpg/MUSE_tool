@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MUSE AI STUDIO - AI Music Video Director Suite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-secondary-fixed": "#002106",
+          "surface-variant": "#c5e7ff",
+          "surface": "#f5faff",
+          "surface-container": "#def0ff",
+          "on-tertiary-fixed-variant": "#3c4d00",
+          "on-secondary": "#ffffff",
+          "inverse-primary": "#bbc8d5",
+          "primary-fixed": "#d7e4f1",
+          "primary": "#53606b",
+          "inverse-on-surface": "#e4f3ff",
+          "tertiary": "#506600",
+          "on-tertiary-fixed": "#161f00",
+          "secondary": "#006e24",
+          "inverse-surface": "#00344b",
+          "on-error": "#ffffff",
+          "surface-tint": "#53606b",
+          "background": "#f5faff",
+          "error-container": "#ffdad6",
+          "tertiary-container": "#cef949",
+          "tertiary-fixed-dim": "#add523",
+          "on-primary-fixed": "#111d26",
+          "secondary-fixed": "#6dff7f",
+          "on-background": "#001e2d",
+          "on-secondary-fixed-variant": "#005319",
+          "on-primary-fixed-variant": "#3c4853",
+          "surface-dim": "#b2e0ff",
+          "on-tertiary-container": "#597100",
+          "surface-container-low": "#eaf5ff",
+          "outline": "#74777b",
+          "on-primary": "#ffffff",
+          "on-error-container": "#93000a",
+          "error": "#ba1a1a",
+          "on-surface": "#001e2d",
+          "surface-container-high": "#d2ecff",
+          "surface-container-lowest": "#ffffff",
+          "surface-bright": "#f5faff",
+          "secondary-container": "#63fd79",
+          "on-primary-container": "#5e6a75",
+          "on-surface-variant": "#43474b",
+          "primary-container": "#deebf8",
+          "secondary-fixed-dim": "#45e263",
+          "on-tertiary": "#ffffff",
+          "surface-container-highest": "#c5e7ff",
+          "outline-variant": "#c4c7cb",
+          "primary-fixed-dim": "#bbc8d5",
+          "on-secondary-container": "#007326",
+          "tertiary-fixed": "#c8f243"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {
+          "space-sm": "0.5rem",
+          "space-xs": "0.25rem",
+          "margin": "2rem",
+          "space-xl": "2.5rem",
+          "space-lg": "1.5rem",
+          "gutter": "1.5rem",
+          "space-md": "1rem"
+        },
+        "fontFamily": {
+          "body-sm": ["Inter"],
+          "headline-sm": ["Inter"],
+          "headline-lg": ["Inter"],
+          "headline-md": ["Inter"],
+          "label-lg": ["Inter"],
+          "body-lg": ["Inter"],
+          "label-sm": ["Inter"],
+          "label-md": ["Inter"],
+          "body-md": ["Inter"]
+        },
+        "fontSize": {
+          "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+          "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+          "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+          "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+          "label-lg": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+          "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+          "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+          "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+          "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  @layer base {
+    html {
+      overscroll-behavior: none;
+    }
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0D0F18;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #252A40;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3B4263;
+  }
+</style>
+<meta content="web_standard" name="shell-type"/>
+</head>
+<body class="bg-[#0A0B10] text-slate-200 antialiased min-h-screen selection:bg-indigo-600/30 selection:text-white">
+<!-- TOPBAR NAVIGATION -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-[#0C0E17]/95 backdrop-blur-md border-b border-white/10">
+<div class="h-16 px-6 flex items-center justify-between">
+<!-- Left: Brand & Project Name -->
+<div class="flex items-center space-x-6">
+<div class="flex items-center space-x-3">
+<div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-600/30 ring-1 ring-white/20">
+<span class="material-symbols-outlined text-white text-[20px]">graphic_eq</span>
+</div>
+<div>
+<span class="font-extrabold tracking-wider text-base bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent flex items-center gap-1.5">
+            MUSE AI STUDIO
+            <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-semibold">Pro v2.4</span>
+</span>
+</div>
+</div>
+<div class="h-5 w-px bg-white/10"></div>
+<!-- Project Badge -->
+<div class="flex items-center space-x-2.5 bg-[#141724] px-3 py-1.5 rounded-lg border border-white/10">
+<span class="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
+<span class="text-xs text-slate-400">Project:</span>
+<span class="text-xs font-semibold text-white tracking-wide">MV: Ngày Chưa Giông Bão</span>
+<button class="text-slate-400 hover:text-white transition-colors" title="Rename Project" type="button">
+<span class="material-symbols-outlined text-[14px]">edit</span>
+</button>
+</div>
+<!-- Live Cluster & Render Status Badges -->
+<div class="flex items-center space-x-2">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span>
+          8 Accounts Active
+        </span>
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 animate-ping"></span>
+          2 Tasks Rendering (GPU #4)
+        </span>
+</div>
+</div>
+<!-- Center: Primary Tab Navigation -->
+<nav class="flex items-center space-x-1 bg-[#12141F] p-1 rounded-xl border border-white/5" data-active-classes="text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow-sm">
+<a class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all" data-path="ai-mv-director" href="#ai-mv-director">
+        AI MV Director
+      </a>
+<a class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all" data-path="batch-studio" href="#batch-studio">
+        Batch Studio
+      </a>
+<a class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all" data-path="account-pool" href="#account-pool">
+        Account Pool
+      </a>
+<a class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all" data-path="capcut-gallery" href="#capcut-gallery">
+        CapCut Gallery
+      </a>
+<a aria-current="page" class="px-3.5 py-1.5 rounded-lg font-medium transition-all text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow-sm" data-path="settings" href="#settings">
+        Settings
+      </a>
+</nav>
+<!-- Right: Quick Actions & User -->
+<div class="flex items-center space-x-3">
+<div class="flex items-center bg-[#151827] border border-white/10 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-300">
+<span class="text-slate-500 mr-2">VRAM</span>
+<span class="text-indigo-400 font-bold">22.4 / 24 GB</span>
+</div>
+<button class="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition-colors" title="Export Plan JSON" type="button">
+<span class="material-symbols-outlined text-[16px]">file_download</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white ring-2 ring-white/10">
+        DA
+      </div>
+</div>
+</div>
+</header>
+<!-- MAIN CONTENT SLOT -->
+<main class="pt-16 max-w-[1720px] w-full mx-auto p-4">
+<div class="flex flex-col w-full">
+<div class="max-w-[880px] w-full mx-auto px-4 py-6 flex flex-col space-y-6">
+<!-- Top Status & Context Header (No duplicated main H1) -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2">
+<div class="space-y-1.5">
+<div class="inline-flex items-center space-x-2 bg-surface-container px-3 py-1 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-primary">MUSE AI STUDIO SYSTEM PREFERENCES</span>
+</div>
+<div class="flex items-center space-x-2.5">
+<span class="material-symbols-outlined text-primary text-[26px]">dns</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">AI Provider &amp; Proxy Gateway</h2>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-xl">
+          Configure real-time LLM inference pipelines for AI MV Director V2, fallback clusters, and localized reverse proxies.
+        </p>
+</div>
+<!-- Quick Status Badges -->
+<div class="flex items-center gap-2 self-start md:self-auto bg-surface-container-low p-2 rounded-lg shadow-sm">
+<div class="flex items-center space-x-2 bg-surface-container px-3 py-1.5 rounded-md">
+<span class="material-symbols-outlined text-primary text-[16px]">hub</span>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">Active Gateway</span>
+<span class="font-label-md text-label-md text-on-surface">OneAPI Proxy v3.1</span>
+</div>
+</div>
+<div class="flex items-center space-x-2 bg-secondary-fixed text-on-secondary-fixed px-3 py-1.5 rounded-md">
+<span class="material-symbols-outlined text-secondary text-[16px]">check_circle</span>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm opacity-80">Health Metric</span>
+<span class="font-label-md text-label-md font-semibold">185ms (Normal)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Settings Canvas -->
+<div class="bg-surface-container-lowest rounded-xl shadow-md p-6 space-y-8">
+<!-- 1. Provider Selector Tabs -->
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<label class="font-label-lg text-label-lg text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">smart_toy</span>
+            Select Model Provider
+          </label>
+<span class="font-label-sm text-label-sm text-outline">5 Presets Available</span>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5" id="providerSelector">
+<!-- Gemini -->
+<button class="provider-tab flex flex-col items-center justify-center p-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface transition-all text-center group" type="button">
+<span class="material-symbols-outlined text-primary text-[22px] group-hover:scale-110 transition-transform">auto_awesome</span>
+<span class="font-label-md text-label-md mt-1.5 line-clamp-1">Google Gemini</span>
+<span class="font-label-sm text-label-sm text-outline mt-0.5">Free Tier / API</span>
+</button>
+<!-- Custom Reverse Proxy (Active) -->
+<button class="provider-tab flex flex-col items-center justify-center p-3 rounded-lg bg-primary text-on-primary shadow-sm text-center relative overflow-hidden group" type="button">
+<span class="absolute top-1.5 right-1.5 material-symbols-outlined text-[14px] text-tertiary-container">verified</span>
+<span class="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">settings_ethernet</span>
+<span class="font-label-md text-label-md mt-1.5 font-semibold line-clamp-1">Custom Proxy</span>
+<span class="font-label-sm text-label-sm text-primary-container mt-0.5">OneAPI / NewAPI</span>
+</button>
+<!-- DeepSeek -->
+<button class="provider-tab flex flex-col items-center justify-center p-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface transition-all text-center group" type="button">
+<span class="material-symbols-outlined text-primary text-[22px] group-hover:scale-110 transition-transform">waves</span>
+<span class="font-label-md text-label-md mt-1.5 line-clamp-1">DeepSeek AI</span>
+<span class="font-label-sm text-label-sm text-outline mt-0.5">V3 / R1 Reasoner</span>
+</button>
+<!-- OpenAI -->
+<button class="provider-tab flex flex-col items-center justify-center p-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface transition-all text-center group" type="button">
+<span class="material-symbols-outlined text-primary text-[22px] group-hover:scale-110 transition-transform">grain</span>
+<span class="font-label-md text-label-md mt-1.5 line-clamp-1">OpenAI</span>
+<span class="font-label-sm text-label-sm text-outline mt-0.5">GPT-4o Direct</span>
+</button>
+<!-- Anthropic Claude -->
+<button class="provider-tab flex flex-col items-center justify-center p-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface transition-all text-center group" type="button">
+<span class="material-symbols-outlined text-primary text-[22px] group-hover:scale-110 transition-transform">sunny</span>
+<span class="font-label-md text-label-md mt-1.5 line-clamp-1">Anthropic</span>
+<span class="font-label-sm text-label-sm text-outline mt-0.5">Claude 3.5 Native</span>
+</button>
+</div>
+</div>
+<!-- 2. Connection Parameters Form -->
+<div class="space-y-5 bg-surface-container-low p-5 rounded-xl">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">tune</span>
+            Connection Parameters
+          </h3>
+<span class="font-label-sm text-label-sm text-primary bg-primary-container px-2 py-0.5 rounded">Protocol: HTTP/REST</span>
+</div>
+<!-- Base URL -->
+<div class="space-y-1.5">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-on-surface flex items-center gap-1.5" for="base-url-input">
+              Base URL / Gateway Endpoint
+              <span class="material-symbols-outlined text-outline text-[14px]" title="The reverse proxy upstream endpoint conforming to OpenAI compatible standard.">info</span>
+</label>
+<span class="font-label-sm text-label-sm bg-surface-container px-2 py-0.5 rounded text-on-surface-variant font-mono">Custom Gateway</span>
+</div>
+<div class="relative flex items-center">
+<span class="absolute left-3 material-symbols-outlined text-outline text-[18px]">terminal</span>
+<input class="w-full bg-surface-container-lowest text-on-surface pl-10 pr-24 py-2.5 rounded-lg text-body-md font-body-md focus:outline-none focus:bg-surface-container focus:ring-0 shadow-sm" id="base-url-input" type="text" value="https://api.openai-proxy.org/v1"/>
+<button class="absolute right-2 px-2.5 py-1 bg-surface-container hover:bg-surface-variant text-on-surface rounded text-label-sm font-label-sm transition-colors flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+              Copy
+            </button>
+</div>
+</div>
+<!-- API Key -->
+<div class="space-y-1.5">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-on-surface flex items-center gap-1.5" for="api-key-input">
+              Authorization Token / Bearer Key
+            </label>
+<div class="inline-flex items-center gap-1 text-on-secondary-fixed bg-secondary-fixed px-2 py-0.5 rounded text-label-sm font-label-sm">
+<span class="material-symbols-outlined text-[13px]">lock</span>
+              Stored locally &amp; encrypted (AES-256 GCM)
+            </div>
+</div>
+<div class="relative flex items-center">
+<span class="absolute left-3 material-symbols-outlined text-outline text-[18px]">key</span>
+<input class="w-full bg-surface-container-lowest text-on-surface pl-10 pr-12 py-2.5 rounded-lg font-mono text-body-md focus:outline-none focus:bg-surface-container shadow-sm" id="api-key-input" type="password" value="sk-proxy-8f9219034aa109b8214ec8912d0912"/>
+<button class="absolute right-3 text-outline hover:text-on-surface transition-colors p-1" id="toggle-key-visibility" title="Toggle key visibility" type="button">
+<span class="material-symbols-outlined text-[18px]" id="key-icon">visibility</span>
+</button>
+</div>
+</div>
+<!-- Model Name + Quick Selection Chips -->
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-on-surface" for="model-name-input">
+              Active Routing Model Identifier
+            </label>
+<span class="font-label-sm text-label-sm text-outline">Overwrites director default agent</span>
+</div>
+<div class="relative flex items-center">
+<span class="absolute left-3 material-symbols-outlined text-outline text-[18px]">model_training</span>
+<input class="w-full bg-surface-container-lowest text-on-surface pl-10 pr-4 py-2.5 rounded-lg font-mono text-body-md focus:outline-none focus:bg-surface-container shadow-sm" id="model-name-input" type="text" value="claude-3-5-sonnet"/>
+</div>
+<!-- Chips -->
+<div class="flex flex-wrap items-center gap-1.5 pt-1">
+<span class="font-label-sm text-label-sm text-outline mr-1">Quick Select:</span>
+<button class="model-chip px-2.5 py-1 rounded bg-surface-container hover:bg-surface-variant text-on-surface text-label-sm font-mono transition-colors" type="button">gemini-2.0-flash</button>
+<button class="model-chip px-2.5 py-1 rounded bg-surface-container hover:bg-surface-variant text-on-surface text-label-sm font-mono transition-colors" type="button">gpt-4o</button>
+<button class="model-chip px-2.5 py-1 rounded bg-primary text-on-primary text-label-sm font-mono shadow-sm" type="button">claude-3-5-sonnet</button>
+<button class="model-chip px-2.5 py-1 rounded bg-surface-container hover:bg-surface-variant text-on-surface text-label-sm font-mono transition-colors" type="button">deepseek-chat</button>
+<button class="model-chip px-2.5 py-1 rounded bg-surface-container-lowest hover:bg-surface-variant text-primary text-label-sm font-mono transition-colors flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[13px]">add</span> Custom...
+            </button>
+</div>
+</div>
+<!-- Network Proxy (HTTP / SOCKS5) -->
+<div class="space-y-1.5 pt-1">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-on-surface flex items-center gap-1.5" for="local-proxy-input">
+              Local Network Proxy (HTTP / SOCKS5)
+              <span class="font-label-sm text-label-sm text-outline">(Optional)</span>
+</label>
+<span class="font-label-sm text-label-sm bg-surface-container px-2 py-0.5 rounded text-secondary font-medium">Bypass Direct</span>
+</div>
+<div class="relative flex items-center">
+<span class="absolute left-3 material-symbols-outlined text-outline text-[18px]">router</span>
+<input class="w-full bg-surface-container-lowest text-on-surface pl-10 pr-24 py-2.5 rounded-lg font-mono text-body-md focus:outline-none focus:bg-surface-container shadow-sm" id="local-proxy-input" type="text" value="http://127.0.0.1:7890"/>
+<button class="absolute right-2 px-2.5 py-1 bg-surface-container hover:bg-surface-variant text-on-surface-variant rounded text-label-sm font-label-sm transition-colors" type="button">
+              Reset
+            </button>
+</div>
+</div>
+</div>
+<!-- 3. Live Connection Ping Box -->
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Connection Health Check</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Verify SSL certificates, model capabilities, and latency handshake.</p>
+</div>
+<button class="px-4 py-2.5 rounded-lg bg-primary hover:bg-on-primary-container text-on-primary font-label-md text-label-md shadow-md flex items-center gap-2 transition-all" id="ping-test-btn" type="button">
+<span class="material-symbols-outlined text-[18px] animate-spin hidden" id="ping-spinner">progress_activity</span>
+<span class="material-symbols-outlined text-[18px]" id="ping-icon">bolt</span>
+<span>Test AI Connection (Ping Test)</span>
+</button>
+</div>
+<!-- Ping Result Display -->
+<div class="bg-secondary-fixed text-on-secondary-fixed p-4 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-sm">
+<div class="flex items-center space-x-3">
+<div class="w-9 h-9 rounded-lg bg-secondary text-on-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">done_all</span>
+</div>
+<div>
+<div class="flex items-center gap-2 flex-wrap">
+<span class="font-label-lg text-label-lg font-semibold">Connected Successfully!</span>
+<span class="font-label-sm text-label-sm font-mono bg-on-secondary-fixed/10 px-2 py-0.5 rounded">Latency: 185ms</span>
+</div>
+<p class="font-body-sm text-body-sm opacity-90 mt-0.5">
+                Model: <span class="font-mono font-medium">claude-3-5-sonnet</span> responded OK • Token Quota: Unlimited / Valid Session
+              </p>
+</div>
+</div>
+<!-- Raw Expander Badge -->
+<div class="shrink-0 flex items-center space-x-2">
+<span class="font-mono text-label-sm bg-on-secondary-fixed/15 px-2.5 py-1 rounded">HTTP 200 OK • TTFB 94ms</span>
+</div>
+</div>
+</div>
+<!-- 4. Concurrency & Failover Engine Settings -->
+<div class="space-y-5 bg-surface-container-low p-5 rounded-xl">
+<div class="border-b border-surface-variant pb-3">
+<h3 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">alt_route</span>
+            Concurrency &amp; Failover Engine
+          </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Manage queue throttle and multi-account fallbacks across GPU generation cycles.</p>
+</div>
+<!-- Slider: Parallel Render Jobs -->
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-on-surface" for="parallel-slider">
+              Parallel Render Jobs
+            </label>
+<span class="font-mono font-label-md text-label-md text-primary bg-primary-container px-2.5 py-0.5 rounded" id="slider-counter">
+              3 Concurrent Tasks (1 to 10)
+            </span>
+</div>
+<div class="space-y-1">
+<input class="w-full accent-primary h-2 bg-surface-container rounded-lg appearance-none cursor-pointer" id="parallel-slider" max="10" min="1" step="1" type="range" value="3"/>
+<div class="flex justify-between font-mono text-label-sm text-outline px-1">
+<span>1</span>
+<span>3</span>
+<span>5</span>
+<span>8</span>
+<span>10</span>
+</div>
+</div>
+</div>
+<!-- Radio: Load Balancing Strategy -->
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface">Load Balancing Strategy</label>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+<label class="flex items-start space-x-3 p-3 rounded-lg bg-surface-container-lowest cursor-pointer hover:bg-surface-container transition-colors">
+<input checked="" class="mt-1 accent-primary" name="load_strategy" type="radio" value="round_robin"/>
+<div>
+<span class="font-label-md text-label-md text-on-surface font-medium block">Round-Robin</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Equally distribute scene prompts across active proxy accounts.</span>
+</div>
+</label>
+<label class="flex items-start space-x-3 p-3 rounded-lg bg-surface-container-lowest cursor-pointer hover:bg-surface-container transition-colors">
+<input class="mt-1 accent-primary" name="load_strategy" type="radio" value="least_used"/>
+<div>
+<span class="font-label-md text-label-md text-on-surface font-medium block">Least-Used First</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Prioritize accounts with the lowest recorded daily token usage.</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Checkboxes: Resilience -->
+<div class="space-y-2.5 pt-1">
+<label class="flex items-center space-x-3 p-2 rounded hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="accent-primary w-4 h-4 rounded" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface">
+              Auto-Failover to next active account if quota or rate-limit (429) is reached
+            </span>
+</label>
+<label class="flex items-center space-x-3 p-2 rounded hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="accent-primary w-4 h-4 rounded" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface">
+              Auto-Retry failed prompt chunks with exponential backoff (Max 3 retries)
+            </span>
+</label>
+</div>
+</div>
+<!-- 5. Bottom Action Bar -->
+<div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+<div class="flex items-center space-x-3">
+<button class="px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-variant text-on-surface font-label-md text-label-md transition-colors flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">restart_alt</span>
+            Reset to Default
+          </button>
+<span class="font-label-sm text-label-sm text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">cloud_sync</span>
+            Config synced 2 mins ago
+          </span>
+</div>
+<div class="flex items-center space-x-2.5 w-full sm:w-auto justify-end">
+<button class="px-4 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md transition-colors" type="button">
+            Cancel
+          </button>
+<button class="px-5 py-2.5 rounded-lg bg-primary hover:bg-on-primary-container text-on-primary font-label-md text-label-md shadow-md flex items-center gap-2 transition-all" id="save-settings-btn" type="button">
+<span class="material-symbols-outlined text-[18px]">check</span>
+<span>Save Settings</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    // 1. Password Visibility Toggle
+    const keyInput = document.getElementById('api-key-input');
+    const toggleKeyBtn = document.getElementById('toggle-key-visibility');
+    const keyIcon = document.getElementById('key-icon');
+
+    if (toggleKeyBtn && keyInput && keyIcon) {
+      toggleKeyBtn.addEventListener('click', () => {
+        const isPassword = keyInput.type === 'password';
+        keyInput.type = isPassword ? 'text' : 'password';
+        keyIcon.textContent = isPassword ? 'visibility_off' : 'visibility';
+      });
+    }
+
+    // 2. Concurrency Slider Counter Sync
+    const slider = document.getElementById('parallel-slider');
+    const counter = document.getElementById('slider-counter');
+
+    if (slider && counter) {
+      slider.addEventListener('input', (e) => {
+        counter.textContent = `${e.target.value} Concurrent Tasks (1 to 10)`;
+      });
+    }
+
+    // 3. Model Quick Chips
+    const modelInput = document.getElementById('model-name-input');
+    const chips = document.querySelectorAll('.model-chip');
+
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const text = chip.textContent.trim();
+        if (!text.includes('Custom')) {
+          if (modelInput) modelInput.value = text;
+          chips.forEach(c => {
+            c.classList.remove('bg-primary', 'text-on-primary', 'shadow-sm');
+            c.classList.add('bg-surface-container', 'text-on-surface');
+          });
+          chip.classList.remove('bg-surface-container', 'text-on-surface');
+          chip.classList.add('bg-primary', 'text-on-primary', 'shadow-sm');
+        } else {
+          if (modelInput) {
+            modelInput.focus();
+            modelInput.select();
+          }
+        }
+      });
+    });
+
+    // 4. Ping Test Simulation
+    const pingBtn = document.getElementById('ping-test-btn');
+    const pingIcon = document.getElementById('ping-icon');
+    const pingSpinner = document.getElementById('ping-spinner');
+
+    if (pingBtn && pingIcon && pingSpinner) {
+      pingBtn.addEventListener('click', () => {
+        pingIcon.classList.add('hidden');
+        pingSpinner.classList.remove('hidden');
+        pingBtn.disabled = true;
+
+        setTimeout(() => {
+          pingSpinner.classList.add('hidden');
+          pingIcon.classList.remove('hidden');
+          pingBtn.disabled = false;
+        }, 800);
+      });
+    }
+  })();
+</script>
+</main>
+<!-- STUDIO FOOTER -->
+<footer class="border-t border-white/10 bg-[#0C0E17]/80 mt-auto py-4 px-6 text-xs text-slate-500 flex items-center justify-between max-w-[1720px] w-full mx-auto">
+<div class="flex items-center space-x-4">
+<span>MUSE AI STUDIO © 2025</span>
+<span>Cluster: US-West Node 08 (RTX 4090 x8)</span>
+</div>
+<div class="flex items-center space-x-4">
+<span class="inline-flex items-center gap-1.5 text-emerald-400">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> All Systems Operational
+    </span>
+<span class="font-mono">Latency: 28ms</span>
+</div>
+</footer>
+</body></html>

@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MUSE AI STUDIO - AI Music Video Director Suite</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              obsidian: '#0A0B10',
+              panel: '#12141F',
+              panelLight: '#181B2B',
+              surface: '#1E2238',
+              accent: '#8B5CF6',
+              accentHover: '#7C3AED',
+              indigo: '#6366F1',
+              emerald: '#10B981',
+              amber: '#F59E0B',
+              rose: '#F43F5E',
+              cyan: '#06B6D4'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0D0F18;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #252A40;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3B4263;
+    }
+    .hairline-border {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .hairline-border-focus:focus-within {
+      border-color: rgba(139, 92, 246, 0.5);
+    }
+    .glow-subtle {
+      box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.15);
+    }
+    .glow-emerald {
+      box-shadow: 0 0 20px -3px rgba(16, 185, 129, 0.25);
+    }
+  </style>
+</head>
+<body class="bg-[#0A0B10] text-slate-200 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-indigo/30 selection:text-white">
+
+  <!-- TOPBAR NAVIGATION -->
+  <header class="h-16 border-b border-white/10 bg-[#0C0E17]/90 backdrop-blur-md sticky top-0 z-50 px-6 flex items-center justify-between flex-shrink-0">
+    <!-- Left: Brand & Project Name -->
+    <div class="flex items-center space-x-6">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-600/30 ring-1 ring-white/20">
+          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+        </div>
+        <div>
+          <span class="font-extrabold tracking-wider text-base bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent flex items-center gap-1.5">
+            MUSE AI STUDIO
+            <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-brand-accent/20 text-brand-accent border border-brand-accent/30 font-semibold">Pro v2.4</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="h-5 w-px bg-white/10"></div>
+
+      <!-- Project Badge -->
+      <div class="flex items-center space-x-2.5 bg-[#141724] px-3 py-1.5 rounded-lg border border-white/10">
+        <span class="w-2 h-2 rounded-full bg-brand-accent animate-pulse"></span>
+        <span class="text-xs text-slate-400">Project:</span>
+        <span class="text-xs font-semibold text-white tracking-wide">MV: Ngày Chưa Giông Bão</span>
+        <button class="text-slate-400 hover:text-white transition-colors" title="Rename Project">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Live Cluster & Render Status Badges -->
+      <div class="flex items-center space-x-2">
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span>
+          8 Accounts Active
+        </span>
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 animate-ping"></span>
+          2 Tasks Rendering (GPU #4)
+        </span>
+      </div>
+    </div>
+
+    <!-- Center: Primary Tab Navigation -->
+    <nav class="flex items-center space-x-1 bg-[#12141F] p-1 rounded-xl border border-white/5">
+      <button class="px-4 py-1.5 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-indigo-600 to-brand-accent shadow-sm flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        AI MV Director
+      </button>
+      <button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+        Batch Studio
+      </button>
+      <button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+        Account Pool
+      </button>
+      <button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+        CapCut Gallery
+      </button>
+      <button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+        Settings
+      </button>
+    </nav>
+
+    <!-- Right: Quick Actions & User -->
+    <div class="flex items-center space-x-3">
+      <div class="flex items-center bg-[#151827] border border-white/10 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-300">
+        <span class="text-slate-500 mr-2">VRAM</span>
+        <span class="text-indigo-400 font-bold">22.4 / 24 GB</span>
+      </div>
+      <button class="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition-colors" title="Export Plan JSON">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+      </button>
+      <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white ring-2 ring-white/10">
+        DA
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN 2-COLUMN SPLIT STUDIO LAYOUT (1440px optimized) -->
+  <main class="flex-1 flex overflow-hidden max-w-[1720px] w-full mx-auto p-4 gap-4">
+
+    <!-- LEFT COLUMN: INPUT FORM & LYRICS (40% width) -->
+    <section class="w-[40%] flex flex-col bg-[#12141F] rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+      <!-- Panel Header -->
+      <div class="p-4 border-b border-white/10 flex items-center justify-between bg-[#151827]/70 backdrop-blur">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-2.5 h-2.5 rounded-full bg-brand-accent"></div>
+          <h2 class="text-sm font-bold tracking-wide text-white uppercase font-sans">Music Video Parameters &amp; Lyrics</h2>
+        </div>
+        <span class="text-[11px] font-mono text-slate-400 bg-white/5 px-2 py-0.5 rounded border border-white/5">Step 01 / Pre-Production</span>
+      </div>
+
+      <!-- Scrollable Form Body -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+
+        <!-- Song Metadata Row -->
+        <div class="space-y-1.5">
+          <label class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-between">
+            <span>Song Title</span>
+            <span class="text-slate-500 font-mono text-[10px]">Track ID #VN-2024-91</span>
+          </label>
+          <div class="relative">
+            <input type="text" value="Ngày Chưa Giông Bão" class="w-full bg-[#181B2B] border border-white/10 rounded-xl px-3.5 py-2.5 text-white font-medium text-sm focus:outline-none focus:border-brand-accent transition-colors">
+            <span class="absolute right-3 top-2.5 text-slate-500 text-xs">V-Pop / OST</span>
+          </div>
+        </div>
+
+        <!-- Genre Tags Selection -->
+        <div class="space-y-1.5">
+          <label class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Genre Tags</label>
+          <div class="flex flex-wrap gap-1.5">
+            <button class="px-2.5 py-1.5 rounded-lg bg-brand-indigo/25 text-indigo-300 border border-brand-indigo/50 font-medium text-xs flex items-center gap-1 shadow-sm">
+              <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span> Pop Ballad
+            </button>
+            <button class="px-2.5 py-1.5 rounded-lg bg-[#181B2B] text-slate-400 border border-white/10 hover:border-white/20 transition-all text-xs">
+              Lofi Chill
+            </button>
+            <button class="px-2.5 py-1.5 rounded-lg bg-brand-accent/20 text-purple-300 border border-brand-accent/40 font-medium text-xs flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> Acoustic Cinematic
+            </button>
+            <button class="px-2.5 py-1.5 rounded-lg bg-[#181B2B] text-slate-400 border border-white/10 hover:border-white/20 transition-all text-xs">
+              Ambient EDM
+            </button>
+            <button class="px-2 py-1.5 rounded-lg bg-white/5 text-slate-400 hover:text-white border border-dashed border-white/20 text-xs">
+              + Custom
+            </button>
+          </div>
+        </div>
+
+        <!-- BPM, Vocal Type, Mood Grid -->
+        <div class="grid grid-cols-3 gap-3">
+          <!-- BPM -->
+          <div class="space-y-1.5">
+            <label class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Tempo (BPM)</label>
+            <div class="flex items-center bg-[#181B2B] border border-white/10 rounded-xl px-3 py-2 font-mono">
+              <input type="number" value="85" class="bg-transparent w-full text-white text-sm font-semibold focus:outline-none">
+              <span class="text-[10px] text-slate-500 uppercase">BPM</span>
+            </div>
+          </div>
+
+          <!-- Vocal Type -->
+          <div class="space-y-1.5">
+            <label class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Vocal Profile</label>
+            <div class="flex items-center justify-between bg-[#181B2B] border border-white/10 rounded-xl px-2.5 py-2">
+              <span class="text-xs text-purple-300 font-medium truncate">Warm Female</span>
+              <span class="w-2 h-2 rounded-full bg-brand-accent"></span>
+            </div>
+          </div>
+
+          <!-- Mood Selector -->
+          <div class="space-y-1.5">
+            <label class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Mood Aura</label>
+            <div class="flex items-center justify-between bg-[#181B2B] border border-white/10 rounded-xl px-2.5 py-2">
+              <span class="text-xs text-sky-300 font-medium truncate">Nostalgic &amp; Melancholic</span>
+              <svg class="w-3.5 h-3.5 text-slate-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vietnamese Lyrics Rich-Text Area with Line Numbers -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1.5">
+              <span>Vietnamese Song Lyrics</span>
+              <span class="text-[10px] font-mono text-brand-emerald bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">Synced 8 Bars</span>
+            </label>
+            <div class="flex items-center space-x-2 text-[11px] text-slate-400">
+              <button class="hover:text-white transition-colors" title="Format Strophes">Auto-Format</button>
+              <span>•</span>
+              <span class="font-mono text-slate-500">142 words</span>
+            </div>
+          </div>
+
+          <div class="bg-[#181B2B] border border-white/10 rounded-xl p-2.5 flex font-mono text-xs hairline-border-focus transition-all">
+            <!-- Line numbers -->
+            <div class="text-slate-600 select-none pr-3 border-r border-white/5 space-y-1 text-right w-7 flex-shrink-0 text-[11px]">
+              <div>01</div>
+              <div>02</div>
+              <div>03</div>
+              <div>04</div>
+              <div>05</div>
+              <div>06</div>
+              <div>07</div>
+              <div>08</div>
+              <div>09</div>
+              <div>10</div>
+            </div>
+            <!-- Editable Lyrics Content -->
+            <div class="pl-3.5 text-slate-300 space-y-1 leading-relaxed overflow-x-hidden w-full font-sans text-xs">
+              <p class="text-white font-medium"><span class="text-purple-400 font-mono text-[10px] mr-1.5">[Chorus]</span>Mùa đông xé rách lòng bàn tay khi em kiếm tìm anh...</p>
+              <p class="text-slate-300">Đôi mắt thẫn thờ nhìn giọt sương tan trong ánh chiều tà.</p>
+              <p class="text-slate-400">Lời hẹn ước xưa nay như tàn tro cuốn bay theo gió.</p>
+              <p class="text-white font-medium"><span class="text-purple-400 font-mono text-[10px] mr-1.5">[Verse 2]</span>Có những ngày biển lặng không một gợn sóng xô bến bờ,</p>
+              <p class="text-slate-300">Là những ngày báo trước cơn giông bão ngập tràn hồn hoang.</p>
+              <p class="text-slate-400">Em đứng giữa ngã tư thành phố mịt mờ hơi mưa,</p>
+              <p class="text-slate-300">Chờ một vạt nắng muộn màng sưởi ấm con tim giá băng.</p>
+              <p class="text-purple-300 italic"><span class="text-purple-400 font-mono text-[10px] mr-1.5">[Outro]</span>Và rồi ta lạc mất nhau... vào một ngày chưa giông bão.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Optional Director Notes Input Field -->
+        <div class="space-y-1.5">
+          <label class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-between">
+            <span>Director's Creative Notes &amp; Visual Anchors</span>
+            <span class="text-[10px] text-slate-500 font-mono">Optional</span>
+          </label>
+          <textarea rows="2" class="w-full bg-[#181B2B] border border-white/10 rounded-xl px-3.5 py-2.5 text-slate-300 text-xs focus:outline-none focus:border-brand-accent transition-colors leading-normal" placeholder="e.g. Prioritize heavy anamorphic lens flare, lonely silhouettes against misty Da Lat pine hills, slow camera dolly-in, 24fps motion blur..."></textarea>
+        </div>
+
+        <!-- Secondary Action Buttons -->
+        <div class="flex items-center space-x-2 pt-1">
+          <button class="flex-1 bg-[#181B2B] hover:bg-[#1E2238] border border-white/10 hover:border-white/20 text-slate-300 hover:text-white rounded-xl py-2 px-3 flex items-center justify-center gap-1.5 transition-all font-medium text-xs">
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+            Copy Clean Prompt
+          </button>
+          <button class="flex-1 bg-[#181B2B] hover:bg-[#1E2238] border border-white/10 hover:border-white/20 text-slate-300 hover:text-white rounded-xl py-2 px-3 flex items-center justify-center gap-1.5 transition-all font-medium text-xs">
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            Paste External Script
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Sticky Panel Footer CTA: Prominent Purple Button -->
+      <div class="p-4 border-t border-white/10 bg-[#151827]/90 backdrop-blur">
+        <button class="w-full py-3.5 px-5 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white font-bold text-sm tracking-wide shadow-xl shadow-purple-600/30 flex items-center justify-center gap-2 transform active:scale-[0.99] transition-all">
+          <svg class="w-4 h-4 text-purple-200 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+          ✨ Generate MV Production Plan (AI)
+          <span class="text-[11px] font-normal font-mono bg-black/30 px-2 py-0.5 rounded text-purple-200 ml-1">~18s Latency</span>
+        </button>
+      </div>
+    </section>
+
+
+    <!-- RIGHT COLUMN: INTERACTIVE PRODUCTION BOARD (60% width) -->
+    <section class="w-[60%] flex flex-col bg-[#12141F] rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+
+      <!-- Right Header: Rationale, Badges & Floating CTA -->
+      <div class="p-4 border-b border-white/10 bg-[#151827]/80 backdrop-blur flex items-start justify-between gap-4">
+        <div class="space-y-2 max-w-[62%]">
+          <div class="flex items-center space-x-2">
+            <span class="px-2.5 py-1 rounded-md text-xs font-semibold bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1.5">
+              <svg class="w-3 h-3 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M14.31 8l5.74 9.94M9.69 8h11.48M7.38 12l5.74-9.94M9.69 16L3.95 6.06M14.31 16H2.83M16.62 12l-5.74 9.94"/></svg>
+              Cinematic Moodscape Visualizer
+            </span>
+            <span class="text-[11px] font-mono text-slate-400 bg-white/5 px-2 py-0.5 rounded">8 Shots Master Plan</span>
+          </div>
+          <!-- Director's Rationale Quote Box -->
+          <div class="p-2.5 rounded-xl bg-[#181B2B] border border-white/5 text-[11px] text-slate-300 italic leading-relaxed border-l-2 border-l-brand-accent">
+            "Sử dụng gam màu Teal & Orange tương phản lạnh/ấm nhằm đặc tả sự dồn nén cảm xúc trước cơn bão lòng. Tận dụng ống kính anamorphic 35mm để kéo giãn bokeh mưa đêm, biến từng khung hình thành một tác phẩm điện ảnh độc lập."
+          </div>
+        </div>
+
+        <!-- Floating Green CTA Button -->
+        <div class="flex flex-col items-end gap-1 flex-shrink-0">
+          <button class="py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs tracking-wide shadow-lg shadow-emerald-500/25 flex items-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0 transition-all glow-emerald">
+            <span>➡️ Push All 8 Shots to Batch Studio</span>
+            <span class="w-5 h-5 rounded-lg bg-black/20 flex items-center justify-center text-slate-900 font-mono text-[10px]">8</span>
+          </button>
+          <span class="text-[10px] font-mono text-emerald-400/80 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Ready for Auto-Queue
+          </span>
+        </div>
+      </div>
+
+      <!-- Tabbed / Accordion Sections Container -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-4">
+
+        <!-- SECTION 1: VISUAL BIBLE -->
+        <div class="rounded-xl bg-[#151827] border border-white/10 overflow-hidden">
+          <div class="px-4 py-2.5 bg-[#181B2B] border-b border-white/5 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+              <h3 class="text-xs font-bold text-white uppercase tracking-wider font-mono">1. Visual Bible &amp; Consistency Locks</h3>
+            </div>
+            <span class="text-[10px] text-cyan-300 font-mono bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">Global Seed: #8491024</span>
+          </div>
+
+          <div class="p-3.5 grid grid-cols-3 gap-3 text-xs">
+            <!-- Style Lock -->
+            <div class="p-3 rounded-lg bg-[#12141F] border border-white/5 space-y-2">
+              <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                <span>Style Lock</span>
+                <span class="text-emerald-400 font-semibold">16:9 Scope</span>
+              </div>
+              <p class="text-slate-200 font-medium text-[11px]">Cinematic 16:9 Anamorphic</p>
+              <div class="flex items-center gap-1.5">
+                <span class="w-3.5 h-3.5 rounded bg-teal-500 border border-white/20 inline-block" title="Teal Palette"></span>
+                <span class="w-3.5 h-3.5 rounded bg-amber-500 border border-white/20 inline-block" title="Warm Amber"></span>
+                <span class="text-[10px] text-slate-400 font-mono">Teal &amp; Orange LUT</span>
+              </div>
+              <div class="text-[10px] text-slate-500 font-mono">Kodak 2383 Film Grain • ISO 800</div>
+            </div>
+
+            <!-- Character Lock Chips with Face Placeholders -->
+            <div class="p-3 rounded-lg bg-[#12141F] border border-white/5 space-y-2">
+              <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                <span>Character Lock</span>
+                <span class="text-purple-400 font-mono text-[10px]">LoRA v1.4</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-900 border border-purple-400/40 flex items-center justify-center text-xs font-bold text-white shadow-inner">
+                  L
+                </div>
+                <div>
+                  <div class="text-[11px] font-bold text-white leading-tight">Linh (Hero Lead)</div>
+                  <div class="text-[10px] text-slate-400 font-mono">22yo Vietnamese Girl</div>
+                </div>
+              </div>
+              <div class="text-[10px] text-slate-400 font-mono bg-white/5 px-2 py-1 rounded truncate">
+                Token: &lt;linh_actor_face_matrix&gt;
+              </div>
+            </div>
+
+            <!-- Wardrobe and Location Rules -->
+            <div class="p-3 rounded-lg bg-[#12141F] border border-white/5 space-y-1.5">
+              <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Wardrobe &amp; Scene Rules</div>
+              <div class="text-[11px] text-slate-300">
+                <span class="text-purple-300 font-semibold">• Wardrobe:</span> Charcoal trench coat, vintage wool scarf, rain droplets.
+              </div>
+              <div class="text-[11px] text-slate-300">
+                <span class="text-teal-300 font-semibold">• Location:</span> Misty pine valley, wet neon street reflection at dusk.
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- SECTION 2: REFERENCE PACK (English Prompts with Copy Buttons) -->
+        <div class="rounded-xl bg-[#151827] border border-white/10 overflow-hidden">
+          <div class="px-4 py-2.5 bg-[#181B2B] border-b border-white/5 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-brand-accent"></span>
+              <h3 class="text-xs font-bold text-white uppercase tracking-wider font-mono">2. Reference Pack (Master Image Prompts)</h3>
+            </div>
+            <span class="text-[10px] text-purple-300 font-mono">Midjourney v6.1 / Flux Pro Ready</span>
+          </div>
+
+          <div class="p-3.5 space-y-2 text-xs">
+            <div class="p-2.5 rounded-lg bg-[#10121C] border border-white/5 space-y-1.5">
+              <div class="flex items-center justify-between text-[11px]">
+                <span class="font-mono text-slate-400 font-medium">Ref #01: Master Key Visual (Hero Shot Mood)</span>
+                <button class="px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 flex items-center gap-1 text-[10px] transition-colors">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                  Copy Prompt
+                </button>
+              </div>
+              <code class="block font-mono text-[11px] text-purple-200/90 bg-[#0A0B10] p-2 rounded-md border border-white/5 overflow-x-auto leading-relaxed">
+                cinematic film still, 35mm anamorphic photography, young Vietnamese woman standing in rainy Da Lat street at dusk, melancholic eyes, charcoal trench coat, teal and orange color grading, soft bokeh streetlights, Kodak Vision3 500T, volumetric mist, hyper-detailed skin pores --ar 16:9 --style raw --v 6.1
+              </code>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- SECTION 3: STORYBOARD SHEET (8 Interactive Scene Cards) -->
+        <div class="rounded-xl bg-[#151827] border border-white/10 overflow-hidden">
+          <div class="px-4 py-2.5 bg-[#181B2B] border-b border-white/5 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <h3 class="text-xs font-bold text-white uppercase tracking-wider font-mono">3. Storyboard Sheet (8 Scene Sequence)</h3>
+            </div>
+            <div class="flex items-center space-x-2 text-[11px] font-mono text-slate-400">
+              <span>Total Duration: 58s</span>
+              <span>•</span>
+              <span class="text-emerald-400">Luma Dream Machine &amp; Kling AI 1.5</span>
+            </div>
+          </div>
+
+          <!-- 8 Shot Cards Grid -->
+          <div class="p-3.5 space-y-3">
+
+            <!-- SHOT 01 -->
+            <div class="p-3 rounded-xl bg-[#12141F] border border-white/10 hover:border-purple-500/40 transition-all space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <span class="font-mono font-bold text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">Shot 01</span>
+                  <span class="text-xs font-semibold text-white">Khởi đầu u buồn - Rừng thông trong sương sớm</span>
+                </div>
+                <div class="flex items-center space-x-1.5">
+                  <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">7s</span>
+                  <span class="text-[10px] font-mono text-slate-500">Camera: Slow Dolly-In</span>
+                </div>
+              </div>
+              <p class="text-[11px] text-slate-300">
+                <span class="text-slate-500 font-mono">[Nội dung VN]:</span> Góc quay toàn cảnh rừng thông mờ sương, gió nhẹ lay động cành thông, tạo cảm giác cô độc và lạnh giá trước cơn bão.
+              </p>
+              <div class="bg-[#0A0B10] p-2 rounded-lg border border-white/5 font-mono text-[10.5px] text-slate-300 flex items-start justify-between gap-2">
+                <span class="text-purple-300">Slow forward cinematic dolly shot through dense pine forest covered in early morning fog, melancholic atmospheric mood, anamorphic bokeh, 4k 24fps.</span>
+                <button class="text-slate-500 hover:text-white p-1" title="Copy Shot Prompt">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                </button>
+              </div>
+              <div class="flex items-center gap-2 text-[10px] font-mono text-slate-500">
+                <span class="text-rose-400 bg-rose-500/10 px-1.5 py-0.2 rounded border border-rose-500/20">Negative: fast camera shake, oversaturated colors, sunny sky, cartoonish</span>
+              </div>
+            </div>
+
+            <!-- SHOT 02 -->
+            <div class="p-3 rounded-xl bg-[#12141F] border border-white/10 hover:border-purple-500/40 transition-all space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <span class="font-mono font-bold text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">Shot 02</span>
+                  <span class="text-xs font-semibold text-white">Đôi bàn tay lạnh giá và vết xước thời gian</span>
+                </div>
+                <div class="flex items-center space-x-1.5">
+                  <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">8s</span>
+                  <span class="text-[10px] font-mono text-slate-500">Camera: Macro Tilt-Up</span>
+                </div>
+              </div>
+              <p class="text-[11px] text-slate-300">
+                <span class="text-slate-500 font-mono">[Nội dung VN]:</span> Cận cảnh đôi bàn tay thiếu nữ run rẩy chạm vào hàng rào gỗ ướt sương, giọt nước rơi chậm rơi khỏi đầu ngón tay.
+              </p>
+              <div class="bg-[#0A0B10] p-2 rounded-lg border border-white/5 font-mono text-[10.5px] text-slate-300 flex items-start justify-between gap-2">
+                <span class="text-purple-300">Extreme macro close-up of delicate female hands trembling in cold air, touching wet wooden railing, water droplet falling in slow motion, shallow depth of field.</span>
+                <button class="text-slate-500 hover:text-white p-1" title="Copy Shot Prompt">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                </button>
+              </div>
+              <div class="flex items-center gap-2 text-[10px] font-mono text-slate-500">
+                <span class="text-rose-400 bg-rose-500/10 px-1.5 py-0.2 rounded border border-rose-500/20">Negative: distorted fingers, extra limbs, blur, high key lighting</span>
+              </div>
+            </div>
+
+            <!-- SHOT 03 -->
+            <div class="p-3 rounded-xl bg-[#12141F] border border-white/10 hover:border-purple-500/40 transition-all space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <span class="font-mono font-bold text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">Shot 03</span>
+                  <span class="text-xs font-semibold text-white">Chân dung đôi mắt chất chứa nỗi nhớ</span>
+                </div>
+                <div class="flex items-center space-x-1.5">
+                  <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">7s</span>
+                  <span class="text-[10px] font-mono text-slate-500">Camera: Static 50mm Prime</span>
+                </div>
+              </div>
+              <p class="text-[11px] text-slate-300">
+                <span class="text-slate-500 font-mono">[Nội dung VN]:</span> Khuôn mặt nhân vật Linh ngước nhìn về phía chân trời xa xăm, gió làm bay nhẹ lọn tóc mai, ánh mắt buồn da diết.
+              </p>
+              <div class="bg-[#0A0B10] p-2 rounded-lg border border-white/5 font-mono text-[10.5px] text-slate-300 flex items-start justify-between gap-2">
+                <span class="text-purple-300">Cinematic medium portrait of Linh &lt;linh_actor_face_matrix&gt;, wind blowing strands of hair across her face, tears gleaming subtly in eyes, moody overcast lighting.</span>
+                <button class="text-slate-500 hover:text-white p-1" title="Copy Shot Prompt">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                </button>
+              </div>
+              <div class="flex items-center gap-2 text-[10px] font-mono text-slate-500">
+                <span class="text-rose-400 bg-rose-500/10 px-1.5 py-0.2 rounded border border-rose-500/20">Negative: smiling, unnatural expression, plastic skin, 3D render look</span>
+              </div>
+            </div>
+
+            <!-- SHOTS 04 to 08 COMPACT ROWS -->
+            <div class="grid grid-cols-2 gap-2.5 pt-1">
+              <!-- Shot 04 -->
+              <div class="p-2.5 rounded-lg bg-[#10121C] border border-white/5 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="font-mono text-xs text-purple-400 font-bold">Shot 04 • 8s</span>
+                  <span class="text-[10px] font-mono text-slate-500">Orbit 45°</span>
+                </div>
+                <p class="text-[11px] text-slate-300 font-medium">Bóng lưng bước đi cô độc trên đồi</p>
+                <code class="block font-mono text-[10px] text-slate-400 truncate bg-black/40 p-1 rounded">Long tracking shot behind woman walking uphill into fog...</code>
+              </div>
+
+              <!-- Shot 05 -->
+              <div class="p-2.5 rounded-lg bg-[#10121C] border border-white/5 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="font-mono text-xs text-purple-400 font-bold">Shot 05 • 7s</span>
+                  <span class="text-[10px] font-mono text-slate-500">Low Angle Crane</span>
+                </div>
+                <p class="text-[11px] text-slate-300 font-medium">Mặt biển phẳng lặng trước bão dữ</p>
+                <code class="block font-mono text-[10px] text-slate-400 truncate bg-black/40 p-1 rounded">Eerie calm ocean surface, dark ominous clouds gathering on horizon...</code>
+              </div>
+
+              <!-- Shot 06 -->
+              <div class="p-2.5 rounded-lg bg-[#10121C] border border-white/5 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="font-mono text-xs text-purple-400 font-bold">Shot 06 • 7s</span>
+                  <span class="text-[10px] font-mono text-slate-500">Pan Right</span>
+                </div>
+                <p class="text-[11px] text-slate-300 font-medium">Ngã tư thành phố mịt mờ hơi mưa</p>
+                <code class="block font-mono text-[10px] text-slate-400 truncate bg-black/40 p-1 rounded">Empty city intersection drenched in rain, neon amber & teal reflections...</code>
+              </div>
+
+              <!-- Shot 07 -->
+              <div class="p-2.5 rounded-lg bg-[#10121C] border border-white/5 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="font-mono text-xs text-purple-400 font-bold">Shot 07 • 7s</span>
+                  <span class="text-[10px] font-mono text-slate-500">POV Over-shoulder</span>
+                </div>
+                <p class="text-[11px] text-slate-300 font-medium">Mảnh thư tay bị gió cuốn bay</p>
+                <code class="block font-mono text-[10px] text-slate-400 truncate bg-black/40 p-1 rounded">Handwritten letter blowing out of hand into rainy wind gusts...</code>
+              </div>
+
+              <!-- Shot 08 -->
+              <div class="col-span-2 p-2.5 rounded-lg bg-[#10121C] border border-white/5 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="font-mono text-xs text-purple-400 font-bold">Shot 08 (Final Outro) • 7s</span>
+                  <span class="text-[10px] font-mono text-slate-500">Slow Pull-Back Aerial Drone</span>
+                </div>
+                <p class="text-[11px] text-slate-300 font-medium">Hòa tan vào chân trời mờ sương - Kết thúc bản tình ca</p>
+                <code class="block font-mono text-[10px] text-slate-400 truncate bg-black/40 p-1 rounded">Extreme wide aerial shot pulling backwards, lonely figure standing at cliff edge as storm clouds roll in, fade to dark...</code>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+
+        <!-- SECTION 4: CAPCUT TIMELINE SHEET (Visual Multi-Layer Breakdown) -->
+        <div class="rounded-xl bg-[#151827] border border-white/10 overflow-hidden">
+          <div class="px-4 py-2.5 bg-[#181B2B] border-b border-white/5 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+              <h3 class="text-xs font-bold text-white uppercase tracking-wider font-mono">4. CapCut Timeline Sheet (NLE Assembly Matrix)</h3>
+            </div>
+            <span class="text-[10px] text-indigo-300 font-mono">Export: XML / CapCut Draft Pro</span>
+          </div>
+
+          <div class="p-3.5 space-y-3">
+            <!-- Timeline Visual Track Bars -->
+            <div class="bg-[#0D0F18] p-3 rounded-xl border border-white/5 space-y-2.5 font-mono text-xs">
+              
+              <!-- Timeline ruler timecode -->
+              <div class="flex justify-between text-[10px] text-slate-500 border-b border-white/5 pb-1">
+                <span>00:00:00</span>
+                <span>00:00:15</span>
+                <span>00:00:30</span>
+                <span>00:00:45</span>
+                <span>00:00:58</span>
+              </div>
+
+              <!-- Layer 2: Overlay Track (VFX & Rain Overlays) -->
+              <div class="space-y-1">
+                <div class="flex items-center justify-between text-[10px]">
+                  <span class="text-purple-300 font-semibold">Track 2: Overlay &amp; B-Roll (Rain Particles / Anamorphic Flairs)</span>
+                  <span class="text-slate-500">Opacity: 65% Screen</span>
+                </div>
+                <div class="h-6 w-full bg-[#181B2B] rounded-lg border border-purple-500/20 flex overflow-hidden p-0.5 gap-1">
+                  <div class="w-[25%] bg-purple-500/20 border border-purple-500/40 rounded flex items-center justify-center text-[9px] text-purple-300 font-mono truncate px-1">
+                    FX: Fog Drift (7s)
+                  </div>
+                  <div class="w-[15%] bg-slate-800/40 rounded"></div>
+                  <div class="w-[30%] bg-purple-500/20 border border-purple-500/40 rounded flex items-center justify-center text-[9px] text-purple-300 font-mono truncate px-1">
+                    FX: Rain Droplets Bokeh (8s)
+                  </div>
+                  <div class="w-[30%] bg-purple-500/20 border border-purple-500/40 rounded flex items-center justify-center text-[9px] text-purple-300 font-mono truncate px-1">
+                    FX: Anamorphic Streak (7s)
+                  </div>
+                </div>
+              </div>
+
+              <!-- Layer 1: Main Track (Primary Generated Shots with Cross Dissolves) -->
+              <div class="space-y-1">
+                <div class="flex items-center justify-between text-[10px]">
+                  <span class="text-emerald-300 font-semibold">Track 1: Main Storyboard Sequence (Shots 01 - 08)</span>
+                  <span class="text-emerald-400 font-mono">8 Clips • 100% Sync</span>
+                </div>
+                <div class="h-8 w-full bg-[#141724] rounded-lg border border-emerald-500/30 flex overflow-hidden p-0.5 gap-1 relative">
+                  <!-- Shot 1 -->
+                  <div class="w-[12%] bg-emerald-600/30 border border-emerald-500/50 rounded flex items-center justify-center text-[10px] text-white font-mono font-bold">
+                    S01
+                  </div>
+                  <!-- Dissolve marker -->
+                  <div class="w-[3%] bg-brand-accent/40 rounded flex items-center justify-center text-[8px] text-purple-200" title="Cross Dissolve 0.8s">
+                    ⧓
+                  </div>
+                  <!-- Shot 2 -->
+                  <div class="w-[14%] bg-emerald-600/30 border border-emerald-500/50 rounded flex items-center justify-center text-[10px] text-white font-mono font-bold">
+                    S02
+                  </div>
+                  <!-- Dissolve marker -->
+                  <div class="w-[3%] bg-brand-accent/40 rounded flex items-center justify-center text-[8px] text-purple-200" title="Cross Dissolve 0.8s">
+                    ⧓
+                  </div>
+                  <!-- Shot 3 -->
+                  <div class="w-[12%] bg-emerald-600/30 border border-emerald-500/50 rounded flex items-center justify-center text-[10px] text-white font-mono font-bold">
+                    S03
+                  </div>
+                  <!-- Dissolve marker -->
+                  <div class="w-[3%] bg-brand-accent/40 rounded flex items-center justify-center text-[8px] text-purple-200">
+                    ⧓
+                  </div>
+                  <!-- Shot 4 -->
+                  <div class="w-[14%] bg-emerald-600/30 border border-emerald-500/50 rounded flex items-center justify-center text-[10px] text-white font-mono font-bold">
+                    S04
+                  </div>
+                  <!-- Shot 5 -->
+                  <div class="w-[12%] bg-emerald-600/30 border border-emerald-500/50 rounded flex items-center justify-center text-[10px] text-white font-mono font-bold">
+                    S05
+                  </div>
+                  <!-- Shot 6 -->
+                  <div class="w-[12%] bg-emerald-600/30 border border-emerald-500/50 rounded flex items-center justify-center text-[10px] text-white font-mono font-bold">
+                    S06
+                  </div>
+                  <!-- Shot 7 -->
+                  <div class="w-[12%] bg-emerald-600/30 border border-emerald-500/50 rounded flex items-center justify-center text-[10px] text-white font-mono font-bold">
+                    S07
+                  </div>
+                  <!-- Shot 8 -->
+                  <div class="w-[12%] bg-emerald-600/30 border border-emerald-500/50 rounded flex items-center justify-center text-[10px] text-white font-mono font-bold">
+                    S08
+                  </div>
+                </div>
+              </div>
+
+              <!-- Audio Master Track -->
+              <div class="space-y-1">
+                <div class="flex items-center justify-between text-[10px]">
+                  <span class="text-cyan-300 font-semibold">Audio A1: Master Vocal &amp; Instrumental Track (85 BPM)</span>
+                  <span class="text-slate-500 font-mono">48kHz / 24-bit Stereo</span>
+                </div>
+                <div class="h-5 w-full bg-[#181B2B] rounded-lg border border-cyan-500/20 flex items-center px-2">
+                  <div class="w-full flex items-center space-x-1">
+                    <span class="text-[9px] font-mono text-cyan-300">♫ Ngay_Chua_Giong_Bao_Master_85BPM.wav</span>
+                    <div class="flex-1 flex items-center space-x-0.5 justify-end opacity-60">
+                      <span class="w-0.5 h-2 bg-cyan-400"></span>
+                      <span class="w-0.5 h-3 bg-cyan-400"></span>
+                      <span class="w-0.5 h-1.5 bg-cyan-400"></span>
+                      <span class="w-0.5 h-3.5 bg-cyan-400"></span>
+                      <span class="w-0.5 h-2.5 bg-cyan-400"></span>
+                      <span class="w-0.5 h-4 bg-cyan-400"></span>
+                      <span class="w-0.5 h-2 bg-cyan-400"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Transition Legend & Direct CapCut Export -->
+            <div class="flex items-center justify-between text-[11px] pt-1 text-slate-400">
+              <div class="flex items-center space-x-4">
+                <span class="flex items-center gap-1.5">
+                  <span class="w-3 h-3 rounded bg-brand-accent/40 text-purple-200 text-[8px] flex items-center justify-center">⧓</span>
+                  Cross Dissolve (0.8s Smooth Easing)
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  Keyframe Audio Beat Markers (85 BPM)
+                </span>
+              </div>
+
+              <button class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white font-medium border border-white/10 flex items-center gap-1.5 text-xs transition-colors">
+                <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Export Direct CapCut Project (.draft)
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</body>
+</html>

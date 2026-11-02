@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MUSE AI STUDIO - AI Music Video Director Suite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              obsidian: '#0A0B10',
+              panel: '#12141F',
+              panelLight: '#181B2B',
+              surface: '#1E2238',
+              accent: '#8B5CF6',
+              accentHover: '#7C3AED',
+              indigo: '#6366F1',
+              emerald: '#10B981',
+              amber: '#F59E0B',
+              rose: '#F43F5E',
+              cyan: '#06B6D4'
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0D0F18;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #252A40;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3B4263;
+    }
+    .hairline-border {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .hairline-border-focus:focus-within {
+      border-color: rgba(139, 92, 246, 0.5);
+    }
+    .glow-subtle {
+      box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.15);
+    }
+    .glow-emerald {
+      box-shadow: 0 0 20px -3px rgba(16, 185, 129, 0.25);
+    }
+  </style>
+<meta content="web_standard" name="shell-type"/></head>
+<body class="bg-[#0A0B10] text-slate-200 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-indigo/30 selection:text-white">
+<!-- TOPBAR NAVIGATION -->
+<header class="h-16 border-b border-white/10 bg-[#0C0E17]/90 backdrop-blur-md sticky top-0 z-50 px-6 flex items-center justify-between flex-shrink-0">
+<!-- Left: Brand & Project Name -->
+<div class="flex items-center space-x-6">
+<div class="flex items-center space-x-3">
+<div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-600/30 ring-1 ring-white/20">
+<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24">
+<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+<path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+<path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+</svg>
+</div>
+<div>
+<span class="font-extrabold tracking-wider text-base bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent flex items-center gap-1.5">
+            MUSE AI STUDIO
+            <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-brand-accent/20 text-brand-accent border border-brand-accent/30 font-semibold">Pro v2.4</span>
+</span>
+</div>
+</div>
+<div class="h-5 w-px bg-white/10"></div>
+<!-- Project Badge -->
+<div class="flex items-center space-x-2.5 bg-[#141724] px-3 py-1.5 rounded-lg border border-white/10">
+<span class="w-2 h-2 rounded-full bg-brand-accent animate-pulse"></span>
+<span class="text-xs text-slate-400">Project:</span>
+<span class="text-xs font-semibold text-white tracking-wide">MV: Ngày Chưa Giông Bão</span>
+<button class="text-slate-400 hover:text-white transition-colors" title="Rename Project">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+<!-- Live Cluster & Render Status Badges -->
+<div class="flex items-center space-x-2">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span>
+          8 Accounts Active
+        </span>
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 animate-ping"></span>
+          2 Tasks Rendering (GPU #4)
+        </span>
+</div>
+</div>
+<!-- Center: Primary Tab Navigation -->
+<nav class="flex items-center space-x-1 bg-[#12141F] p-1 rounded-xl border border-white/5">
+<button class="px-4 py-1.5 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-indigo-600 to-brand-accent shadow-sm flex items-center gap-1.5">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+        AI MV Director
+      </button>
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+        Batch Studio
+      </button>
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+        Account Pool
+      </button>
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+        CapCut Gallery
+      </button>
+<button class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+        Settings
+      </button>
+</nav>
+<!-- Right: Quick Actions & User -->
+<div class="flex items-center space-x-3">
+<div class="flex items-center bg-[#151827] border border-white/10 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-300">
+<span class="text-slate-500 mr-2">VRAM</span>
+<span class="text-indigo-400 font-bold">22.4 / 24 GB</span>
+</div>
+<button class="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition-colors" title="Export Plan JSON">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white ring-2 ring-white/10">
+        DA
+      </div>
+</div>
+</header>
+<!-- MAIN 2-COLUMN SPLIT STUDIO LAYOUT (1440px optimized) -->
+<main class="flex-1 flex overflow-hidden max-w-[1720px] w-full mx-auto p-4 gap-4"><div class="flex flex-col w-full text-on-surface">
+<!-- PAGE HEADER & ACTION CONTROLS -->
+<header class="flex flex-col lg:flex-row lg:items-center justify-between pb-6 border-b border-white/10 gap-4">
+<div class="space-y-1">
+<div class="flex items-center gap-2 text-label-sm font-label-sm text-slate-400">
+<span class="text-secondary-fixed-dim font-semibold uppercase tracking-wider">Project Suite</span>
+<span>•</span>
+<span class="text-slate-300">MV: Ngày Chưa Giông Bão</span>
+<span>•</span>
+<span class="text-white font-medium">Media Gallery &amp; CapCut Timeline Plan</span>
+</div>
+<h1 class="text-headline-md font-headline-md text-white tracking-tight flex items-center gap-3">
+        Synchronized NLE Assembly Matrix &amp; Multi-Track Video Asset Staging
+        <span class="text-label-sm font-label-sm px-2.5 py-0.5 rounded-full bg-secondary/30 text-secondary-fixed border border-secondary/40 font-mono">
+          Synced 85 BPM
+        </span>
+</h1>
+<p class="text-body-sm font-body-sm text-slate-400">
+        Multi-track automated sequence packaging with pre-baked dissolves, stereo stems, and XML draft manifests.
+      </p>
+</div>
+<!-- Quick Action Bar -->
+<div class="flex flex-wrap items-center gap-2.5">
+<!-- Format Selector Pill -->
+<div class="flex items-center bg-[#12141F] rounded-lg p-1 border border-white/10">
+<button class="px-2.5 py-1 text-label-sm font-label-sm rounded bg-primary text-white shadow-sm transition" id="fmt-draft">.draft</button>
+<button class="px-2.5 py-1 text-label-sm font-label-sm rounded text-slate-400 hover:text-white transition" id="fmt-xml">XML</button>
+<button class="px-2.5 py-1 text-label-sm font-label-sm rounded text-slate-400 hover:text-white transition" id="fmt-edl">EDL</button>
+</div>
+<!-- Secondary: Open Explorer -->
+<button class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#181B2B] hover:bg-[#1E2238] border border-white/10 text-label-sm font-label-sm text-slate-200 transition shadow-sm">
+<span class="material-symbols-outlined text-base text-slate-400">folder_open</span>
+<span>Open Downloads Folder</span>
+</button>
+<!-- Primary Highlight: CapCut ZIP -->
+<button class="group relative flex items-center gap-2.5 px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-500 hover:from-indigo-500 hover:to-purple-500 text-white font-label-md text-label-md shadow-lg shadow-purple-600/20 border border-white/20 transition-all">
+<span class="material-symbols-outlined text-lg group-hover:translate-y-0.5 transition-transform">archive</span>
+<span>Download CapCut Ready ZIP</span>
+<span class="px-2 py-0.5 text-[10px] font-mono rounded bg-white/20 text-white font-semibold">8 Clips + Draft XML</span>
+</button>
+</div>
+</header>
+<!-- SECTION 1: CAPCUT MULTI-TRACK TIMELINE SIMULATOR -->
+<section class="mt-6 bg-[#12141F] rounded-xl border border-white/10 shadow-2xl overflow-hidden flex flex-col">
+<!-- NLE Control Bar -->
+<div class="px-4 py-2.5 bg-[#0E101A] border-b border-white/10 flex flex-wrap items-center justify-between gap-3 text-slate-300">
+<div class="flex items-center gap-2">
+<!-- Playback Controls -->
+<button class="p-1.5 rounded hover:bg-white/5 text-slate-400 hover:text-white transition" title="Step Back (1 frame)">
+<span class="material-symbols-outlined text-lg">skip_previous</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-purple-600 hover:brightness-110 flex items-center justify-center text-white shadow-md" id="playBtn">
+<span class="material-symbols-outlined text-lg" id="playIcon">play_arrow</span>
+</button>
+<button class="p-1.5 rounded hover:bg-white/5 text-slate-400 hover:text-white transition" title="Step Forward (1 frame)">
+<span class="material-symbols-outlined text-lg">skip_next</span>
+</button>
+<!-- Timecode Display -->
+<div class="ml-2 px-3 py-1 bg-[#0A0B10] rounded border border-white/10 font-mono text-label-md font-label-md flex items-center gap-1.5">
+<span class="text-cyan-400 font-semibold" id="curTimecode">00:00:28:14</span>
+<span class="text-slate-600">/</span>
+<span class="text-slate-400">00:00:58:00</span>
+</div>
+</div>
+<!-- Center: Snapping / Tools -->
+<div class="flex items-center gap-1 bg-[#181B2B] p-1 rounded-lg border border-white/5 text-slate-400">
+<button class="px-2 py-1 rounded bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 flex items-center gap-1 text-label-sm font-label-sm" title="Snapping Active">
+<span class="material-symbols-outlined text-sm">qr_code_2</span>
+<span>Snapping</span>
+</button>
+<button class="p-1 rounded hover:bg-white/5 hover:text-white transition" title="Razor Cut Tool">
+<span class="material-symbols-outlined text-sm">content_cut</span>
+</button>
+<button class="p-1 rounded hover:bg-white/5 hover:text-white transition" title="Ripple Edit">
+<span class="material-symbols-outlined text-sm">drag_handle</span>
+</button>
+</div>
+<!-- Right: Timeline Zoom -->
+<div class="flex items-center gap-2 text-label-sm font-label-sm text-slate-400">
+<span class="material-symbols-outlined text-sm">zoom_out</span>
+<input class="w-24 accent-indigo-500 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer" max="100" min="1" type="range" value="58"/>
+<span class="material-symbols-outlined text-sm">zoom_in</span>
+</div>
+</div>
+<!-- Timeline Workspace (Horizontal Scrollable Canvas) -->
+<div class="relative w-full overflow-x-auto bg-[#0B0C13] select-none">
+<div class="min-w-[1240px] flex flex-col relative pb-3">
+<!-- Scrubber Line with Playhead (At 28s / ~48% mark) -->
+<div class="absolute top-0 bottom-0 left-[48.2%] w-0.5 bg-rose-500 z-30 pointer-events-none shadow-[0_0_12px_rgba(244,63,94,0.8)]">
+<div class="w-3.5 h-3.5 bg-rose-500 rounded-sm rotate-45 -translate-x-[6px] -translate-y-1 shadow-md"></div>
+</div>
+<!-- 1. Ruler Header -->
+<div class="flex items-end h-8 border-b border-white/10 bg-[#0E101A] text-slate-400 font-mono text-[10px]">
+<div class="w-48 shrink-0 px-4 py-1 text-slate-500 uppercase tracking-wider text-[10px] font-semibold border-r border-white/5">
+            Tracks / Routing
+          </div>
+<div class="flex-1 grid grid-cols-8 relative px-2 text-center border-l border-white/5">
+<span class="text-left">00:00</span>
+<span class="text-left">00:07</span>
+<span class="text-left">00:15</span>
+<span class="text-left">00:22</span>
+<span class="text-left">00:30</span>
+<span class="text-left">00:37</span>
+<span class="text-left">00:45</span>
+<span class="text-right pr-2">00:58</span>
+</div>
+</div>
+<!-- 2. Track V2 (B-Roll Overlay) -->
+<div class="flex h-16 border-b border-white/5 group hover:bg-white/[0.01]">
+<!-- Track Header -->
+<div class="w-48 shrink-0 px-3 py-2 bg-[#12141F] border-r border-white/10 flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-label-sm font-label-sm font-semibold text-purple-300 flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                V2 (B-Roll Overlay)
+              </span>
+<div class="flex items-center gap-1 text-slate-400">
+<button class="p-0.5 hover:text-white" title="Toggle Visible"><span class="material-symbols-outlined text-xs">visibility</span></button>
+<button class="p-0.5 hover:text-white" title="Lock Track"><span class="material-symbols-outlined text-xs">lock</span></button>
+</div>
+</div>
+<div class="flex items-center justify-between text-[10px] font-mono text-slate-500">
+<span>Blend: Normal</span>
+<span class="text-purple-300">Opacity 85%</span>
+</div>
+</div>
+<!-- Track Lane (Even Shots) -->
+<div class="flex-1 relative flex items-center px-2 py-1.5 bg-[#0B0C13]">
+<!-- Shot 02 (starts ~00:07, 7s duration ~ 12% width) -->
+<div class="absolute left-[12%] w-[13%] h-12 rounded-lg bg-gradient-to-r from-purple-700/80 to-purple-900/80 border border-purple-400/40 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-purple-300 transition group/clip">
+<div class="flex items-center justify-between text-[11px] font-medium text-white truncate">
+<span class="truncate font-semibold">Shot 02: Trembling Hands</span>
+<span class="font-mono text-[9px] text-purple-200">7s</span>
+</div>
+<div class="flex items-center gap-1 text-[9px] text-purple-200/80 font-mono">
+<span class="material-symbols-outlined text-[10px]">movie</span>
+<span>H.265 • 24fps</span>
+</div>
+</div>
+<!-- Transition 1 Badge -->
+<div class="absolute left-[24.5%] top-1/2 -translate-y-1/2 z-20 px-1.5 py-0.5 rounded bg-black/80 border border-purple-500/60 text-[9px] font-mono text-purple-300 flex items-center gap-1 shadow-sm">
+<span>✦ 0.8s Dissolve</span>
+</div>
+<!-- Shot 04 (starts ~00:23, 8s duration ~ 14%) -->
+<div class="absolute left-[27%] w-[14%] h-12 rounded-lg bg-gradient-to-r from-purple-700/80 to-purple-900/80 border border-purple-400/40 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-purple-300 transition">
+<div class="flex items-center justify-between text-[11px] font-medium text-white truncate">
+<span class="truncate font-semibold">Shot 04: Melancholy Horizon</span>
+<span class="font-mono text-[9px] text-purple-200">8s</span>
+</div>
+<div class="flex items-center gap-1 text-[9px] text-purple-200/80 font-mono">
+<span class="material-symbols-outlined text-[10px]">movie</span>
+<span>H.265 • 24fps</span>
+</div>
+</div>
+<!-- Transition 2 Badge -->
+<div class="absolute left-[49%] top-1/2 -translate-y-1/2 z-20 px-1.5 py-0.5 rounded bg-black/80 border border-purple-500/60 text-[9px] font-mono text-purple-300 flex items-center gap-1 shadow-sm">
+<span>✦ 0.8s Dissolve</span>
+</div>
+<!-- Shot 06 (starts ~00:41, 7s duration ~ 12%) -->
+<div class="absolute left-[52%] w-[13%] h-12 rounded-lg bg-gradient-to-r from-purple-700/80 to-purple-900/80 border border-purple-400/40 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-purple-300 transition">
+<div class="flex items-center justify-between text-[11px] font-medium text-white truncate">
+<span class="truncate font-semibold">Shot 06: Rain Neon Bokeh</span>
+<span class="font-mono text-[9px] text-purple-200">7s</span>
+</div>
+<div class="flex items-center gap-1 text-[9px] text-purple-200/80 font-mono">
+<span class="material-symbols-outlined text-[10px]">movie</span>
+<span>H.265 • 120fps</span>
+</div>
+</div>
+</div>
+</div>
+<!-- 3. Track V1 (Main Storyboard Track) -->
+<div class="flex h-16 border-b border-white/5 group hover:bg-white/[0.01]">
+<!-- Track Header -->
+<div class="w-48 shrink-0 px-3 py-2 bg-[#12141F] border-r border-white/10 flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-label-sm font-label-sm font-semibold text-indigo-300 flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+                V1 (Main Storyboard)
+              </span>
+<div class="flex items-center gap-1 text-slate-400">
+<button class="p-0.5 hover:text-white" title="Toggle Visible"><span class="material-symbols-outlined text-xs">visibility</span></button>
+<button class="p-0.5 hover:text-white" title="Lock Track"><span class="material-symbols-outlined text-xs">lock</span></button>
+</div>
+</div>
+<div class="flex items-center justify-between text-[10px] font-mono text-slate-500">
+<span>Main Video Master</span>
+<span class="text-indigo-300">5 Sequences</span>
+</div>
+</div>
+<!-- Track Lane (Odd Shots) -->
+<div class="flex-1 relative flex items-center px-2 py-1.5 bg-[#0B0C13]">
+<!-- Shot 01 (00:00 - 00:07) -->
+<div class="absolute left-[0%] w-[12%] h-12 rounded-lg bg-gradient-to-r from-indigo-700/80 to-blue-900/80 border border-indigo-400/40 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-indigo-300 transition">
+<div class="flex items-center justify-between text-[11px] font-medium text-white truncate">
+<span class="truncate font-semibold">Shot 01: Pine Forest</span>
+<span class="font-mono text-[9px] text-indigo-200">7s</span>
+</div>
+<div class="flex items-center gap-1 text-[9px] text-indigo-200 font-mono">
+<span class="material-symbols-outlined text-[10px]">hd</span>
+<span>ProRes 422</span>
+</div>
+</div>
+<!-- Shot 03 (00:15 - 00:23) -->
+<div class="absolute left-[20%] w-[14%] h-12 rounded-lg bg-gradient-to-r from-indigo-700/80 to-blue-900/80 border border-indigo-400/40 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-indigo-300 transition">
+<div class="flex items-center justify-between text-[11px] font-medium text-white truncate">
+<span class="truncate font-semibold">Shot 03: Da Lat Street Fog</span>
+<span class="font-mono text-[9px] text-indigo-200">8s</span>
+</div>
+<div class="flex items-center gap-1 text-[9px] text-indigo-200 font-mono">
+<span class="material-symbols-outlined text-[10px]">hd</span>
+<span>ProRes 422</span>
+</div>
+</div>
+<!-- Shot 05 (00:33 - 00:39) -->
+<div class="absolute left-[40%] w-[11%] h-12 rounded-lg bg-gradient-to-r from-indigo-700/90 to-blue-900/90 border border-cyan-400/50 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-cyan-300 transition">
+<div class="flex items-center justify-between text-[11px] font-medium text-white truncate">
+<span class="truncate font-semibold text-cyan-200">Shot 05: Storm Lake</span>
+<span class="font-mono text-[9px] text-cyan-200">6s</span>
+</div>
+<div class="flex items-center gap-1 text-[9px] text-cyan-300 font-mono">
+<span class="px-1 bg-cyan-500/20 rounded text-[8px]">4K ProRes HQ</span>
+</div>
+</div>
+<!-- Shot 07 (00:44 - 00:51) -->
+<div class="absolute left-[64%] w-[12%] h-12 rounded-lg bg-gradient-to-r from-indigo-700/80 to-blue-900/80 border border-indigo-400/40 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-indigo-300 transition">
+<div class="flex items-center justify-between text-[11px] font-medium text-white truncate">
+<span class="truncate font-semibold">Shot 07: Letter in Wind</span>
+<span class="font-mono text-[9px] text-indigo-200">7s</span>
+</div>
+<div class="flex items-center gap-1 text-[9px] text-indigo-200 font-mono">
+<span class="material-symbols-outlined text-[10px]">hd</span>
+<span>ProRes 422</span>
+</div>
+</div>
+<!-- Shot 08 (00:51 - 00:58) -->
+<div class="absolute left-[77%] w-[22%] h-12 rounded-lg bg-gradient-to-r from-indigo-600/90 to-purple-900/90 border border-indigo-300/50 p-1.5 flex flex-col justify-between shadow-md cursor-pointer hover:border-indigo-200 transition">
+<div class="flex items-center justify-between text-[11px] font-medium text-white truncate">
+<span class="truncate font-semibold text-white">Shot 08: Cliff Edge Final Outro</span>
+<span class="font-mono text-[9px] text-indigo-200">7s</span>
+</div>
+<div class="flex items-center gap-1 text-[9px] text-purple-200 font-mono">
+<span class="px-1 bg-purple-500/20 rounded text-[8px]">Master End</span>
+</div>
+</div>
+</div>
+</div>
+<!-- 4. Track A1 (Master Audio OST) -->
+<div class="flex h-14 border-b border-white/5 group hover:bg-white/[0.01]">
+<!-- Track Header -->
+<div class="w-48 shrink-0 px-3 py-1.5 bg-[#12141F] border-r border-white/10 flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-label-sm font-label-sm font-semibold text-emerald-400 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-xs">volume_up</span>
+                A1 (Master OST)
+              </span>
+<div class="flex items-center gap-1 text-slate-400">
+<button class="px-1 text-[9px] font-mono rounded bg-white/5 hover:bg-white/10" title="Mute">M</button>
+<button class="px-1 text-[9px] font-mono rounded bg-white/5 hover:bg-white/10" title="Solo">S</button>
+</div>
+</div>
+<div class="flex items-center justify-between text-[10px] font-mono text-slate-500">
+<span class="truncate max-w-[90px]">85 BPM • Stereo</span>
+<span class="text-emerald-400">+0.0 dB</span>
+</div>
+</div>
+<!-- Audio Waveform Lane -->
+<div class="flex-1 relative flex items-center px-2 bg-[#080B10] overflow-hidden">
+<div class="w-full h-10 rounded bg-emerald-950/20 border border-emerald-500/20 flex items-center px-2 relative">
+<!-- Inline Audio Waveform SVG -->
+<svg class="w-full h-7 text-emerald-400/70" preserveaspectratio="none" viewbox="0 0 1000 40">
+<path d="M0,20 Q10,5 20,20 T40,20 T60,2 T80,35 T100,10 T120,28 T140,4 T160,38 T180,18 T200,22 T220,1 T240,39 T260,15 T280,25 T300,5 T320,35 T340,12 T360,28 T380,0 T400,40 T420,10 T440,30 T460,5 T480,35 T500,20 T520,2 T540,38 T560,14 T580,26 T600,8 T620,32 T640,16 T660,24 T680,4 T700,36 T720,18 T740,22 T760,2 T780,38 T800,12 T820,28 T840,5 T860,35 T880,10 T900,30 T920,15 T940,25 T960,18 T980,22 L1000,20" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+</svg>
+<!-- Beat Drop Sync Marker -->
+<div class="absolute left-[33%] top-1 bottom-1 px-1.5 rounded bg-emerald-500/20 border border-emerald-400/40 text-[9px] font-mono text-emerald-300 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+<span>Beat Drop #1</span>
+</div>
+<div class="absolute left-[64%] top-1 bottom-1 px-1.5 rounded bg-emerald-500/20 border border-emerald-400/40 text-[9px] font-mono text-emerald-300 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+<span>Chorus Climax</span>
+</div>
+</div>
+</div>
+</div>
+<!-- 5. Track T1 (Subtitle / Lyric Markers) -->
+<div class="flex h-10 group hover:bg-white/[0.01]">
+<!-- Track Header -->
+<div class="w-48 shrink-0 px-3 py-1.5 bg-[#12141F] border-r border-white/10 flex items-center justify-between">
+<span class="text-label-sm font-label-sm font-semibold text-amber-300 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-xs">subtitles</span>
+              T1 (Lyrics / Sync)
+            </span>
+<span class="text-[9px] font-mono text-slate-500">SRT</span>
+</div>
+<!-- Lyric Markers Lane -->
+<div class="flex-1 relative flex items-center px-2 bg-[#090A11]">
+<div class="absolute left-[0%] w-[18%] px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-200 truncate font-mono">
+              [Intro]: Tiếng lá xào xạc...
+            </div>
+<div class="absolute left-[20%] w-[25%] px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-200 truncate font-mono">
+              [Verse 1]: Mùa thu buông vạt nắng...
+            </div>
+<div class="absolute left-[47%] w-[26%] px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400/40 text-[10px] text-amber-200 font-semibold truncate font-mono">
+              [Chorus]: Ngày chưa giông bão về qua phố...
+            </div>
+<div class="absolute left-[75%] w-[23%] px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-200 truncate font-mono">
+              [Outro]: Tan biến trong sương mù...
+            </div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 2: RENDERED VIDEO CLIPS GRID -->
+<section class="mt-8 flex flex-col space-y-4">
+<!-- Grid Control Bar -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#12141F] p-3.5 rounded-xl border border-white/10">
+<div class="flex flex-wrap items-center gap-3">
+<h2 class="text-headline-sm font-headline-sm text-white flex items-center gap-2">
+<span>Rendered Video Clips</span>
+<span class="px-2 py-0.5 text-label-sm font-label-sm font-mono rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            8/8 Completed
+          </span>
+</h2>
+<!-- Filter Pills -->
+<div class="flex items-center gap-1.5 ml-2">
+<button class="px-2.5 py-1 rounded-lg text-label-sm font-label-sm bg-primary text-white font-medium shadow-sm">All 8</button>
+<button class="px-2.5 py-1 rounded-lg text-label-sm font-label-sm bg-[#181B2B] text-slate-400 hover:text-white border border-white/5 transition">Track 1 Only (5)</button>
+<button class="px-2.5 py-1 rounded-lg text-label-sm font-label-sm bg-[#181B2B] text-slate-400 hover:text-white border border-white/5 transition">Track 2 Overlays (3)</button>
+<button class="px-2.5 py-1 rounded-lg text-label-sm font-label-sm bg-[#181B2B] text-slate-400 hover:text-white border border-white/5 transition">4K ProRes</button>
+</div>
+</div>
+<!-- Search & Batch Actions -->
+<div class="flex items-center gap-2.5">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">search</span>
+<input class="bg-[#0A0B10] border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-body-sm font-body-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 w-52 transition" placeholder="Search shots or prompts..." type="text"/>
+</div>
+<button class="px-3 py-1.5 rounded-lg bg-[#181B2B] hover:bg-[#1E2238] border border-white/10 text-label-sm font-label-sm text-slate-300 flex items-center gap-1.5 transition">
+<span class="material-symbols-outlined text-sm">download</span>
+<span>Bulk Download MP4</span>
+</button>
+</div>
+</div>
+<!-- 4-Column Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- CARD 1: Shot 01 -->
+<div class="group bg-[#12141F] rounded-xl border border-white/10 hover:border-indigo-500/50 shadow-lg hover:shadow-indigo-500/10 transition-all flex flex-col overflow-hidden">
+<!-- 16:9 Thumbnail -->
+<div class="relative aspect-video w-full overflow-hidden bg-slate-900">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Cinematic wide dolly shot through a dense misty pine forest in Da Lat Vietnam with early morning volumetric fog, sun rays piercing through tall trees, 35mm anamorphic camera lens, moody cinematic atmosphere with cool teal shadows and warm golden light highlights, photorealistic 8k render." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDABH7g1qsL1d5gf8sfZhYExVMQSpeAerMy2encj1litsuChsUT5x6qieoO3_FpZgc4qpUVsd3VBhrq7LoEHaw9IPSyqlBq-ZIY_L1Plfv-yUlNgJXNv4BMPtyXLL-Mt2jXkU1u0QViunLZ89i8l9Cq0k8AktcrITF_8MVNjtroXMKFWhDE3-AP02z2JMtFjGaxwVSsk5nJIgvrIcJEcg7SDfwVApkK1PJktr10EQ"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#12141F] via-transparent to-transparent opacity-80"></div>
+<!-- Badges -->
+<div class="absolute top-2 left-2 flex items-center gap-1.5">
+<span class="px-1.5 py-0.5 rounded bg-indigo-600/80 backdrop-blur-md text-[10px] font-mono font-semibold text-white border border-indigo-400/30">Track V1</span>
+<span class="px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-md text-[10px] font-mono text-cyan-300 border border-white/10">4K UHD</span>
+</div>
+<span class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-md text-[10px] font-mono font-medium text-white">00:07</span>
+<!-- Hover Play Overlay -->
+<button class="absolute inset-0 m-auto w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 shadow-lg">
+<span class="material-symbols-outlined text-xl">play_arrow</span>
+</button>
+</div>
+<!-- Card Content -->
+<div class="p-3.5 flex flex-col flex-1 justify-between space-y-3">
+<div>
+<div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
+<span>H100 Node #1 • 24fps</span>
+<span class="text-indigo-400">ProRes 422</span>
+</div>
+<h3 class="text-body-md font-body-md font-semibold text-white line-clamp-1">Shot 01 - Dolly through Pine Forest</h3>
+<!-- Prompt Excerpt Box -->
+<div class="mt-2 p-2 rounded bg-[#0A0B10] border border-white/5 font-mono text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+              cinematic slow dolly shot of Linh walking through dense pine forest under rainy morning fog, 35mm anamorphic...
+            </div>
+</div>
+<!-- Quick Action Pills -->
+<div class="flex items-center justify-between pt-2 border-t border-white/5">
+<button class="text-label-sm font-label-sm text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition" title="Download Clip">
+<span class="material-symbols-outlined text-sm">download</span>
+<span>MP4</span>
+</button>
+<div class="flex items-center gap-2">
+<button class="p-1 text-slate-400 hover:text-white rounded hover:bg-white/5" title="Copy Prompt">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+<button class="p-1 text-slate-400 hover:text-white rounded hover:bg-white/5" title="Expand In Inspector">
+<span class="material-symbols-outlined text-sm">fullscreen</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- CARD 2: Shot 02 -->
+<div class="group bg-[#12141F] rounded-xl border border-white/10 hover:border-purple-500/50 shadow-lg hover:shadow-purple-500/10 transition-all flex flex-col overflow-hidden">
+<!-- 16:9 Thumbnail -->
+<div class="relative aspect-video w-full overflow-hidden bg-slate-900">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Extreme macro cinematic close-up of a delicate female hand trembling in cold mountain air, touching a damp weathered dark wood balcony railing in the rain, hyperdetailed water droplets clinging to skin, moody cold blue tones with soft warm ambient glow, 85mm macro cine lens." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4xPn-S344da7Q2eby7z6DCZvo41AJwurgjQW9GXdJpt1rQ9zOA5PjQTXbnn1G_uy_JdSqJb_NQ5QCzot0peWZpdTdBdjkx7uNfB1T3SidTo-ZCyHBKHF2tUBSfKnz_eI-QMG5f-ldo9RTNnod5EBszWMsAnwCAwmsoZ9NY5RckHWf84QOixt6pj-mFEyUXtjTshE1a4TWiOZ0Y0neZmfEfUv9Oe19GnYCX_1wKg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#12141F] via-transparent to-transparent opacity-80"></div>
+<div class="absolute top-2 left-2 flex items-center gap-1.5">
+<span class="px-1.5 py-0.5 rounded bg-purple-600/80 backdrop-blur-md text-[10px] font-mono font-semibold text-white border border-purple-400/30">Track V2</span>
+<span class="px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-md text-[10px] font-mono text-purple-300 border border-white/10">B-Roll</span>
+</div>
+<span class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-md text-[10px] font-mono font-medium text-white">00:07</span>
+<button class="absolute inset-0 m-auto w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 shadow-lg">
+<span class="material-symbols-outlined text-xl">play_arrow</span>
+</button>
+</div>
+<div class="p-3.5 flex flex-col flex-1 justify-between space-y-3">
+<div>
+<div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
+<span>RTX 4090 • 24fps</span>
+<span class="text-purple-400">H.265</span>
+</div>
+<h3 class="text-body-md font-body-md font-semibold text-white line-clamp-1">Shot 02 - Macro Trembling Hands</h3>
+<div class="mt-2 p-2 rounded bg-[#0A0B10] border border-white/5 font-mono text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+              extreme macro close-up of delicate female hands trembling in cold air, touching wet wooden railing...
+            </div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-white/5">
+<button class="text-label-sm font-label-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 transition">
+<span class="material-symbols-outlined text-sm">download</span>
+<span>MP4</span>
+</button>
+<div class="flex items-center gap-2">
+<button class="p-1 text-slate-400 hover:text-white rounded hover:bg-white/5"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+<button class="p-1 text-slate-400 hover:text-white rounded hover:bg-white/5"><span class="material-symbols-outlined text-sm">fullscreen</span></button>
+</div>
+</div>
+</div>
+</div>
+<!-- CARD 3: Shot 03 -->
+<div class="group bg-[#12141F] rounded-xl border border-white/10 hover:border-indigo-500/50 shadow-lg hover:shadow-indigo-500/10 transition-all flex flex-col overflow-hidden">
+<!-- 16:9 Thumbnail -->
+<div class="relative aspect-video w-full overflow-hidden bg-slate-900">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Atmospheric medium shot of a young Vietnamese woman standing on an old French colonial Da Lat street at dusk, wrapped in a dark vintage coat, thick mist swirling around vintage street lamps, puddle reflections showing blurred neon amber and emerald signs, 35mm film grain." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1exFWYIctLN-rXjlTztU_BNDqLa38tmygt_QYS4SB-fElzBCjiQHrGNjnNMa1skyT5LrWAwRuGF-PfQfKpGOdUh7H1rqqpIQNrByNZ5dXo5b5US_HqbLu7tmVBsCSaimJaoL2u3KFrCsYgwuNCKbA2ETwO6h2A4iLbIJ8TegOVxqRxqBq31rNlmOwBcHJhoHs9FG-ohlTi60nfBekUZPPtwA1zChmXDAB2TkYIA"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#12141F] via-transparent to-transparent opacity-80"></div>
+<div class="absolute top-2 left-2 flex items-center gap-1.5">
+<span class="px-1.5 py-0.5 rounded bg-indigo-600/80 backdrop-blur-md text-[10px] font-mono font-semibold text-white border border-indigo-400/30">Track V1</span>
+</div>
+<span class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-md text-[10px] font-mono font-medium text-white">00:08</span>
+<button class="absolute inset-0 m-auto w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 shadow-lg">
+<span class="material-symbols-outlined text-xl">play_arrow</span>
+</button>
+</div>
+<div class="p-3.5 flex flex-col flex-1 justify-between space-y-3">
+<div>
+<div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
+<span>H100 Node #4 • 24fps</span>
+<span class="text-indigo-400">ProRes 422</span>
+</div>
+<h3 class="text-body-md font-body-md font-semibold text-white line-clamp-1">Shot 03 - Da Lat Street Fog</h3>
+<div class="mt-2 p-2 rounded bg-[#0A0B10] border border-white/5 font-mono text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+              medium shot Linh looking towards misty horizon, wind blowing hair, melancholy eyes, 35mm film grain...
+            </div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-white/5">
+<button class="text-label-sm font-label-sm text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition">
+<span class="material-symbols-outlined text-sm">download</span>
+<span>MP4</span>
+</button>
+<div class="flex items-center gap-2">
+<button class="p-1 text-slate-400 hover:text-white rounded hover:bg-white/5"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+<button class="p-1 text-slate-400 hover:text-white rounded hover:bg-white/5"><span class="material-symbols-outlined text-sm">fullscreen</span></button>
+</div>
+</div>
+</div>
+</div>
+<!-- CARD 4: Shot 04 -->
+<div class="group bg-[#12141F] rounded-xl border border-white/10 hover:border-purple-500/50 shadow-lg hover:shadow-purple-500/10 transition-all flex flex-col overflow-hidden">
+<!-- 16:9 Thumbnail -->
+<div class="relative aspect-video w-full overflow-hidden bg-slate-900">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Moody cinematic portrait of a young woman gazing into a rainy mountain horizon, delicate tear glistening on cheek, dark hair windswept across her face, cinematic soft focus background with distant cloudy valley, soft diffused overcast lighting, highly emotive cinematic framing." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfygZOmffZbhHQLQoEtCCHHzlOREUQNb4oBM5ddN3ah87QQyl7GaJ0LnJkMvLE1wTEOsivelCT9nirUOgtMuOou25atntvy5BlBUWZD_D1SBViwX3cuD9X2WOvplWBTLZnXj5KDgwgJVWH2o9r61Yf_XW9bVX3tjMHW6pDwfdKGCvCh8zSSWivUVpBNitsw7u_AFO9PiWzYnA4ehK5ikhIPTiUn_NyBDI87Hxbcw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#12141F] via-transparent to-transparent opacity-80"></div>
+<div class="absolute top-2 left-2 flex items-center gap-1.5">
+<span class="px-1.5 py-0.5 rounded bg-purple-600/80 backdrop-blur-md text-[10px] font-mono font-semibold text-white border border-purple-400/30">Track V2</span>
+<span class="px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-md text-[10px] font-mono text-purple-300 border border-white/10">B-Roll</span>
+</div>
+<span class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-md text-[10px] font-mono font-medium text-white">00:08</span>
+<button class="absolute inset-0 m-auto w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 shadow-lg">
+<span class="material-symbols-outlined text-xl">play_arrow</span>
+</button>
+</div>
+<div class="p-3.5 flex flex-col flex-1 justify-between space-y-3">
+<div>
+<div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
+<span>H100 Node #2 • 24fps</span>
+<span class="text-purple-400">H.265</span>
+</div>
+<h3 class="text-body-md font-body-md font-semibold text-white line-clamp-1">Shot 04 - Melancholy Horizon Gaze</h3>
+<div class="mt-2 p-2 rounded bg-[#0A0B10] border border-white/5 font-mono text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+              360 orbit around Linh turning back toward camera, wind blowing dark hair, tear glistening softly...
+            </div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-white/5">
+<button class="text-label-sm font-label-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 transition">
+<span class="material-symbols-outlined text-sm">download</span>
+<span>MP4</span>
+</button>
+<div class="flex items-center gap-2">
+<button class="p-1 text-slate-400 hover:text-white rounded hover:bg-white/5"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+<button class="p-1 text-slate-400 hover:text-white rounded hover:bg-white/5"><span class="material-symbols-outlined text-sm">fullscreen</span></button>
+</div>
+</div>
+</div>
+</div>
+<!-- CARD 5: Shot 05 -->
+<div class="group bg-[#12141F] rounded-xl border border-white/10 hover:border-cyan-500/50 shadow-lg hover:shadow-cyan-500/10 transition-all flex flex-col overflow-hidden">
+<!-- 16:9 Thumbnail -->
+<div class="relative aspect-video w-full overflow-hidden bg-slate-900">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Dramatic wide drone crane establishing shot of Tuyen Lam mountain lake just before an intense thunderstorm, dark swirling purple-gray storm clouds gathering, ripples and whitecaps on deep emerald water, distant pine ridge silhouettes, hyperrealistic cinematic lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBu_vZCQNhUxQNS-9s-OUZcfglUUc6kKv-UGzcLc8_kjMNNIJzkyrX0xsYTyShzLI6K6Bqrafo86hSfrw3tQhemLCsmNDoWeY5CXCbEbZTxb5zClINgYm8ClrPfs_PaJk3KkZY-wrMKJ_uwXbtJ7W1RpVMJ9Fj4ZhB5Ikhdj0mYtHZPuYnIxizPbJ20kzAbc1FU-d6risgATE9JAr4aBDfHql7l2CFwnstuTq_22g"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#12141F] via-transparent to-transparent opacity-80"></div>
+<div class="absolute top-2 left-2 flex items-center gap-1.5">
+<span class="px-1.5 py-0.5 rounded bg-indigo-600/80 backdrop-blur-md text-[10px] font-mono font-semibold text-white border border-indigo-400/30">Track V1</span>
+<span class="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 backdrop-blur-md text-[10px] font-mono border border-cyan-500/30 font-semibold">Master</span>
+</div>
+<span class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-md text-[10px] font-mono font-medium text-white">00:06</span>
+<button class="absolute inset-0 m-auto w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 shadow-lg">
+<span class="material-symbols-outlined text-xl">play_arrow</span>
+</button>
+</div>
+<div class="p-3.5 flex flex-col flex-1 justify-between space-y-3">
+<div>
+<div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
+<span>H100 Node #3 • 24fps</span>
+<span class="text-cyan-400 font-semibold">4K ProRes HQ</span>
+</div>
+<h3 class="text-body-md font-body-md font-semibold text-white line-clamp-1">Shot 05 - Establishing Stormy Lake</h3>
+<div class="mt-2 p-2 rounded bg-[#0A0B10] border border-white/5 font-mono text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+              wide crane shot revealing dark stormy mountain lake, hyperrealistic water ripple, dark ominous clouds...
+            </div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-white/5">
+<button class="text-label-sm font-label-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition">
+<span class="material-symbols-outlined text-sm">download</span>
+<span>MP4</span>
+</button>
+<div class="flex items-center gap-2">
+<button class="p-1 text-slate-400 hover:text-white rounded hover:bg-white/5"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+<button class="p-1 text-slate-400 hover:text-white rounded hover:bg-white/5"><span class="material-symbols-outlined text-sm">fullscreen</span></button>
+</div>
+</div>
+</div>
+</div>
+<!-- CARD 6: Shot 06 -->
+<div class="group bg-[#12141F] rounded-xl border border-white/10 hover:border-purple-500/50 shadow-lg hover:shadow-purple-500/10 transition-all flex flex-col overflow-hidden">
+<!-- 16:9 Thumbnail -->
+<div class="relative aspect-video w-full overflow-hidden bg-slate-900">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="High frame rate slow motion shot of heavy raindrops falling into a dark asphalt street puddle, vibrant neon reflections of deep magenta and cyan signage glowing in the water ripples, empty quiet city intersection at midnight, cinematic noir aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdU7xj2Ps5yQWJsQOMbHJCFCMn5n8KbRRjTvBP6E_fU685ZQVfkjpr7uUFxn8fWqjT9OWHW54pVdR-n-0OjAr1ZIjIKT6GJ8PyetudX0dQhQ4c-JowphoDT28ReGoqIw_SCL0I8uHRVkeEWlckgt0U6QeyFo0FXk9Y79h4pHVRtE5HRemmjxVXZGSxaAfi8KXFENE8uHitX-QQSNyA1nZBH7JSwOvr1H0GXEM0Uw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#12141F] via-transparent to-transparent opacity-80"></div>
+<div class="absolute top-2 left-2 flex items-center gap-1.5">
+<span class="px-1.5 py-0.5 rounded bg-purple-600/80 backdrop-blur-md text-[10px] font-mono font-semibold text-white border border-purple-400/30">Track V2</span>
+<span class="px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-md text-[10px] font-mono text-purple-300 border border-white/10">B-Roll</span>
+</div>
+<span class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-md text-[10px] font-mono font-medium text-white">00:07</span>
+<button class="absolute inset-0 m-auto w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 shadow-lg">
+<span class="material-symbols-outlined text-xl">play_arrow</span>
+</button>
+</div>
+<div class="p-3.5 flex flex-col flex-1 justify-between space-y-3">
+<div>
+<div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
+<span>H100 Node #6 • 120fps</span>
+<span class="text-purple-400">H.265</span>
+</div>
+<h3 class="text-body-md font-body-md font-semibold text-white line-clamp-1">Shot 06 - Rain Neon Reflection</h3>
+<div class="mt-2 p-2 rounded bg-[#0A0B10] border border-white/5 font-mono text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+              120fps slow motion droplets hitting puddle with neon city lights in reflection, street reflections...
+            </div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-white/5">
+<button class="text-label-sm font-label-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 transition">
+<span class="material-symbols-outlined text-sm">download</span>
+<span>MP4</span>
+</button>
+<div class="flex items-center gap-2">
+<button class="p-1 text-slate-400 hover:text-white rounded hover:bg-white/5"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+<button class="p-1 text-slate-400 hover:text-white rounded hover:bg-white/5"><span class="material-symbols-outlined text-sm">fullscreen</span></button>
+</div>
+</div>
+</div>
+</div>
+<!-- CARD 7: Shot 07 -->
+<div class="group bg-[#12141F] rounded-xl border border-white/10 hover:border-indigo-500/50 shadow-lg hover:shadow-indigo-500/10 transition-all flex flex-col overflow-hidden">
+<!-- 16:9 Thumbnail -->
+<div class="relative aspect-video w-full overflow-hidden bg-slate-900">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Poetic medium shot of a handwritten folded paper letter slipping out of trembling fingers and fluttering away in a sudden gust of wind across a rainy pine ridge at dusk, shallow depth of field, ink slightly blurred by rain, poignant bittersweet film aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpvSBqcpMD1ZjPkJGNxeAV-KWo0iAPhpSdaYuTHSlLYQOIoCgjhn1JKAFuI3Ahlv8F38bXcrxWSPkT5UWI3NGELNqNDsRU-14wdMtyOTWKsAdSoBV9hbA1rMuL1c2oahjoxLXTJkdAQlMHWiiVhznc6_hykeK4cdTSzNjOS8Fep5pRbpxzHexB_5Z8bjyj6cXy3FfPQFEH309sR2qHplTDOa-ARSSaG3sxZsCh0g"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#12141F] via-transparent to-transparent opacity-80"></div>
+<div class="absolute top-2 left-2 flex items-center gap-1.5">
+<span class="px-1.5 py-0.5 rounded bg-indigo-600/80 backdrop-blur-md text-[10px] font-mono font-semibold text-white border border-indigo-400/30">Track V1</span>
+</div>
+<span class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-md text-[10px] font-mono font-medium text-white">00:07</span>
+<button class="absolute inset-0 m-auto w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 shadow-lg">
+<span class="material-symbols-outlined text-xl">play_arrow</span>
+</button>
+</div>
+<div class="p-3.5 flex flex-col flex-1 justify-between space-y-3">
+<div>
+<div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
+<span>H100 Node #5 • 24fps</span>
+<span class="text-indigo-400">ProRes 422</span>
+</div>
+<h3 class="text-body-md font-body-md font-semibold text-white line-clamp-1">Shot 07 - Handwritten Letter in Wind</h3>
+<div class="mt-2 p-2 rounded bg-[#0A0B10] border border-white/5 font-mono text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+              handwritten letter blowing out of hand into rainy dusk, slow motion paper fluttering away...
+            </div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-white/5">
+<button class="text-label-sm font-label-sm text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition">
+<span class="material-symbols-outlined text-sm">download</span>
+<span>MP4</span>
+</button>
+<div class="flex items-center gap-2">
+<button class="p-1 text-slate-400 hover:text-white rounded hover:bg-white/5"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+<button class="p-1 text-slate-400 hover:text-white rounded hover:bg-white/5"><span class="material-symbols-outlined text-sm">fullscreen</span></button>
+</div>
+</div>
+</div>
+</div>
+<!-- CARD 8: Shot 08 -->
+<div class="group bg-[#12141F] rounded-xl border border-white/10 hover:border-indigo-500/50 shadow-lg hover:shadow-indigo-500/10 transition-all flex flex-col overflow-hidden">
+<!-- 16:9 Thumbnail -->
+<div class="relative aspect-video w-full overflow-hidden bg-slate-900">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Breathtaking extreme wide aerial shot pulling backwards over a vast misty mountain cliff, a single silhouette of a woman standing at the edge as massive storm clouds roll across the sky, epic cinematic scale, mist rising from valley floor, 4k master final frame." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTprRQ4p3GyNpdHKlOWxZ7VqjsdJx2WF21P34C0Wf9uNM8hLrspm43cu8ZpEQx9SvXFXXOssuJKqsdvhNhTeUqcGPaLjcMx8L0MFoxDAsL6FQGJmzYdH9uj-n1xxy9OIVJ4I4Ikcit9-SomWKxLZZMKfow6RWa_L-RFXTWMYBsd3gJdudmPDcMcH4lKTn2GMBS7VZ4y5bTxyGgn9rKYAhlpWuxd9aJrb3HWg8Wlg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#12141F] via-transparent to-transparent opacity-80"></div>
+<div class="absolute top-2 left-2 flex items-center gap-1.5">
+<span class="px-1.5 py-0.5 rounded bg-indigo-600/80 backdrop-blur-md text-[10px] font-mono font-semibold text-white border border-indigo-400/30">Track V1</span>
+<span class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 backdrop-blur-md text-[10px] font-mono border border-purple-500/30 font-semibold">Outro</span>
+</div>
+<span class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-md text-[10px] font-mono font-medium text-white">00:07</span>
+<button class="absolute inset-0 m-auto w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 shadow-lg">
+<span class="material-symbols-outlined text-xl">play_arrow</span>
+</button>
+</div>
+<div class="p-3.5 flex flex-col flex-1 justify-between space-y-3">
+<div>
+<div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
+<span>H100 Node #1 • 24fps</span>
+<span class="text-cyan-400 font-semibold">4K ProRes HQ</span>
+</div>
+<h3 class="text-body-md font-body-md font-semibold text-white line-clamp-1">Shot 08 - Cliff Edge Final Outro</h3>
+<div class="mt-2 p-2 rounded bg-[#0A0B10] border border-white/5 font-mono text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+              extreme wide aerial shot pulling backwards, lonely figure standing at cliff edge as storm clouds roll in...
+            </div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-white/5">
+<button class="text-label-sm font-label-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition">
+<span class="material-symbols-outlined text-sm">download</span>
+<span>MP4</span>
+</button>
+<div class="flex items-center gap-2">
+<button class="p-1 text-slate-400 hover:text-white rounded hover:bg-white/5"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+<button class="p-1 text-slate-400 hover:text-white rounded hover:bg-white/5"><span class="material-symbols-outlined text-sm">fullscreen</span></button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- BOTTOM FLOATING STATUS & EXPORT DOCK -->
+<footer class="mt-8 bg-[#12141F]/90 backdrop-blur-lg border border-white/10 rounded-xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+<div class="flex items-center gap-3 text-label-sm font-label-sm">
+<span class="flex h-2.5 w-2.5 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+</span>
+<div class="font-mono text-slate-300">
+<span>CapCut Draft Engine: <span class="text-emerald-400 font-semibold">Ready</span></span>
+<span class="text-slate-600 mx-1.5">•</span>
+<span>Auto-Sync Active (Port 8092)</span>
+<span class="text-slate-600 mx-1.5">•</span>
+<span class="text-slate-400">Total Project Duration: <strong class="text-white">00:58</strong> (8 Clips)</span>
+</div>
+</div>
+<div class="flex items-center gap-2.5">
+<button class="px-3.5 py-1.5 rounded-lg bg-[#181B2B] hover:bg-[#1E2238] border border-white/10 text-label-sm font-label-sm text-slate-200 transition flex items-center gap-1.5">
+<span class="material-symbols-outlined text-base text-slate-400">code</span>
+<span>Export XML Sequence</span>
+</button>
+<button class="px-4 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white text-label-sm font-label-sm font-semibold shadow-md shadow-emerald-900/30 flex items-center gap-1.5 transition">
+<span>🚀 Open in CapCut Desktop App</span>
+</button>
+</div>
+</footer>
+<!-- Micro-Interactions Script -->
+<script>
+    // Simple playhead simulator toggle
+    const playBtn = document.getElementById('playBtn');
+    const playIcon = document.getElementById('playIcon');
+    let isPlaying = false;
+
+    if (playBtn && playIcon) {
+      playBtn.addEventListener('click', () => {
+        isPlaying = !isPlaying;
+        playIcon.textContent = isPlaying ? 'pause' : 'play_arrow';
+      });
+    }
+
+    // Export format selector toggle
+    const fmtButtons = ['fmt-draft', 'fmt-xml', 'fmt-edl'];
+    fmtButtons.forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          fmtButtons.forEach(bId => {
+            const b = document.getElementById(bId);
+            if (b) {
+              b.classList.remove('bg-primary', 'text-white', 'shadow-sm');
+              b.classList.add('text-slate-400');
+            }
+          });
+          btn.classList.add('bg-primary', 'text-white', 'shadow-sm');
+          btn.classList.remove('text-slate-400');
+        });
+      }
+    });
+  </script>
+</div></main>
+</body></html>
