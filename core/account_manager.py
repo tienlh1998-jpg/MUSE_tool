@@ -207,4 +207,15 @@ class AccountManager:
             self.save()
             return {"success": False, "error": str(e)}
 
+    async def check_all(self, proxy: Optional[str] = None) -> dict:
+        active = 0
+        dead = 0
+        for acc in self.accounts:
+            res = await self.check_health(acc.id, proxy=proxy)
+            if res.get("success"):
+                active += 1
+            else:
+                dead += 1
+        return {"total": len(self.accounts), "active": active, "dead": dead}
+
 account_manager = AccountManager()

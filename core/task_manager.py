@@ -13,12 +13,15 @@ TASKS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "t
 
 class RenderTask(BaseModel):
     id: str
+    project_id: Optional[str] = None
+    shot_id: Optional[str] = None
     prompt: str
     negative_prompt: str = ""
     mode: str = "text-to-video"  # "text-to-video", "image-to-video", "text-to-image"
     aspect: str = "16:9"
     duration: int = 7
     ref_image: Optional[str] = None
+    source_image_path: Optional[str] = None
     status: str = "pending"  # "pending", "running", "completed", "failed"
     progress: int = 0
     status_message: str = "Đang chờ trong hàng đợi..."
@@ -61,12 +64,15 @@ class TaskManager:
         for item in task_items:
             task = RenderTask(
                 id=uuid.uuid4().hex[:10],
+                project_id=item.get("project_id"),
+                shot_id=item.get("shot_id"),
                 prompt=item.get("prompt", "").strip(),
                 negative_prompt=item.get("negative_prompt", "").strip(),
                 mode=item.get("mode", "text-to-video"),
                 aspect=item.get("aspect", "16:9"),
                 duration=item.get("duration", 7),
                 ref_image=item.get("ref_image"),
+                source_image_path=item.get("source_image_path"),
                 created_at=now
             )
             self.tasks.append(task)
@@ -101,7 +107,6 @@ class TaskManager:
                 self._queue.task_done()
                 continue
 
-            # Find available account
             account = account_manager.get_next_account(mode=cfg.rotation_mode)
             if not account:
                 task.status = "failed"
@@ -133,6 +138,7 @@ class TaskManager:
                     aspect=task.aspect,
                     duration=task.duration,
                     ref_image_base64=task.ref_image,
+                    source_image_path=task.source_image_path,
                     on_progress=progress_cb
                 )
 
@@ -144,17 +150,36 @@ class TaskManager:
                 task.status_message = "Hoàn thành!"
                 account_manager.record_usage(account.id, success=True)
 
+                # Sync back to project shot or image if project_id is given
+                if task.project_id:
+                    try:
+                        from core.project_manager import ProjectManager
+                        pm = ProjectManager()
+                        if task.shot_id:
+                            pm.update_shot(task.project_id, task.shot_id, {
+                                "status": "completed",
+                                "video_url": task.result_url,
+                                "local_path": task.local_file
+                            })
+                        elif "image" in task.mode:
+                            pm.add_image(task.project_id, {
+                                "prompt": task.prompt,
+                                "url": task.result_url,
+                                "local_path": task.local_file,
+                                "aspect": task.aspect
+                            })
+                    except Exception as pe:
+                        print(f"Error syncing project task: {pe}")
+
             except Exception as e:
                 err_str = str(e)
                 account_manager.record_usage(account.id, success=False, error=err_str)
                 
-                # Check Auto-failover
                 if cfg.auto_failover:
                     alt_account = account_manager.get_next_account(mode=cfg.rotation_mode)
                     if alt_account and alt_account.id != account.id:
                         task.status_message = f"Tài khoản lỗi ({err_str[:40]}). Đang tự động đổi sang {alt_account.email}..."
                         self.save()
-                        # Re-queue for immediate retry with alternative account
                         self._queue.put_nowait(task.id)
                         self._queue.task_done()
                         continue
@@ -162,6 +187,13 @@ class TaskManager:
                 task.status = "failed"
                 task.error = err_str
                 task.status_message = f"Lỗi: {err_str[:100]}"
+                if task.project_id and task.shot_id:
+                    try:
+                        from core.project_manager import ProjectManager
+                        pm = ProjectManager()
+                        pm.update_shot(task.project_id, task.shot_id, {"status": "failed"})
+                    except Exception:
+                        pass
 
             self.save()
             self._queue.task_done()
