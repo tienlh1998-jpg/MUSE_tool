@@ -574,33 +574,57 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
   }
 
   function scriptField(section,label,nextLabels){
-    const startPattern=new RegExp(`^\\s*(?:[A-E]\\)\\s*)?(?:\\[)?${label}(?:\\])?\\s*:\\s*`,'im'),match=startPattern.exec(section);if(!match)return'';
-    const start=match.index+match[0].length,tail=section.slice(start),stop=nextLabels.length?new RegExp(`^\\s*(?:[A-E]\\)\\s*)?(?:\\[)?(?:${nextLabels.join('|')})(?:\\])?\\s*:`,'im').exec(tail):null;
-    return tail.slice(0,stop?stop.index:tail.length).trim();
+    const startPattern=new RegExp(`^\\s*(?:[-*•]\\s*)?(?:[A-E]\\)\\s*)?(?:\\*{1,2})?(?:\\[)?${label}(?:\\])?(?:\\*{1,2})?\\s*:\\s*(.*)$`,'im');
+    const match=startPattern.exec(section);if(!match)return'';
+    const start=match.index+match[0].length-(match[1]?match[1].length:0),tail=section.slice(start);
+    const stopPattern=nextLabels.length?new RegExp(`^\\s*(?:[-*•]\\s*)?(?:[A-E]\\)\\s*)?(?:\\*{1,2})?(?:\\[)?(?:${nextLabels.join('|')})(?:\\])?(?:\\*{1,2})?\\s*:`,'im'):null;
+    const stop=stopPattern?stopPattern.exec(tail):null;
+    let val=tail.slice(0,stop?stop.index:tail.length).trim();
+    val=val.replace(/^```[a-zA-Z]*\n?([\s\S]*?)```$/m,'$1').replace(/^`([\s\S]*?)`$/,'$1').trim();
+    return val;
   }
-  function extractBracketLocks(text){const pattern=/^\s*\[([A-Z][A-Z0-9_]*)\][^\r\n]*:\s*$/gim,matches=[...text.matchAll(pattern)],blocks={};for(let index=0;index<matches.length;index++){const match=matches[index],start=match.index+match[0].length,nextLock=matches[index+1]?.index??text.length,tail=text.slice(start,nextLock),nextSection=/^\s*(?:\d+\.\s+\S|(?:CẢNH|SCENE)\s+\d+\s*\()/gim.exec(tail),end=nextSection?start+nextSection.index:nextLock,key=match[1].toLowerCase();blocks[key]=text.slice(start,end).trim().replace(/^(?:CHARACTER_[A-Z0-9_]+|SET_[A-Z0-9_]+)\s*:\s*/i,'');}return blocks;}
-  function expandScriptLocks(text,locks){return String(text||'').replace(/\[([A-Z][A-Z0-9_ ]*)\]/gi,(token,key)=>{const normalized=key.toLowerCase(),canonical=normalized==='character lock'?'char lock':normalized;return locks[canonical]||locks[normalized.replaceAll(' ','_')]||token;});}
+  function extractBracketLocks(text){
+    const pattern=/^\s*(?:[-*•]\s*)?(?:\*{1,2})?\[([A-Z0-9_\s]+)\](?:\*{1,2})?\s*:\s*(.*)$/gim;
+    const matches=[...text.matchAll(pattern)],blocks={};
+    for(let index=0;index<matches.length;index++){
+      const match=matches[index],key=match[1].trim().toLowerCase().replace(/\s+/g,' ');
+      const sameLineContent=match[2]||'';
+      const startOfNext=match.index+match[0].length;
+      const nextMatch=matches[index+1];
+      const nextLockIndex=nextMatch?nextMatch.index:text.length;
+      let tail=text.slice(startOfNext,nextLockIndex);
+      const stopIdx=tail.search(/^\s*(?:```|---|#{1,6}\s*(?:HỒI|CẢNH|SCENE)|(?:\*{1,2}\s*)?(?:(?:PHÂN\s*)?C[AẢÀÁẠÃÂẬẦẤ]NH|SCENE|SHOT|CLIP)\s*\d+)/im);
+      if(stopIdx!==-1)tail=tail.slice(0,stopIdx);
+      let fullContent=(sameLineContent+(tail?'\n'+tail:'')).trim();
+      fullContent=fullContent.replace(/^```[a-zA-Z]*\n?([\s\S]*?)```$/,'$1').replace(/^`([\s\S]*?)`$/,'$1').trim();
+      fullContent=fullContent.replace(/^(?:CHARACTER_[A-Z0-9_]+|SET_[A-Z0-9_]+)\s*:\s*/i,'');
+      blocks[key]=fullContent;
+    }
+    return blocks;
+  }
+  function expandScriptLocks(text,locks){return String(text||'').replace(/\[([A-Z][A-Z0-9_ ]*)\]/gi,(token,key)=>{const normalized=key.toLowerCase().trim().replace(/\s+/g,' '),canonical=normalized==='character lock'?'char lock':normalized;return locks[canonical]||locks[normalized.replaceAll(' ','_')]||locks[normalized]||token;});}
   function withPromptContext(prompt,context,before=true){const value=String(prompt||'').trim(),parts=context.filter(Boolean).filter(part=>!value.includes(part));return before?[...parts,value].filter(Boolean).join('\n\n'):[value,...parts].filter(Boolean).join('\n\n');}
   function parseSceneScript(text){
-    const heading=/^\s*(?:#{1,6}\s*)?(?:CẢNH|SCENE)\s+(\d+)\s*\(([^)]*)\)\s*:\s*(.*?)\s*$/gim,matches=[...text.matchAll(heading)];if(!matches.length)return[];
-    const preamble=text.slice(0,matches[0].index),namedLocks=extractBracketLocks(preamble),locks={...namedLocks,
-      'char lock':scriptField(preamble,'(?:CHAR(?:ACTER)?\\s*LOCK|NHÂN VẬT(?:\\s+THAM GIA)?)',['STYLE\\s*LOCK','PHONG CÁCH VÀ KỸ THUẬT','SET\\s*LOCK','VIDEO\\s*SUFFIX','NEGATIVE','C\\)'])||namedLocks['char lock']||namedLocks['character lock']||'',
-      'style lock':scriptField(preamble,'(?:STYLE\\s*LOCK|PHONG CÁCH VÀ KỸ THUẬT)',['SET\\s*LOCK','VIDEO\\s*SUFFIX','NEGATIVE','C\\)'])||namedLocks.style||namedLocks['style lock']||'',
-      'set lock':scriptField(preamble,'(?:SET\\s*LOCK|BỐI CẢNH\\s*LOCK)',['VIDEO\\s*SUFFIX','NEGATIVE','C\\)'])||namedLocks['set lock']||'',
-      'video suffix':scriptField(preamble,'VIDEO\\s*SUFFIX',['NEGATIVE','C\\)'])||namedLocks.suffix||namedLocks['video suffix']||'',
-      negative:namedLocks.negative||scriptField(preamble,'(?:NEGATIVE(?:\\s+PROMPT)?|PROMPT\\s+ÂM)',['SET\\s*LOCK','VIDEO\\s*SUFFIX','C\\)'])||''
+    const heading=/^\s*(?:[-*•]\s*)?(?:#{1,6}\s*)?(?:\*{1,2}\s*)?(?:(?:PHÂN\s*)?C[AẢÀÁẠÃÂẬẦẤ]NH|SCENE|SHOT|CLIP)\s*(\d+)\s*[:\.\s-]*\s*(?:\(([^)]*)\))?\s*[:\.\s-]*\s*(.*?)(?:\(([^)]*)\))?\s*(?:\*{1,2})?\s*$/gim,matches=[...text.matchAll(heading)];if(!matches.length)return[];
+    const preamble=text.slice(0,matches[0].index),namedLocks=extractBracketLocks(preamble),allLockLabels=['CHAR(?:ACTER)?\\s*LOCK','NHÂN VẬT(?:\\s+THAM GIA)?','STYLE\\s*LOCK','PHONG CÁCH(?:\\s+VÀ\\s+KỸ\\s+THUẬT)?','SET\\s*LOCK','BỐI CẢNH(?:\\s*LOCK)?','VIDEO\\s*SUFFIX','NEGATIVE(?:\\s+PROMPT)?','PROMPT\\s+ÂM','C\\)'],locks={...namedLocks,
+      'char lock':namedLocks['char lock']||namedLocks['character lock']||scriptField(preamble,'(?:CHAR(?:ACTER)?\\s*LOCK|NHÂN VẬT(?:\\s+THAM GIA)?)',allLockLabels.filter(l=>!l.includes('CHAR')))||'',
+      'style lock':namedLocks['style lock']||namedLocks.style||scriptField(preamble,'(?:STYLE\\s*LOCK|PHONG CÁCH(?:\\s+VÀ\\s+KỸ\\s+THUẬT)?)',allLockLabels.filter(l=>!l.includes('STYLE')))||'',
+      'set lock':namedLocks['set lock']||namedLocks.set||scriptField(preamble,'(?:SET\\s*LOCK|BỐI CẢNH(?:\\s*LOCK)?)',allLockLabels.filter(l=>!l.includes('SET')))||'',
+      'video suffix':namedLocks['video suffix']||namedLocks.suffix||scriptField(preamble,'VIDEO\\s*SUFFIX',allLockLabels.filter(l=>!l.includes('SUFFIX')))||'',
+      negative:namedLocks.negative||scriptField(preamble,'(?:NEGATIVE(?:\\s+PROMPT)?|PROMPT\\s+ÂM)',allLockLabels.filter(l=>!l.includes('NEGATIVE')))||''
     };
     for(const key of Object.keys(locks))if(/^\[[^\]]+\]$/.test(locks[key]))locks[key]='';
     return matches.map((match,index)=>{
-      const body=text.slice(match.index+match[0].length,matches[index+1]?.index??text.length),fieldStops=['Khung\\s+đầu','Khung\\s+cuối','Diễn\\s+biến','Prompt\\s+ảnh','Prompt\\s+video','Audio','Negative(?:\\s+prompt)?','Checklist','Tự\\s+kiểm\\s+tra','[A-E]\\)'];
-      const opening=scriptField(body,'Khung\\s+đầu',fieldStops.filter(label=>label!=='Khung\\s+đầu')),
-        ending=scriptField(body,'Khung\\s+cuối',fieldStops.filter(label=>label!=='Khung\\s+cuối')),
-        beats=scriptField(body,'Diễn\\s+biến',fieldStops.filter(label=>label!=='Diễn\\s+biến')),
-        rawImage=scriptField(body,'Prompt\\s+ảnh(?:\\s+khung\\s+đầu)?',['Khung\\s+cuối','Diễn\\s+biến','Prompt\\s+video','Audio','Negative(?:\\s+prompt)?','Checklist','[A-E]\\)']),
-        rawVideo=scriptField(body,'Prompt\\s+video',['Audio','Negative(?:\\s+prompt)?','Checklist','[A-E]\\)']),
-        audio=scriptField(body,'Audio',['Negative(?:\\s+prompt)?','Checklist','[A-E]\\)']),
-        sceneNegative=scriptField(body,'(?:Negative(?:\\s+prompt)?|Prompt\\s+âm)',['Checklist','[A-E]\\)']),
-        range=match[2].match(/(\d+):(\d{2})\s*(?:đến|to|[–—-])\s*(\d+):(\d{2})/i);
+      const body=text.slice(match.index+match[0].length,matches[index+1]?.index??text.length);
+      const fieldStops=['(?:Khung\\s+[đd]ầu|Opening\\s+frame)','(?:Khung\\s+cuối|Ending\\s+frame)','(?:Diễn\\s+biến|Dien\\s+bien|Action(?:\\s+beats)?)','(?:Prompt\\s+[ảa]nh(?:\\s+khung\\s+[đd]ầu)?|Image\\s+prompt)','(?:Prompt\\s+video|Video\\s+prompt)','(?:Audio|Âm\\s+thanh|Am\\s+thanh)','(?:Negative(?:\\s+prompt)?|Prompt\\s+[âa]m)','Checklist','Tự\\s+kiểm\\s+tra','[A-E]\\)'];
+      const opening=scriptField(body,'(?:Khung\\s+[đd]ầu|Opening\\s+frame)',fieldStops.filter(label=>!label.includes('đầu')&&!label.includes('Opening'))),
+        ending=scriptField(body,'(?:Khung\\s+cuối|Ending\\s+frame)',fieldStops.filter(label=>!label.includes('cuối')&&!label.includes('Ending'))),
+        beats=scriptField(body,'(?:Diễn\\s+biến|Dien\\s+bien|Action(?:\\s+beats)?)',fieldStops.filter(label=>!label.includes('biến')&&!label.includes('Action'))),
+        rawImage=scriptField(body,'(?:Prompt\\s+[ảa]nh(?:\\s+khung\\s+[đd]ầu)?|Image\\s+prompt)',['Khung\\s+cuối','Ending\\s+frame','Diễn\\s+biến','Prompt\\s+video','Video\\s+prompt','Audio','Negative','Checklist','[A-E]\\)']),
+        rawVideo=scriptField(body,'(?:Prompt\\s+video|Video\\s+prompt)',['Audio','Âm\\s+thanh','Am\\s+thanh','Negative','Prompt\\s+[âa]m','Checklist','[A-E]\\)']),
+        audio=scriptField(body,'(?:Audio|Âm\\s+thanh|Am\\s+thanh)',['Negative','Prompt\\s+[âa]m','Checklist','[A-E]\\)']),
+        sceneNegative=scriptField(body,'(?:Negative(?:\\s+prompt)?|Prompt\\s+[âa]m)',['Checklist','[A-E]\\)']),
+        timeStr=match[2]||match[4]||'',range=timeStr.match(/(\d+):(\d{2})\s*(?:đến|to|[–—-])\s*(\d+):(\d{2})/i);
       const seconds=range?(Number(range[3])*60+Number(range[4]))-(Number(range[1])*60+Number(range[2])):0;
       let imagePrompt=expandScriptLocks(rawImage,locks),videoPrompt=expandScriptLocks(rawVideo,locks);
       if(rawImage)imagePrompt=withPromptContext(imagePrompt,[locks['char lock'],locks['style lock']]);
@@ -611,9 +635,12 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
       if(rawVideo)videoPrompt=[videoPrompt,...videoDetails].filter(Boolean).join('\n\n');
       if(locks['video suffix']&&!videoPrompt.includes(locks['video suffix']))videoPrompt=`${videoPrompt}\n\n${locks['video suffix']}`.trim();
       const negative=expandScriptLocks(sceneNegative||locks.negative,locks),ratio=(imagePrompt+' '+videoPrompt+' '+preamble).match(/\b(9:16|16:9|1:1|4:3|3:4)\b/);
-      return{number:Number(match[1]),title:match[3].trim(),imagePrompt,videoPrompt,hasImagePrompt:Boolean(rawImage),hasVideoPrompt:Boolean(rawVideo),negative,seconds:seconds>0?seconds:6,size:ratio?.[1]||'9:16'};
+      let title=(match[3]||'').trim().replace(/^[:\.\s-]+|[:\.\s-]+$/g,'').trim();
+      title=title.replace(/\*{1,2}$/,'').trim();
+      return{number:Number(match[1]),title,imagePrompt,videoPrompt,hasImagePrompt:Boolean(rawImage),hasVideoPrompt:Boolean(rawVideo),negative,seconds:seconds>0?seconds:6,size:ratio?.[1]||'16:9'};
     }).filter(scene=>scene.hasImagePrompt||scene.hasVideoPrompt);
   }
+
   function buildSceneNodesFromScript(){
     const status=$('#scriptImportStatus'),scenes=parseSceneScript($('#scriptInput').value);
     if(!scenes.length){status.className='error';status.textContent='No scenes found. Use headings like “CẢNH 1 (0:00–0:07): Title” or “Scene 1 (0:00–0:05): Title”, then add Prompt ảnh or Prompt video.';return;}

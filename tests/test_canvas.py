@@ -183,3 +183,48 @@ def test_ai_director_endpoints_and_canvas_dom(client):
     assert 'id="aiDirectorBtn"' in html
     assert 'id="aiDirectorModal"' in html
     assert "AI Đạo Diễn Suno" in html
+
+
+
+def test_canvas_markdown_script_parsing():
+    """Verify parseSceneScript handles markdown bold headings, bullets, code blocks, and locks."""
+    import json
+    import shutil
+    import subprocess
+
+    node_bin = shutil.which("node")
+    if not node_bin:
+        pytest.skip("node is not installed")
+
+    sample_script = (
+        "```text\n"
+        "[CHAR LOCK]: Hai nhan vat A va B.\n"
+        "[SET LOCK]: Phong thu acoustic.\n"
+        "[STYLE LOCK]: 35mm cinematic film look.\n"
+        "[NEGATIVE]: 3D CGI, blurry.\n"
+        "```\n\n"
+        "**CANH 1 (0:00-0:06): Thiet lap khong gian phong thu**\n"
+        "* Khung dau: Toan canh phong thu.\n"
+        "* Prompt anh: `Wide establishing shot of studio.`\n"
+        "* Prompt video: `Slow dolly in towards table.`\n\n"
+        "**CANH 2 (0:06-0:12): Loi mo dau cua A**\n"
+        "* Khung dau: Can canh A.\n"
+        "* Prompt anh: `Medium shot of host A.`\n"
+        "* Prompt video: `Host A speaking into microphone.`\n"
+    )
+
+    encoded = json.dumps(sample_script)
+    test_js = (
+        "const fs = require('fs');\n"
+        "const code = fs.readFileSync('static/canvas/canvas.js', 'utf8');\n"
+        "const fnCode = code.slice(code.indexOf('function scriptField'), code.indexOf('function buildSceneNodesFromScript'));\n"
+        "const parseFn = new Function(fnCode + '\\nreturn parseSceneScript;')();\n"
+        f"const sample = {encoded};\n"
+        "const scenes = parseFn(sample);\n"
+        "if (!scenes || scenes.length !== 2) process.exit(1);\n"
+        "if (scenes[0].title !== 'Thiet lap khong gian phong thu' || scenes[0].seconds !== 6) process.exit(2);\n"
+        "if (!scenes[0].imagePrompt.includes('Hai nhan vat A va B') || !scenes[0].imagePrompt.includes('Wide establishing shot of studio')) process.exit(3);\n"
+        "process.exit(0);\n"
+    )
+    res = subprocess.run([node_bin, "-e", test_js], capture_output=True, text=True)
+    assert res.returncode == 0, f"Node script test failed with code {res.returncode}: {res.stderr}"
