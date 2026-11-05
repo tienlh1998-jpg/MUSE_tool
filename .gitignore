@@ -10,11 +10,18 @@ __pycache__/
 
 # User Data & Sensitive Credentials (do not push personal cookies)
 data/*.json
+data/downloads/
+data/muse_states/
+scratch/
 !data/.gitkeep
 
-# Downloads & Renders
+# Downloads & Renders (legacy location)
 downloads/*
 !downloads/.gitkeep
+
+# Test artifacts
+.pytest_cache/
+tests/__pycache__/
 
 # Backup & Old files
 *.old.html

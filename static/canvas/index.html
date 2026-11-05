@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MUSE AI MV Studio · Workflow Canvas</title>
+  <link rel="icon" type="image/png" sizes="128x128" href="./icons/icon128.png" />
+  <link rel="stylesheet" href="./styles.css?v=3.5.1" />
+  <style>
+    .back-studio-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #1e2230;
+      color: #93c5fd;
+      text-decoration: none;
+      padding: 7px 12px;
+      border: 1px solid #3b425b;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-right: 8px;
+      transition: all 0.2s ease;
+    }
+    .back-studio-link:hover {
+      background: #2b3248;
+      color: #bfdbfe;
+      border-color: #60a5fa;
+    }
+    .project-picker-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #141620;
+      border: 1px solid #2e3245;
+      padding: 4px 10px;
+      border-radius: 8px;
+      margin: 0 4px;
+    }
+    .project-picker-wrap select {
+      background: #0d0f17;
+      color: #f1f5f9;
+      border: 1px solid #3f455d;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 12px;
+      outline: none;
+      max-width: 200px;
+    }
+    .project-picker-wrap button {
+      padding: 5px 10px !important;
+      font-size: 12px !important;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header class="toolbar">
+    <a href="/" class="back-studio-link" title="Quay lại giao diện Studio chính">🎬 Quay lại Studio Chính</a>
+    <div class="brand">
+      <img class="brand-logo" src="./icons/26flow.svg" alt="Canvas" />
+      <strong class="brand-name">Workflow Canvas</strong>
+      <span class="brand-version">v3.1</span>
+    </div>
+
+    <!-- Project Selector & Direct Loader -->
+    <div class="project-picker-wrap">
+      <label for="projectSelect" style="font-size:12px;color:#94a3b8;font-weight:600;">📁 Dự án:</label>
+      <select id="projectSelect" title="Chọn dự án trong MUSE Studio để nạp kịch bản vào Canvas">
+        <option value="">-- Đang nạp danh sách dự án... --</option>
+      </select>
+      <button id="loadProjectBtn" type="button" class="primary" title="Tự động bung toàn bộ Shots trong kịch bản thành mạng lưới Node đã nối dây">📥 Nạp vào Canvas</button>
+    </div>
+
+    <div class="toolbar-tools" aria-label="Thêm node vào quy trình">
+            <button id="aiDirectorBtn" type="button" class="ai-director-btn" title="Dùng AI phân tích lời bài hát và Style nhạc Suno để tự động dựng dàn Node phân cảnh">
+        <span class="ai-icon">✨</span>
+        <span>AI Đạo Diễn Suno</span>
+      </button>
+      <button id="workflowPresetsBtn" type="button" class="accent-btn" title="Nạp nhanh các mẫu workflow nối dây sẵn 1-click">⚡ Mẫu Workflow</button>
+      <button id="wireGuideBtn" type="button" class="help-btn" title="Xem hướng dẫn cách kéo thả và quy tắc nối dây giữa các node">📖 Hướng dẫn nối dây</button>
+      <button id="scriptImportBtn" type="button">＋ Kịch bản → Nodes</button>
+      <button id="addNodeMenuBtn" type="button" aria-haspopup="true" aria-expanded="false">＋ Thêm node</button>
+    </div>
+    <div class="toolbar-actions">
+      <button id="arrangeNodesBtn" type="button" title="Tự động sắp xếp dàn node ngay ngắn, giãn đều, không bị đè lên nhau">📐 Sắp xếp node</button>
+      <button id="saveBtn">Lưu Canvas</button>
+      <button id="workflowExportBtn" type="button" title="Xuất quy trình dạng JSON">Xuất JSON</button>
+      <button id="workflowImportBtn" type="button" title="Nhập quy trình từ file JSON">Nhập JSON</button>
+      <input id="workflowFileInput" type="file" accept=".json,application/json" hidden />
+      <button id="resetBtn" class="danger">Xóa Canvas</button>
+      <button id="runBtn" class="primary" title="Chạy toàn bộ các node tạo ảnh/video theo thứ tự phụ thuộc">▶ Chạy Workflow</button>
+    </div>
+  </header>
+
+  <!-- Mẫu Workflow Dropdown -->
+  <div id="presetsMenu" class="presets-menu hidden" role="menu" aria-label="Mẫu Workflow dựng sẵn">
+    <div class="presets-menu-caption">⚡ Mẫu Quy Trình Nối Sẵn (1-Click)</div>
+    <button type="button" role="menuitem" data-preset="image_gen">
+      <strong>🎨 1. Tạo Ảnh AI Chuẩn Muse</strong>
+      <small>Prompt ➔ Tạo Ảnh (Muse AI) ➔ Xem trước</small>
+    </button>
+    <button type="button" role="menuitem" data-preset="image_to_video">
+      <strong>🎬 2. Tạo Video từ Ảnh (Image-to-Video)</strong>
+      <small>Ảnh đầu vào ➔ Tạo Video ➔ Timeline MV</small>
+    </button>
+    <button type="button" role="menuitem" data-preset="full_mv">
+      <strong>🌟 3. Quy Trình MV Hoàn Chỉnh</strong>
+      <small>Prompt ➔ Tạo Ảnh ➔ Tạo Video ➔ Timeline ➔ Ghép MV</small>
+    </button>
+    <button type="button" role="menuitem" data-preset="continuity_shots">
+      <strong>🔄 4. Nối Mạch 2 Cảnh Liên Tiếp</strong>
+      <small>Cảnh 1 [Khung cuối] ➔ Cảnh 2 [Khung đầu] ➔ Timeline</small>
+    </button>
+  </div>
+
+  <div id="addNodeMenu" class="add-node-menu hidden" role="menu" aria-label="Thêm node">
+    <div class="add-node-group"><span>Văn bản &amp; Prompt</span>
+      <button type="button" role="menuitem" data-add="prompt">Prompt</button>
+      <button type="button" role="menuitem" data-add="negativePrompt">Negative prompt</button>
+      <button type="button" role="menuitem" data-add="textAppend">Nối đuôi text (Append)</button>
+      <button type="button" role="menuitem" data-add="textConcat">Ghép nhiều text (Merge)</button>
+      <button type="button" role="menuitem" data-add="text">Ghi chú (Note)</button>
+    </div>
+    <div class="add-node-group"><span>Hình ảnh</span>
+      <button type="button" role="menuitem" data-add="imageInput">Ảnh đầu vào (Image input)</button>
+      <button type="button" role="menuitem" data-add="references">Ảnh tham chiếu (References)</button>
+      <button type="button" role="menuitem" data-add="generateImage">Tạo ảnh (Generate image)</button>
+      <button type="button" role="menuitem" data-add="imageResize">Đổi cỡ ảnh (Resize)</button>
+      <button type="button" role="menuitem" data-add="preview">Xem trước (Preview)</button>
+    </div>
+    <div class="add-node-group"><span>Video &amp; Timeline</span>
+      <button type="button" role="menuitem" data-add="generateVideo">Tạo video (Generate video)</button>
+      <button type="button" role="menuitem" data-add="timeline">Dòng thời gian (Timeline)</button>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span id="museStatus">● Đang kết nối backend...</span>
+    <span id="backendStatus">Account Pool: Đang kiểm tra...</span>
+    <span id="runStatus"></span>
+  </div>
+
+  <main id="viewport">
+    <svg id="edges"></svg>
+    <div id="canvas"></div>
+    <div id="canvasTools" class="canvas-tools" aria-label="Điều khiển Canvas">
+      <button id="handTool" type="button" title="Công cụ bàn tay (H) · Giữ Space để rê chuột · Alt-kéo để nhân bản · Ctrl+Z để Undo">✋</button>
+      <button id="groupTool" type="button" title="Vẽ vùng nhóm node (G)">▱</button>
+      <button id="zoomOut" type="button" title="Thu nhỏ">−</button>
+      <span id="zoomLevel">100%</span>
+      <button id="zoomIn" type="button" title="Phóng to">＋</button>
+      <button id="fitCanvas" type="button" title="Căn vừa toàn bộ nodes">Fit</button>
+    </div>
+  </main>
+
+  <section id="timelineDock" class="timeline-dock collapsed" aria-label="Video timeline">
+    <div class="timeline-dock-header">
+      <div class="timeline-heading">
+        <strong>Timeline MV</strong>
+        <span id="timelineClipCount">0 clips</span>
+        <span id="timelineTotalDurationBadge" class="timeline-meta-badge" title="Tổng thời lượng video">⏱ 00:00</span>
+        <span id="timelineAudioBadge" class="timeline-meta-badge audio-meta-badge hidden" title="Nhạc nền BGM">🎵 BGM</span>
+        <small>Trình dựng CapCut thu nhỏ · Sắp xếp, nhân bản & lồng nhạc</small>
+      </div>
+      <div class="timeline-dock-actions">
+        <input type="file" id="timelineAudioInput" accept="audio/*" hidden />
+        <button id="timelineAddAudioBtn" type="button" class="btn-highlight-audio" title="Thêm file nhạc nền BGM (.mp3 / .wav) trực tiếp vào timeline">🎵 Thêm Audio</button>
+        <button id="timelineImportAllBtn" type="button" title="Thêm tất cả các node Generate Video vào timeline">＋ Nhập tất cả video</button>
+        <div class="timeline-output-picker">
+          <button id="timelineAddVideoBtn" type="button" title="Thêm một clip video hoặc tạo phân cảnh mới">＋ Thêm clip</button>
+          <div id="timelineOutputMenu" class="timeline-output-menu hidden"></div>
+        </div>
+        <button id="timelinePlayBtn" type="button" title="Xem trước chuỗi video đồng bộ nhạc">▶ Xem trước</button>
+        <select id="timelineExportFormat" title="Định dạng xuất">
+          <option value="mp4" selected>MP4 (Studio FFmpeg)</option>
+          <option value="webm">WebM (Trình duyệt)</option>
+        </select>
+        <button id="timelineExportBtn" type="button" title="Ghép toàn bộ timeline kết hợp file nhạc BGM">⇩ Ghép Video</button>
+        <button id="timelineExportStopBtn" class="timeline-export-stop hidden" type="button" title="Dừng ghép timeline">■ Dừng</button>
+        <button id="timelineToggleBtn" type="button" aria-expanded="false" title="Đóng/Mở timeline">▲</button>
+      </div>
+    </div>
+    <div id="timelineDropZone" class="timeline-drop-zone">Kéo thả node video hoặc file nhạc (.mp3/.wav) vào đây</div>
+    <div class="timeline-dock-content">
+      <div id="timelineTrack" class="timeline-dock-track"></div>
+    </div>
+  </section>
+
+  <aside id="timelinePreviewPanel" class="timeline-preview-panel hidden" aria-label="Timeline video preview">
+    <header>
+      <strong>Xem trước Video MV</strong>
+      <button id="closeTimelinePreview" type="button" aria-label="Đóng preview">×</button>
+    </header>
+    <div class="timeline-preview-stage">
+      <video id="timelinePlayer" class="is-active" controls playsinline preload="auto"></video>
+      <video id="timelinePlayerNext" playsinline preload="auto"></video>
+    </div>
+    <div class="timeline-preview-caption">Trình phát timeline</div>
+  </aside>
+
+  <div id="canvasMenu" class="canvas-menu hidden" role="menu">
+    <div class="menu-caption">Thêm Node</div>
+    <button data-context-action="add:prompt" role="menuitem">＋ Prompt</button>
+    <button data-context-action="add:negativePrompt" role="menuitem">＋ Negative Prompt</button>
+    <button data-context-action="add:text" role="menuitem">＋ Ghi chú (Text note)</button>
+    <button data-context-action="add:textAppend" role="menuitem">＋ Nối text (Text Append)</button>
+    <button data-context-action="add:textConcat" role="menuitem">＋ Ghép text (Text Merge)</button>
+    <button data-context-action="add:imageInput" role="menuitem">＋ Ảnh đầu vào (Image Input)</button>
+    <button data-context-action="add:references" role="menuitem">＋ Ảnh tham chiếu (References)</button>
+    <button data-context-action="add:generateImage" role="menuitem">＋ Tạo ảnh (Generate Image)</button>
+    <button data-context-action="add:generateVideo" role="menuitem">＋ Tạo video (Generate Video)</button>
+    <button data-context-action="add:timeline" role="menuitem">＋ Timeline</button>
+    <button data-context-action="add:imageResize" role="menuitem">＋ Đổi cỡ ảnh (Resize)</button>
+    <button data-context-action="add:preview" role="menuitem">＋ Xem trước (Preview)</button>
+    <div class="menu-divider"></div>
+    <button data-context-action="save" role="menuitem">Lưu Canvas</button>
+    <button data-context-action="run" role="menuitem">▶ Chạy Workflow</button>
+    <button data-context-action="arrange" role="menuitem">Tự động sắp xếp node</button>
+    <div class="menu-divider"></div>
+    <button data-context-action="delete-selected" role="menuitem">Xóa node đang chọn</button>
+    <button data-context-action="disconnect-all" role="menuitem">Xóa toàn bộ dây nối</button>
+  </div>
+
+  <div id="groupNameModal" class="modal-backdrop hidden">
+    <section class="modal group-name-modal" role="dialog" aria-modal="true" aria-labelledby="groupNameTitle">
+      <div class="group-name-heading">
+        <span id="nameDialogIcon" class="group-name-icon" aria-hidden="true">▱</span>
+        <div>
+          <h2 id="groupNameTitle">Đặt tên nhóm</h2>
+          <p id="groupNameDescription">Bỏ qua để dùng tên mặc định.</p>
+        </div>
+      </div>
+      <label class="group-name-field" for="groupNameInput">
+        <span id="nameDialogLabel">Tên nhóm</span>
+        <input id="groupNameInput" type="text" maxlength="80" autocomplete="off" placeholder="Nhóm 1">
+      </label>
+      <div class="modal-actions">
+        <button id="skipGroupNameBtn" type="button">Bỏ qua</button>
+        <button id="cancelNodeRenameBtn" class="hidden" type="button">Hủy</button>
+        <button id="confirmGroupNameBtn" type="button" class="primary">Xác nhận</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="scriptModal" class="modal-backdrop hidden">
+    <section class="modal script-modal" role="dialog" aria-modal="true" aria-labelledby="scriptModalTitle">
+      <h2 id="scriptModalTitle">Tạo các Node từ Kịch bản phân cảnh</h2>
+      <p>Dán kịch bản phân cảnh phân đoạn theo định dạng Cảnh 1, Cảnh 2... Canvas sẽ tự động đọc khung đầu, diễn biến, prompt ảnh, prompt video, âm thanh và tự động nối dây hoàn chỉnh lên Canvas và đưa vào Timeline!</p>
+      <p class="script-template-hint">Tải mẫu kịch bản chuẩn để điền hoặc gửi cho AI tạo theo định dạng này.</p>
+      <label for="scriptInput">Kịch bản:</label>
+      <textarea id="scriptInput" placeholder="CẢNH 1 (0:00 đến 0:07): Tên cảnh&#10;Khung đầu: Mô tả khung mở đầu...&#10;Khung cuối: Mô tả khung kết thúc...&#10;Diễn biến: 1. 0-2s: Diễn biến chi tiết...&#10;Prompt ảnh khung đầu: A beautiful cinematic portrait...&#10;Prompt video: Slow motion camera dolly in...&#10;Audio: Tiếng gió và đàn piano du dương..."></textarea>
+      <div id="scriptImportStatus" role="status"></div>
+      <div class="modal-actions">
+        <a id="downloadScriptTemplate" class="script-template-download" href="./templates/museflow-scene-script-template-vi.txt" download="MuseFlow_Scene_Script_Template_VI.txt">⇩ Tải mẫu kịch bản tiếng Việt</a>
+        <button id="cancelScriptImport" type="button">Hủy</button>
+        <button id="buildScriptNodes" type="button" class="primary">Tạo các node phân cảnh</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="runOrderModal" class="modal-backdrop hidden">
+    <section class="modal run-order-modal" role="dialog" aria-modal="true" aria-labelledby="runOrderTitle">
+      <header class="run-order-header">
+        <div class="run-order-heading-icon" aria-hidden="true">⇅</div>
+        <div class="run-order-heading-copy">
+          <h2 id="runOrderTitle">Xác nhận thứ tự chạy</h2>
+          <p id="runOrderSubtitle">Các node tạo ảnh / video sẽ chạy theo thứ tự bên dưới.</p>
+        </div>
+        <button id="closeRunOrderBtn" class="run-order-close" type="button" aria-label="Đóng">×</button>
+      </header>
+      <div id="runOrderList" class="run-order-list" aria-label="Thứ tự node tạo"></div>
+      <div id="runOrderWarning" class="run-order-warning hidden" role="alert"></div>
+      <footer class="run-order-footer">
+        <p><span aria-hidden="true">ⓘ</span> Tick chọn node muốn chạy; bỏ tick để bỏ qua.</p>
+        <div class="run-order-actions">
+          <button id="cancelRunOrderBtn" type="button">Hủy</button>
+          <button id="resetRunOrderBtn" type="button">Đặt lại theo thứ tự tạo</button>
+          <button id="confirmRunOrderBtn" class="primary" type="button">▶ Bắt đầu chạy</button>
+        </div>
+      </footer>
+    </section>
+  </div>
+
+  <!-- Guide Modal: Hướng Dẫn Nối Dây -->
+  
+  <!-- Modal AI Đạo Diễn Suno (Lyrics & Style to Nodes) -->
+  <div id="aiDirectorModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="aiDirectorTitle">
+    <div class="ai-modal-card modal-card" style="position:relative;">
+      <!-- Loading Overlay -->
+      <div id="aiLoadingOverlay" class="ai-loading-overlay hidden">
+        <div class="ai-loading-spinner"></div>
+        <div id="aiLoadingText" class="ai-loading-text">✨ AI đang lắng nghe và phân tích bài hát...</div>
+        <div class="ai-loading-subtext">Đang phân tích ca từ, nhịp điệu, file nhạc Suno, lập Visual Bible và chia phân cảnh...</div>
+      </div>
+
+      <header class="ai-modal-header">
+        <h2 id="aiDirectorTitle">✨ Trợ Lý AI Đạo Diễn MV từ Lyric &amp; Style Suno</h2>
+        <button id="closeAiDirectorBtn" type="button" class="close-btn" aria-label="Đóng">&times;</button>
+      </header>
+
+      <div class="ai-modal-body">
+        <!-- Cột Trái: Thông Tin Bài Hát -->
+        <div class="ai-main-fields">
+          <div class="ai-form-group">
+            <label for="aiSongTitle">🎵 Tên bài hát:</label>
+            <input type="text" id="aiSongTitle" placeholder="Ví dụ: Mặt Nạ Bôi Vôi" />
+          </div>
+
+          
+          <!-- Tải File Subtitle SRT (Khớp Lời & Thời Gian Chuẩn 100%) -->
+          <div class="ai-form-group" style="background:#131522; padding:10px 14px; border-radius:8px; border:1px solid #4a2e7a;">
+            <label style="color:#e9d5ff; font-weight:700; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+              <span>📄 File Phụ Đề (.srt / .lrc) từ Subtitle Edit, CapCut, Karaoke — Khớp đúng 100% bối cảnh từng câu hát:</span>
+              <span style="font-size:10px; background:#7c3aed; color:#fff; padding:2px 6px; border-radius:4px; font-weight:bold;">ĐỘT PHÁ</span>
+            </label>
+            <p style="font-size:11px; color:#94a3b8; margin:0 0 8px;">
+              File .srt chứa mốc giây chính xác của từng câu hát. AI sẽ tự động đọc timecode, chia cảnh khớp chuẩn từng câu hát và phủ kín 100% video!
+            </p>
+            <input type="file" id="aiSrtFile" accept=".srt,.lrc,text/plain" hidden />
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <button type="button" id="aiUploadSrtBtn" class="ai-chip" style="font-size:12px; padding:6px 14px; background:#4c1d95; border-color:#a855f7; color:#fff; font-weight:bold;">
+                📄 Chọn File .SRT / .LRC
+              </button>
+              <span id="aiSrtInfo" style="font-size:12px; color:#cbd5e1;">Chưa tải file .srt / .lrc (Tùy chọn)</span>
+              <button type="button" id="aiClearSrtBtn" class="small-btn hidden" style="font-size:11px; color:#f87171; background:transparent; border:none; cursor:pointer;">✕ Xóa SRT</button>
+            </div>
+          </div>
+
+          <!-- Tải File Nhạc Suno -->
+          <div class="ai-form-group" style="background:#131522; padding:10px 14px; border-radius:8px; border:1px solid #2d2448;">
+            <label style="color:#d8b4fe; margin-bottom:4px;">🎧 File Nhạc Suno (.mp3 / .wav) — Giúp phân tích thời lượng &amp; khớp nhạc chuẩn 100%:</label>
+            <input type="file" id="aiAudioFile" accept="audio/*" hidden />
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:6px;">
+              <button type="button" id="aiUploadAudioBtn" class="ai-chip" style="font-size:12px; padding:6px 14px; background:#3b1e6d; border-color:#a855f7; color:#fff; font-weight:bold;">
+                📁 Chọn File Nhạc Suno
+              </button>
+              <span id="aiAudioInfo" style="font-size:12px; color:#cbd5e1;">Chưa chọn file nhạc (Tùy chọn)</span>
+              <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
+                <label for="aiAudioDurationManual" style="font-size:11px; color:#a78bfa; margin-bottom:0;">⏱ Thời lượng (s):</label>
+                <input type="number" id="aiAudioDurationManual" min="10" max="600" placeholder="Số giây..." style="width:90px; padding:4px 8px; font-size:12px; background:#090a12; border:1px solid #4c1d95; color:#f1f5f9; border-radius:6px;" title="Thời lượng bài hát tính theo giây (ví dụ: 180s, 225s). AI sẽ tự động sinh số phân cảnh phủ kín 100% thời gian bài hát!">
+              </div>
+            </div>
+            <div id="aiAudioPlayerWrap" class="hidden" style="margin-top:8px;">
+              <audio id="aiAudioPreview" controls style="width:100%; height:32px; border-radius:4px;"></audio>
+            </div>
+          </div>
+
+          <div class="ai-form-group">
+            <label for="aiGenreStyle">🎨 Style nhạc Suno đầy đủ (Paste nguyên Style Prompt từ Suno vào đây):</label>
+            <textarea id="aiGenreStyle" rows="3" placeholder="Ví dụ: dark avant-garde Vietnamese theatrical folk, sarcastic Cheo clown talk-singing, dramatic raspy Hat Boi guttural vocal belt, piercing weeping Ken Bau horn solo, clashing traditional bronze gongs, rustic battle drums, eerie village satire, 96 bpm, -autotune, -western brass, -modern EDM synth..."></textarea>
+            <div class="ai-chips-wrap">
+              <span class="ai-chip" data-style="dark avant-garde Vietnamese theatrical folk, sarcastic Cheo clown talk-singing, dramatic raspy Hat Boi guttural vocal belt, piercing weeping Ken Bau horn solo, clashing traditional bronze gongs, rustic battle drums, eerie village satire, 96 bpm, -autotune, -western brass, -modern EDM synth">🎭 Hề Chèo / Hát Bội Folk</span>
+              <span class="ai-chip" data-style="80s synthwave, energetic, nostalgic, night drive, neon city, retro synthesizer, female vocal, 110 bpm, -modern pop">🌆 80s Synthwave</span>
+              <span class="ai-chip" data-style="acoustic pop ballad, emotional sad piano, deep female vocal, rainy window, soft cello, 80 bpm, -heavy bass">☕ Acoustic Ballad</span>
+              <span class="ai-chip" data-style="cyberpunk EDM, aggressive distorted bass, high-tech samurai, neon metropolis, intense drop, 130 bpm">⚡ Cyberpunk EDM</span>
+              <span class="ai-chip" data-style="lofi hip hop, chill beats, nostalgic acoustic guitar, peaceful night cafe, warm vinyl crackle, 85 bpm">🎧 Lofi Chill</span>
+              <span class="ai-chip" data-style="epic cinematic fantasy orchestral, dramatic war choir, thundering battle drums, brass fanfare, 95 bpm">⚔️ Epic Cinematic</span>
+            </div>
+          </div>
+
+          <div class="ai-form-group">
+            <label for="aiLyricsInput">📝 Lời bài hát hoàn chỉnh (Full Lyrics từ Suno):</label>
+            <textarea id="aiLyricsInput" rows="7" placeholder="[Haunting Village Intro - Tiếng mõ tre gõ lốc cốc lệch nhịp, tiếng kèn Bầu rít lên một vệt dài chua chát]&#10;&#10;[Verse 1 - Lối hát nói Hề Chèo tưng tửng, nhả chữ lả lơi trêu ngươi]&#10;Đầu đội khăn rách, tay cầm quạt nan&#10;Mặt bôi vôi trắng bước ra giữa đình&#10;Miệng cười toe toét, ai mắng cho vui?&#10;&#10;[Chorus]&#10;Đời là một vở tuồng hề&#10;Mặt nạ rơi xuống, ai về cùng ai..."></textarea>
+          </div>
+        </div>
+
+        <!-- Cột Phải: Cấu Hình Model AI & Tùy Chọn Dựng Node -->
+        <div class="ai-sidebar-fields">
+          <div class="ai-sidebar-box" style="margin-bottom:14px;">
+            <h3>⚙️ Tùy Chọn Dựng Nodes</h3>
+            <label class="ai-checkbox-item">
+              <input type="checkbox" id="aiOptClearOldNodes" checked />
+              <span><strong>Xóa sạch dàn node cũ</strong> để dựng mới</span>
+            </label>
+            <label class="ai-checkbox-item">
+              <input type="checkbox" id="aiOptAttachAudio" checked />
+              <span>Gán file nhạc làm <strong>Audio nền</strong> của MV</span>
+            </label>
+            <label class="ai-checkbox-item">
+              <input type="checkbox" id="aiOptPromptImageVideo" checked />
+              <span>Dựng cụm: <strong>Prompt ➔ Tạo Ảnh ➔ Tạo Video</strong></span>
+            </label>
+            <label class="ai-checkbox-item">
+              <input type="checkbox" id="aiOptAddToTimeline" checked />
+              <span>Tự động xếp video vào <strong>Timeline MV</strong></span>
+            </label>
+            <label class="ai-checkbox-item">
+              <input type="checkbox" id="aiOptAutoArrange" checked />
+              <span>Tự động <strong>sắp xếp dàn node</strong> gọn gàng</span>
+            </label>
+            <label class="ai-checkbox-item">
+              <input type="checkbox" id="aiOptContinuity" />
+              <span>Nối mạch cảnh liên tiếp (Khung cuối ➔ Khung đầu)</span>
+            </label>
+          </div>
+
+          <div class="ai-sidebar-box">
+            <h3>🤖 Cấu Hình Model AI</h3>
+            <div id="aiConfigStatus" class="ai-status-indicator">
+              <span>Đang kiểm tra Model AI...</span>
+            </div>
+
+            <label class="ai-checkbox-item" style="margin-bottom:8px;">
+              <input type="checkbox" id="aiUseCustomProxy" />
+              <span>Tùy chỉnh Proxy / Model AI riêng</span>
+            </label>
+
+            <div id="aiCustomProxyFields" class="hidden" style="margin-top:8px;">
+              <div class="ai-form-group">
+                <label for="aiCustomProvider">Provider:</label>
+                <select id="aiCustomProvider">
+                  <option value="custom_proxy">OpenAI Compatible (Proxy)</option>
+                  <option value="openai">OpenAI Official</option>
+                  <option value="gemini">Google Gemini</option>
+                </select>
+              </div>
+              <div class="ai-form-group">
+                <label for="aiCustomBaseUrl">Base URL / Proxy:</label>
+                <input type="text" id="aiCustomBaseUrl" placeholder="https://api.openai.com/v1" />
+              </div>
+              <div class="ai-form-group">
+                <label for="aiCustomApiKey">API Key:</label>
+                <input type="password" id="aiCustomApiKey" placeholder="sk-..." />
+              </div>
+              <div class="ai-form-group">
+                <label for="aiCustomModel">Model Name:</label>
+                <input type="text" id="aiCustomModel" placeholder="gpt-4o, deepseek-chat, gemini-1.5-pro..." />
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <footer class="modal-actions" style="padding:14px 20px; background:#141724; border-top:1px solid #282d44;">
+        <button id="cancelAiDirectorBtn" type="button">Hủy</button>
+        <button id="submitAiDirectorBtn" type="button" class="ai-director-btn" style="font-size:13px; padding:8px 18px;">
+          <span>✨ Phân Tích &amp; Dựng Dàn Node Tự Động</span>
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <div id="wireGuideModal" class="modal-backdrop hidden">
+    <section class="modal wire-guide-modal" role="dialog" aria-modal="true" aria-labelledby="wireGuideTitle">
+      <header class="wire-guide-header">
+        <div class="wire-guide-icon">📖</div>
+        <div>
+          <h2 id="wireGuideTitle">Hướng Dẫn Nối Dây & Quy Trình Tạo Video</h2>
+          <p>Kéo từ cổng tròn bên phải (Đầu ra) sang cổng tròn bên trái (Đầu vào) của node tiếp theo.</p>
+        </div>
+        <button id="closeWireGuideBtn" type="button" class="modal-close-btn" aria-label="Đóng">×</button>
+      </header>
+      <div class="wire-guide-content">
+        <!-- Flow Diagram -->
+        <div class="wire-flow-diagram">
+          <div class="flow-step step-prompt">
+            <span class="step-badge">1. Nhập Ý Tưởng</span>
+            <strong>Prompt</strong>
+            <small>Văn bản mô tả</small>
+          </div>
+          <div class="flow-arrow">➔ 🟣 ➔</div>
+          <div class="flow-step step-image">
+            <span class="step-badge">2. Tạo Khung Nguồn</span>
+            <strong>Tạo Ảnh</strong>
+            <small>Muse AI sinh ảnh</small>
+          </div>
+          <div class="flow-arrow">➔ 🔵 ➔</div>
+          <div class="flow-step step-video">
+            <span class="step-badge">3. Tạo Chuyển Động</span>
+            <strong>Tạo Video</strong>
+            <small>Muse AI sinh video MP4</small>
+          </div>
+          <div class="flow-arrow">➔ 🟢 ➔</div>
+          <div class="flow-step step-timeline">
+            <span class="step-badge">4. Hoàn Thiện</span>
+            <strong>Timeline MV</strong>
+            <small>Ghép chuỗi phân cảnh</small>
+          </div>
+        </div>
+
+        <!-- Rules Table -->
+        <table class="wire-rules-table">
+          <thead>
+            <tr>
+              <th>Cổng Xuất (Bên phải)</th>
+              <th></th>
+              <th>Cổng Nhập (Bên trái)</th>
+              <th>Ý nghĩa & Mục đích</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="port-tag tag-text">🟣 Văn bản (Prompt)</span></td>
+              <td>➔</td>
+              <td><span class="port-tag tag-text">Prompt (Nội dung)</span></td>
+              <td>Truyền câu lệnh miêu tả vào node Tạo Ảnh hoặc Tạo Video.</td>
+            </tr>
+            <tr>
+              <td><span class="port-tag tag-image">🔵 Ảnh tạo ra (Image)</span></td>
+              <td>➔</td>
+              <td><span class="port-tag tag-image">Ảnh nguồn (Khung đầu)</span></td>
+              <td>Lấy ảnh vừa sinh làm khung hình đầu để AI hoạt hóa thành video.</td>
+            </tr>
+            <tr>
+              <td><span class="port-tag tag-image">🔵 Ảnh tạo ra / Ảnh vào</span></td>
+              <td>➔</td>
+              <td><span class="port-tag tag-media">Xem trước (Preview)</span></td>
+              <td>Xem trực tiếp ảnh kích thước lớn ngay trên màn hình Canvas.</td>
+            </tr>
+            <tr>
+              <td><span class="port-tag tag-video">🟢 Video MP4</span></td>
+              <td>➔</td>
+              <td><span class="port-tag tag-video">Clip vào (Timeline)</span></td>
+              <td>Đưa video đã tạo vào dòng thời gian để chuẩn bị ghép thành video dài.</td>
+            </tr>
+            <tr>
+              <td><span class="port-tag tag-image">🔵 Khung cuối (End Frame)</span></td>
+              <td>➔</td>
+              <td><span class="port-tag tag-image">Ảnh nguồn (Video cảnh 2)</span></td>
+              <td>Nối mạch liền mạch giữa 2 cảnh (nhân vật, bối cảnh giữ nguyên).</td>
+            </tr>
+            <tr>
+              <td><span class="port-tag tag-negative">🔴 Loại trừ (Negative)</span></td>
+              <td>➔</td>
+              <td><span class="port-tag tag-negative">Loại trừ (Negative)</span></td>
+              <td>Loại bỏ mờ, biến dạng, chữ ký, lỗi chi tiết.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="wire-tips-box">
+          <strong>💡 Mẹo Thao Tác Nhanh:</strong>
+          <ul>
+            <li><strong>Không muốn nối thủ công?</strong> Hãy bấm nút <strong>⚡ Mẫu Workflow</strong> trên thanh công cụ — Canvas sẽ tự động tạo và nối sẵn toàn bộ dây cho bạn!</li>
+            <li><strong>Nhấp chuột 2 lần:</strong> Bấm 1 cái vào cổng chấm tròn bên phải, sau đó bấm 1 cái vào cổng chấm tròn bên trái tương ứng.</li>
+            <li><strong>Kéo dây ra vùng trống:</strong> Kéo dây từ cổng xuất rồi thả ra vùng trống để menu tự động gợi ý node tương thích và tự nối luôn.</li>
+            <li><strong>Nhập từ Kịch bản Studio:</strong> Chọn dự án ở menu góc trên bên trái rồi bấm <strong>📥 Nạp vào Canvas</strong> để chuyển toàn bộ các Shots phân cảnh thành node có dây nối sẵn!</li>
+          </ul>
+        </div>
+      </div>
+      <footer class="modal-actions" style="margin-top:16px;">
+        <button id="gotItGuideBtn" type="button" class="primary">Đã hiểu! Bắt đầu ngay</button>
+      </footer>
+    </section>
+  </div>
+
+  <script src="./vendor/ffmpeg/ffmpeg.js"></script>
+  <script src="./canvas.js?v=3.5.2"></script>
+</body>
+</html>

@@ -7,7 +7,9 @@ from datetime import datetime
 from pydantic import BaseModel
 from typing import List, Optional
 
-ACCOUNTS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "accounts.json")
+from core.config import DATA_DIR
+
+ACCOUNTS_FILE = os.path.join(DATA_DIR, "accounts.json")
 
 class MuseAccount(BaseModel):
     id: str
@@ -21,6 +23,8 @@ class MuseAccount(BaseModel):
     last_checked: Optional[str] = None
     last_error: Optional[str] = None
     created_at: str
+    auth_type: str = "cookie"  # "cookie" or "otp"
+    state_dir: Optional[str] = None
 
 def parse_cookie_line(line: str) -> tuple[str, str]:
     """Parse line formatted as email|cookie or just cookie."""
@@ -39,10 +43,29 @@ def parse_cookie_line(line: str) -> tuple[str, str]:
     label = f"acc_{int(time.time() * 1000) % 100000}"
     return label, line
 
+
+def cookie_string_to_jar(cookie_str: str, domain: str = "muse.ai") -> list[dict]:
+    """Convert raw Cookie header string to structured cookies.json list."""
+    items = []
+    for pair in (cookie_str or "").split(";"):
+        if "=" in pair:
+            k, v = pair.split("=", 1)
+            name = k.strip()
+            val = v.strip()
+            if name:
+                items.append({
+                    "name": name,
+                    "value": val,
+                    "domain": domain,
+                    "path": "/",
+                })
+    return items
+
 class AccountManager:
     def __init__(self):
         self.accounts: List[MuseAccount] = []
         self._current_index = 0
+        self._pending_otp: dict = {}
         self.load()
 
     def load(self):
@@ -108,6 +131,18 @@ class AccountManager:
         self.save()
         return {"added": added, "skipped": skipped, "total": len(self.accounts)}
 
+    def add_one(self, email: str, cookie: str) -> MuseAccount:
+        acc = MuseAccount(
+            id=uuid.uuid4().hex[:12],
+            email=email or f"muse_{len(self.accounts)+1}",
+            cookie=cookie,
+            status="active",
+            created_at=datetime.now().isoformat(),
+        )
+        self.accounts.append(acc)
+        self.save()
+        return acc
+
     def delete(self, account_id: str) -> bool:
         initial_len = len(self.accounts)
         self.accounts = [a for a in self.accounts if a.id != account_id]
@@ -163,10 +198,13 @@ class AccountManager:
         else:
             acc.last_error = error or "Unknown error"
             err_lower = (error or "").lower()
-            if "quota" in err_lower or "limit" in err_lower or "hết lượt" in err_lower:
-                acc.status = "quota_limit"
-            elif "unauthorized" in err_lower or "401" in err_lower or "auth" in err_lower or "expired" in err_lower:
-                acc.status = "expired"
+            # Only change account status if the error actually pertains to the Muse account/session
+            is_muse_related = any(kw in err_lower for kw in ["muse", "metaaivm", "session", "cookie", "token", "hatch_vm", "notary"])
+            if is_muse_related:
+                if "quota" in err_lower or "hết lượt" in err_lower:
+                    acc.status = "quota_limit"
+                elif "unauthorized" in err_lower or "401" in err_lower or "auth" in err_lower or "expired" in err_lower:
+                    acc.status = "expired"
 
         self.save()
 
@@ -217,5 +255,121 @@ class AccountManager:
             else:
                 dead += 1
         return {"total": len(self.accounts), "active": active, "dead": dead}
+
+    def ensure_account_state(self, acc: MuseAccount) -> str:
+        """Ensure an account has a valid state_dir with cookies.json for MuseClient."""
+        if not acc.state_dir or not os.path.exists(acc.state_dir):
+            acc.state_dir = os.path.join(DATA_DIR, "muse_states", acc.id)
+            os.makedirs(acc.state_dir, exist_ok=True)
+            self.save()
+
+        cookie_file = os.path.join(acc.state_dir, "cookies.json")
+        if not os.path.exists(cookie_file) and acc.cookie:
+            jar = cookie_string_to_jar(acc.cookie)
+            with open(cookie_file, "w", encoding="utf-8") as f:
+                json.dump(jar, f, indent=2, ensure_ascii=False)
+        return acc.state_dir
+
+    async def request_otp(self, email: str, proxy: Optional[str] = None) -> dict:
+        """Send an OTP code to user's email via MuseAuth."""
+        email = email.strip()
+        if not email or "@" not in email:
+            return {"success": False, "error": "Email không hợp lệ"}
+
+        from core.muse_ai.auth import MuseAuth
+
+        temp_state = os.path.join(
+            DATA_DIR, "muse_states", f"temp_{int(time.time())}_{uuid.uuid4().hex[:4]}"
+        )
+        os.makedirs(temp_state, exist_ok=True)
+
+        try:
+            auth = MuseAuth(state_dir=temp_state)
+            await auth.restart_login()
+            await auth.send_otp(email)
+            self._pending_otp[email] = {
+                "auth": auth,
+                "state_dir": temp_state,
+                "created_at": time.time(),
+            }
+            return {
+                "success": True,
+                "email": email,
+                "message": f"Mã xác thực OTP đã được gửi đến {email}. Vui lòng kiểm tra hộp thư.",
+            }
+        except Exception as exc:
+            return {"success": False, "error": f"Không thể gửi OTP: {exc}"}
+
+    async def confirm_otp(self, email: str, otp_code: str) -> dict:
+        """Verify OTP code and save session into account pool."""
+        email = email.strip()
+        otp_code = otp_code.strip()
+        if not email or not otp_code:
+            return {"success": False, "error": "Vui lòng nhập đầy đủ Email và Mã OTP"}
+
+        pending = self._pending_otp.get(email)
+        if not pending:
+            return {
+                "success": False,
+                "error": "Phiên OTP không tồn tại hoặc đã hết hạn. Vui lòng bấm gửi lại mã.",
+            }
+
+        auth = pending["auth"]
+        try:
+            await auth.confirm_otp(otp_code)
+            await auth.save_account()
+            check = await auth.auth_check()
+            if not check.get("ok"):
+                return {"success": False, "error": f"Xác thực tài khoản thất bại: {check}"}
+
+            acc_id = f"acc_{uuid.uuid4().hex[:8]}"
+            final_state_dir = os.path.join(DATA_DIR, "muse_states", acc_id)
+            os.makedirs(final_state_dir, exist_ok=True)
+            cookie_file = os.path.join(final_state_dir, "cookies.json")
+            await auth.save_cookies(cookie_file)
+
+            cookie_str = ""
+            if os.path.exists(cookie_file):
+                with open(cookie_file, "r", encoding="utf-8") as f:
+                    raw_cookies = json.load(f)
+                    cookie_str = "; ".join(
+                        [
+                            f"{c['name']}={c['value']}"
+                            for c in raw_cookies
+                            if "name" in c and "value" in c
+                        ]
+                    )
+
+            existing = next((a for a in self.accounts if a.email == email), None)
+            now = datetime.now().isoformat()
+            if existing:
+                existing.cookie = cookie_str
+                existing.state_dir = final_state_dir
+                existing.status = "active"
+                existing.auth_type = "otp"
+                existing.last_error = None
+                existing.last_checked = now
+                target_acc = existing
+            else:
+                target_acc = MuseAccount(
+                    id=acc_id,
+                    email=email,
+                    cookie=cookie_str,
+                    status="active",
+                    created_at=now,
+                    auth_type="otp",
+                    state_dir=final_state_dir,
+                )
+                self.accounts.append(target_acc)
+
+            self.save()
+            self._pending_otp.pop(email, None)
+            return {
+                "success": True,
+                "account": target_acc.model_dump(),
+                "message": f"Đăng nhập thành công tài khoản {email} qua OTP!",
+            }
+        except Exception as exc:
+            return {"success": False, "error": f"Lỗi xác thực OTP: {exc}"}
 
 account_manager = AccountManager()

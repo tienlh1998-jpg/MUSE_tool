@@ -86,6 +86,10 @@
         <span class="material-symbols-outlined text-base">movie</span>
         <span>🎬 3. Tạo Video &amp; Ghép Dài</span>
       </button>
+      <a href="/canvas/" target="_blank" id="nav-canvas" class="nav-btn px-4 py-2 rounded-lg text-amber-300 hover:text-amber-200 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 flex items-center space-x-2 transition-all font-bold shadow-sm" title="Mở Bàn Dựng Canvas Kéo Thả (Node Workflow)">
+        <span class="material-symbols-outlined text-base">hub</span>
+        <span>🔀 Bàn Dựng Canvas Kéo Thả (Node Workflow)</span>
+      </a>
     </nav>
 
     <!-- Quick Stats & Settings Triggers -->
@@ -255,6 +259,17 @@
             <span class="material-symbols-outlined text-base">palette</span>
             <span>Tạo Ảnh Ngay</span>
           </button>
+
+          <!-- Live task progress (appears while generating) -->
+          <div id="img-task-panel" class="hidden rounded-xl border border-brand-accent/30 bg-brand-accent/10 p-3 space-y-2">
+            <div class="flex items-center justify-between text-[11px] font-mono">
+              <span id="img-task-msg" class="text-slate-200 truncate pr-2">Đang khởi tạo...</span>
+              <span id="img-task-pct" class="text-brand-accent font-bold">0%</span>
+            </div>
+            <div class="w-full h-1.5 rounded-full bg-black/40 overflow-hidden">
+              <div id="img-task-bar" class="h-full bg-gradient-to-r from-brand-indigo to-brand-accent transition-all duration-500" style="width:0%"></div>
+            </div>
+          </div>
         </div>
 
         <!-- RIGHT: Project Image Gallery (7 cols) -->
@@ -498,20 +513,51 @@
       </div>
 
       <div class="overflow-y-auto space-y-4 flex-1 pr-1 text-xs">
-        <!-- Bulk Add Textarea -->
-        <div class="space-y-1.5">
-          <label class="font-semibold text-slate-300">Thêm Danh Sách Cookie (Mỗi dòng 1 nick: email|cookie hoặc cookie):</label>
-          <textarea id="bulk-cookie-input" rows="4" class="w-full bg-[#181B2B] border border-white/10 rounded-xl p-3 text-slate-200 font-mono text-[11px] placeholder-slate-600 outline-none focus:border-brand-emerald resize-none" placeholder="user1@gmail.com|hatch_sess=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...&#10;user2@gmail.com|hatch_sess=..."></textarea>
-          <div class="flex justify-between items-center pt-1">
-            <button onclick="submitBulkAccounts()" class="px-4 py-2 rounded-xl bg-brand-emerald text-slate-950 font-bold text-xs shadow-md">
-              + Lưu &amp; Kích Hoạt Nick
-            </button>
-            <button onclick="checkAllAccounts()" id="btn-check-all-accs" class="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-semibold text-xs flex items-center space-x-1.5">
-              <span class="material-symbols-outlined text-sm text-brand-indigo">radar</span>
-              <span>Kiểm Tra Sống/Chết Tất Cả</span>
+        <!-- OTP Direct Login (No Cookie Needed) -->
+        <div class="p-3.5 rounded-xl bg-gradient-to-r from-emerald-950/40 to-blue-950/30 border border-emerald-500/20 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-emerald-400 flex items-center space-x-1.5">
+              <span class="material-symbols-outlined text-sm">mark_email_read</span>
+              <span>Thêm Tài Khoản Bằng Email OTP (Không Cần Cookie)</span>
+            </span>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">Tiện Lợi Nhất</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <input id="otp-email-input" type="email" placeholder="Nhập email Muse (vd: mymuse@gmail.com)..." class="flex-1 bg-[#181B2B] border border-white/10 rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 text-xs outline-none focus:border-brand-emerald" />
+            <button id="btn-send-otp" onclick="handleSendOTP()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center space-x-1 whitespace-nowrap shadow transition-all">
+              <span class="material-symbols-outlined text-sm">send</span>
+              <span>Gửi Mã OTP</span>
             </button>
           </div>
+          <div id="otp-verify-row" class="hidden flex items-center space-x-2 pt-1">
+            <input id="otp-code-input" type="text" maxlength="8" placeholder="Nhập mã OTP 6 số từ email..." class="w-48 bg-[#181B2B] border border-emerald-500/40 rounded-xl px-3 py-2 text-center text-emerald-300 font-mono tracking-widest text-sm outline-none focus:border-brand-emerald" />
+            <button id="btn-confirm-otp" onclick="handleConfirmOTP()" class="flex-1 py-2 rounded-xl bg-brand-emerald hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow flex items-center justify-center space-x-1 transition-all">
+              <span class="material-symbols-outlined text-sm">verified</span>
+              <span>Xác Nhận &amp; Thêm Vào Kho</span>
+            </button>
+          </div>
+          <div id="otp-status-msg" class="text-[11px] text-slate-400 hidden"></div>
         </div>
+
+        <!-- Bulk Add Textarea (Legacy/Manual Option) -->
+        <details class="group space-y-1.5 border border-white/5 rounded-xl p-3 bg-white/[0.02]">
+          <summary class="cursor-pointer font-semibold text-slate-400 hover:text-slate-200 text-xs flex items-center justify-between select-none">
+            <span>Hoặc dán Cookie thủ công (Dành cho tài khoản mua sẵn / Google Login)</span>
+            <span class="material-symbols-outlined text-sm group-open:rotate-180 transition-transform">expand_more</span>
+          </summary>
+          <div class="pt-2 space-y-2">
+            <textarea id="bulk-cookie-input" rows="3" class="w-full bg-[#181B2B] border border-white/10 rounded-xl p-3 text-slate-200 font-mono text-[11px] placeholder-slate-600 outline-none focus:border-brand-emerald resize-none" placeholder="user1@gmail.com|cookie1...&#10;user2@gmail.com|cookie2..."></textarea>
+            <div class="flex justify-between items-center">
+              <button onclick="submitBulkAccounts()" class="px-4 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs shadow-md">
+                + Thêm Cookie Vào Kho
+              </button>
+              <button onclick="checkAllAccounts()" id="btn-check-all-accs" class="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-semibold text-xs flex items-center space-x-1.5">
+                <span class="material-symbols-outlined text-sm text-brand-indigo">radar</span>
+                <span>Kiểm Tra Sống/Chết Tất Cả</span>
+              </button>
+            </div>
+          </div>
+        </details>
 
         <!-- Accounts Table -->
         <div class="border border-white/10 rounded-xl overflow-hidden">
@@ -548,6 +594,14 @@
 
       <div class="space-y-3 text-xs">
         <div>
+          <label class="block font-semibold text-slate-300 mb-1">Nhà Cung Cấp AI (Provider):</label>
+          <select id="cfg-provider" class="w-full bg-[#181B2B] border border-white/10 rounded-xl px-3.5 py-2.5 text-white font-mono outline-none focus:border-brand-accent">
+            <option value="custom_proxy">OpenAI-compatible / Custom Proxy (DALL-E 3, Flux, Midjourney...)</option>
+            <option value="gemini">Google Gemini / Imagen 3</option>
+            <option value="openai">OpenAI Official</option>
+          </select>
+        </div>
+        <div>
           <label class="block font-semibold text-slate-300 mb-1">Base URL (OpenAI-compatible / Proxy):</label>
           <input type="text" id="cfg-base-url" placeholder="https://api.openai-proxy.org/v1" class="w-full bg-[#181B2B] border border-white/10 rounded-xl px-3.5 py-2.5 text-white font-mono outline-none focus:border-brand-accent"/>
         </div>
@@ -556,13 +610,21 @@
           <input type="password" id="cfg-api-key" placeholder="sk-..." class="w-full bg-[#181B2B] border border-white/10 rounded-xl px-3.5 py-2.5 text-white font-mono outline-none focus:border-brand-accent"/>
         </div>
         <div>
-          <label class="block font-semibold text-slate-300 mb-1">Model Name:</label>
+          <label class="block font-semibold text-slate-300 mb-1">Model Name (LLM):</label>
           <input type="text" id="cfg-model" placeholder="claude-3-5-sonnet hoặc gpt-4o" class="w-full bg-[#181B2B] border border-white/10 rounded-xl px-3.5 py-2.5 text-white font-mono outline-none focus:border-brand-accent"/>
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Model Tạo Ảnh (Tùy chọn):</label>
+          <input type="text" id="cfg-image-model" placeholder="imagen-3.0-generate-002 hoặc dall-e-3 / flux" class="w-full bg-[#181B2B] border border-white/10 rounded-xl px-3.5 py-2.5 text-white font-mono outline-none focus:border-brand-accent"/>
         </div>
         <div>
           <label class="block font-semibold text-slate-300 mb-1">Network Proxy (Tùy chọn):</label>
           <input type="text" id="cfg-network-proxy" placeholder="http://127.0.0.1:7890" class="w-full bg-[#181B2B] border border-white/10 rounded-xl px-3.5 py-2.5 text-white font-mono outline-none focus:border-brand-accent"/>
         </div>
+        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer">
+          <input type="checkbox" id="cfg-free-fallback" class="accent-brand-accent w-4 h-4"/>
+          <span>Dùng engine ảnh miễn phí khi chưa có API Key hoặc provider lỗi</span>
+        </label>
       </div>
 
       <div class="flex justify-between items-center pt-3 border-t border-white/10">
@@ -873,35 +935,94 @@
       const btn = document.getElementById('btn-create-image');
       const origHtml = btn.innerHTML;
       btn.disabled = true;
-      btn.innerHTML = `<span class="material-symbols-outlined text-base animate-spin">progress_activity</span><span>Đang điều phối dàn nick tạo ảnh...</span>`;
+      btn.innerHTML = `<span class="material-symbols-outlined text-base animate-spin">progress_activity</span><span>Đang tạo ảnh...</span>`;
 
       try {
-        // Enqueue task via task_manager
-        const taskPayload = {
-          tasks: [{
-            project_id: activeProjectId,
-            prompt: prompt,
-            mode: "text-to-image",
-            aspect: currentImgAspect,
-            ref_image: selectedRefImageBase64
-          }]
-        };
-
         const res = await fetch('/api/tasks', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(taskPayload)
+          body: JSON.stringify({
+            tasks: [{
+              project_id: activeProjectId,
+              prompt: prompt,
+              mode: "text-to-image",
+              aspect: currentImgAspect,
+              ref_image: selectedRefImageBase64
+            }]
+          })
         });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Không gửi được yêu cầu tạo ảnh');
 
-        alert('Đã gửi yêu cầu tạo ảnh thành công! Ảnh sẽ xuất hiện trong Thư Viện sau vài giây.');
+        const task = data.tasks[0];
         document.getElementById('img-prompt-input').value = '';
-        setTimeout(loadProjectImages, 3000);
+        showImageTaskProgress(task);
+
+        const finalTask = await pollTask(task.id, (t) => showImageTaskProgress(t));
+        if (finalTask.status === 'completed') {
+          await loadProjectImages();
+          await loadProjects();
+          document.getElementById('img-task-panel').classList.add('hidden');
+        } else {
+          document.getElementById('img-task-msg').textContent = 'Lỗi: ' + (finalTask.error || 'không rõ');
+          document.getElementById('img-task-bar').style.background = '#F43F5E';
+        }
       } catch(err) {
         alert('Lỗi tạo ảnh: ' + err.message);
       } finally {
         btn.disabled = false;
         btn.innerHTML = origHtml;
       }
+    }
+
+    function showImageTaskProgress(task) {
+      const panel = document.getElementById('img-task-panel');
+      panel.classList.remove('hidden');
+      document.getElementById('img-task-msg').textContent = task.status_message || 'Đang xử lý...';
+      document.getElementById('img-task-pct').textContent = `${task.progress || 0}%`;
+      const bar = document.getElementById('img-task-bar');
+      bar.style.background = '';
+      bar.style.width = `${task.progress || 0}%`;
+    }
+
+    // Poll a task until it settles. Returns the final task object.
+    async function pollTask(taskId, onUpdate, intervalMs = 1500, timeoutMs = 300000) {
+      const started = Date.now();
+      while (Date.now() - started < timeoutMs) {
+        const res = await fetch(`/api/tasks/${taskId}`);
+        if (res.ok) {
+          const task = await res.json();
+          if (onUpdate) onUpdate(task);
+          if (task.status === 'completed' || task.status === 'failed') return task;
+        }
+        await new Promise(r => setTimeout(r, intervalMs));
+      }
+      return {status: 'failed', error: 'Quá thời gian chờ xử lý', progress: 0};
+    }
+
+    async function regenerateImage(imageId) {
+      if (!activeProjectId) return;
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/images/${imageId}/regenerate`, {method: 'POST'});
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Không thể tạo lại ảnh');
+        if (data.task) {
+          showImageTaskProgress(data.task);
+          const finalTask = await pollTask(data.task.id, showImageTaskProgress);
+          if (finalTask.status === 'completed') {
+            await loadProjectImages();
+            document.getElementById('img-task-panel').classList.add('hidden');
+          }
+        }
+      } catch(err) {
+        alert('Lỗi tạo lại ảnh: ' + err.message);
+      }
+    }
+
+    async function deleteImage(imageId) {
+      if (!confirm('Xóa ảnh này khỏi thư viện dự án?')) return;
+      await fetch(`/api/projects/${activeProjectId}/images/${imageId}`, {method: 'DELETE'});
+      loadProjectImages();
     }
 
     async function loadProjectImages() {
@@ -927,8 +1048,9 @@
         container.innerHTML = images.map(img => `
           <div class="group bg-[#181B2B] rounded-xl border border-white/10 overflow-hidden flex flex-col justify-between shadow">
             <div class="relative aspect-video bg-black overflow-hidden">
-              <img src="${img.url}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
+              <img src="${img.url}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy"/>
               <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/70 text-[10px] font-mono text-white">${img.aspect || '16:9'}</span>
+              ${img.provider ? `<span class="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-mono text-brand-emerald">${img.provider.split(':')[0]}</span>` : ''}
             </div>
             <div class="p-3 space-y-2.5">
               <p class="text-[11px] text-slate-300 line-clamp-2 font-mono">${img.prompt}</p>
@@ -936,6 +1058,12 @@
                 <button onclick="useImageForVideo('${img.url}')" class="flex-1 py-1.5 rounded-lg bg-brand-emerald hover:bg-emerald-400 text-slate-950 font-bold text-[11px] flex items-center justify-center space-x-1 shadow transition">
                   <span class="material-symbols-outlined text-xs">movie</span>
                   <span>Tạo Video</span>
+                </button>
+                <button onclick="regenerateImage('${img.id}')" class="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-brand-accent" title="Tạo lại ảnh">
+                  <span class="material-symbols-outlined text-sm">refresh</span>
+                </button>
+                <button onclick="deleteImage('${img.id}')" class="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-rose-400" title="Xóa ảnh">
+                  <span class="material-symbols-outlined text-sm">delete</span>
                 </button>
                 <a href="${img.url}" download class="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-xs" title="Tải ảnh">
                   <span class="material-symbols-outlined text-sm">download</span>
@@ -961,6 +1089,7 @@
     // Video Studio & Auto-Stitch Logic
     // ----------------------------------------------------
     let currentVideoMode = 'image-to-video';
+    let currentShots = [];
 
     function setVideoMode(mode) {
       currentVideoMode = mode;
@@ -1070,6 +1199,7 @@
         const res = await fetch(`/api/projects/${activeProjectId}`);
         const proj = await res.json();
         const shots = proj.shots || [];
+        currentShots = shots;
         const container = document.getElementById('project-shots-list');
 
         if (shots.length === 0) {
@@ -1083,7 +1213,16 @@
         }
 
         container.innerHTML = shots.map((s, idx) => {
-          const isDone = s.status === 'completed' && s.video_url;
+          const isDone = (s.status === 'completed' || s.status === 'ready') && !!s.video_url;
+          const isRendering = s.status === 'rendering';
+          const statusBadge = isDone
+            ? `<span class="px-1.5 py-0.2 rounded text-[10px] font-mono bg-brand-emerald/20 text-brand-emerald">✓ Sẵn sàng</span>`
+            : isRendering
+              ? `<span class="px-1.5 py-0.2 rounded text-[10px] font-mono bg-brand-indigo/20 text-brand-indigo flex items-center gap-1"><span class="material-symbols-outlined text-[10px] animate-spin">progress_activity</span>Đang render</span>`
+              : s.status === 'failed'
+                ? `<span class="px-1.5 py-0.2 rounded text-[10px] font-mono bg-rose-500/20 text-rose-400">✗ Lỗi</span>`
+                : `<span class="px-1.5 py-0.2 rounded text-[10px] font-mono bg-brand-amber/20 text-brand-amber">Chờ render</span>`;
+
           return `
             <div class="bg-[#181B2B] rounded-xl border border-white/10 p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div class="flex items-center space-x-3 overflow-hidden">
@@ -1093,12 +1232,11 @@
                     : `<span class="material-symbols-outlined text-slate-600">movie</span>`}
                 </div>
                 <div class="overflow-hidden space-y-0.5">
-                  <div class="flex items-center space-x-2">
+                  <div class="flex items-center space-x-2 flex-wrap gap-y-1">
                     <span class="font-bold text-white text-xs font-mono">Shot ${s.shot_number || (idx + 1)}</span>
-                    <span class="px-1.5 py-0.2 rounded text-[10px] font-mono ${isDone ? 'bg-brand-emerald/20 text-brand-emerald' : 'bg-brand-amber/20 text-brand-amber'}">
-                      ${isDone ? '✓ Hoàn thành' : 'Chờ render'}
-                    </span>
+                    ${statusBadge}
                     <span class="text-[10px] text-slate-500 font-mono">${s.duration || 7}s</span>
+                    ${s.camera_motion ? `<span class="text-[10px] text-brand-accent font-mono">${s.camera_motion}</span>` : ''}
                   </div>
                   <p class="text-xs text-slate-300 font-mono truncate max-w-md">${s.prompt}</p>
                 </div>
@@ -1106,10 +1244,23 @@
 
               <div class="flex items-center space-x-2 shrink-0">
                 ${isDone ? `
+                  <button onclick="previewShotVideo('${s.id}')" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] text-slate-200 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-xs">play_circle</span>
+                    <span>Xem</span>
+                  </button>
                   <a href="${s.video_url}" download class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] text-slate-200 flex items-center gap-1">
                     <span class="material-symbols-outlined text-xs">download</span>
                     <span>Tải clip</span>
                   </a>
+                  <button onclick="renderSingleShot('${s.id}')" class="px-2.5 py-1 rounded-lg bg-brand-accent/20 hover:bg-brand-accent/30 text-[11px] font-semibold text-brand-accent flex items-center gap-1">
+                    <span class="material-symbols-outlined text-xs">refresh</span>
+                    <span>Render Lại</span>
+                  </button>
+                ` : isRendering ? `
+                  <span class="px-2.5 py-1 rounded-lg bg-brand-indigo/20 text-[11px] text-brand-indigo flex items-center gap-1">
+                    <span class="material-symbols-outlined text-xs animate-spin">progress_activity</span>
+                    <span>Đang render...</span>
+                  </span>
                 ` : `
                   <button onclick="renderSingleShot('${s.id}')" class="px-2.5 py-1 rounded-lg bg-brand-indigo hover:bg-indigo-500 text-[11px] font-semibold text-white flex items-center gap-1">
                     <span class="material-symbols-outlined text-xs">play_arrow</span>
@@ -1128,66 +1279,96 @@
       }
     }
 
+    function previewShotVideo(shotId) {
+      const shot = currentShots.find(s => s.id === shotId);
+      if (!shot || !shot.video_url) return;
+      const box = document.getElementById('stitched-player-box');
+      const player = document.getElementById('stitched-video-player');
+      const dlBtn = document.getElementById('btn-download-full-video');
+      box.classList.remove('hidden');
+      player.src = shot.video_url;
+      dlBtn.href = shot.video_url;
+      player.play();
+      box.scrollIntoView({behavior: 'smooth', block: 'center'});
+    }
+
     async function renderAllShots() {
-      const proj = projectsList.find(p => p.id === activeProjectId);
-      if (!proj || !proj.shots || proj.shots.length === 0) {
+      if (!activeProjectId) {
+        alert('Vui lòng chọn dự án trước!');
+        return;
+      }
+      const res = await fetch(`/api/projects/${activeProjectId}`);
+      const proj = await res.json();
+      const shots = proj.shots || [];
+      if (shots.length === 0) {
         alert('Chưa có shot nào để render!');
         return;
       }
 
-      const pending = proj.shots.filter(s => s.status !== 'completed');
+      const pending = shots.filter(s => !s.video_url && s.status !== 'rendering');
       if (pending.length === 0) {
         alert('Tất cả các shot đều đã hoàn thành!');
         return;
       }
 
-      const tasksPayload = {
-        tasks: pending.map(s => ({
-          project_id: activeProjectId,
-          shot_id: s.id,
-          prompt: s.prompt,
-          mode: s.mode || "text-to-video",
-          duration: s.duration || 7,
-          source_image_path: s.source_image_url
-        }))
-      };
-
       try {
-        await fetch('/api/tasks', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(tasksPayload)
-        });
-        alert(`Đã đưa ${pending.length} shots vào hàng đợi xử lý song song qua cụm nick Muse!`);
-        setTimeout(loadProjectShots, 3000);
+        const queued = [];
+        for (const shot of pending) {
+          const req = await fetch(`/api/projects/${activeProjectId}/shots/${shot.id}/render`, {method: 'POST'});
+          const data = await req.json();
+          if (!req.ok) throw new Error(data.detail || 'Không gửi được yêu cầu render');
+          if (data.task) queued.push(data.task);
+        }
+        await loadProjectShots();
+        await trackBatchTasks(queued);
       } catch(e) {
         alert('Lỗi render: ' + e.message);
       }
     }
 
+    async function trackBatchTasks(tasks) {
+      if (!tasks.length) return;
+      const ids = tasks.map(t => t.id);
+      const deadline = Date.now() + 15 * 60 * 1000;
+      while (Date.now() < deadline) {
+        const res = await fetch(`/api/tasks?project_id=${activeProjectId}`);
+        if (res.ok) {
+          const all = await res.json();
+          const tracked = all.filter(t => ids.includes(t.id));
+          const settled = tracked.filter(t => t.status === 'completed' || t.status === 'failed');
+          await loadProjectShots();
+          await loadProjects();
+          if (settled.length === tracked.length) {
+            const failed = tracked.filter(t => t.status === 'failed');
+            if (failed.length) {
+              alert(`Render xong: ${tracked.length - failed.length} thành công, ${failed.length} lỗi.`);
+            }
+            return;
+          }
+        }
+        await new Promise(r => setTimeout(r, 2500));
+      }
+    }
+
     async function renderSingleShot(shotId) {
-      const proj = projectsList.find(p => p.id === activeProjectId);
-      const shot = (proj.shots || []).find(s => s.id === shotId);
-      if (!shot) return;
+      if (!activeProjectId) return;
+      try {
+        const res = await fetch(`/api/projects/${activeProjectId}/shots/${shotId}/render`, {method: 'POST'});
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Không gửi được yêu cầu render');
 
-      const tasksPayload = {
-        tasks: [{
-          project_id: activeProjectId,
-          shot_id: shot.id,
-          prompt: shot.prompt,
-          mode: shot.mode || "text-to-video",
-          duration: shot.duration || 7,
-          source_image_path: shot.source_image_url
-        }]
-      };
-
-      await fetch('/api/tasks', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(tasksPayload)
-      });
-      alert('Đã gửi shot tới dàn nick render!');
-      setTimeout(loadProjectShots, 2000);
+        await loadProjectShots();
+        if (data.task) {
+          const finalTask = await pollTask(data.task.id, () => {});
+          await loadProjectShots();
+          await loadProjects();
+          if (finalTask.status === 'failed') {
+            alert('Render shot thất bại: ' + (finalTask.error || 'không rõ'));
+          }
+        }
+      } catch(err) {
+        alert('Lỗi render shot: ' + err.message);
+      }
     }
 
     // ----------------------------------------------------
@@ -1209,8 +1390,6 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Lỗi ghép video');
 
-        alert(`✓ Ghép thành công ${data.shot_count} shots thành 1 video dài hoàn chỉnh!`);
-        
         // Show in player
         const playerBox = document.getElementById('stitched-player-box');
         const player = document.getElementById('stitched-video-player');
@@ -1220,8 +1399,9 @@
         player.src = data.url;
         dlBtn.href = data.url;
         player.play();
+        playerBox.scrollIntoView({behavior: 'smooth', block: 'center'});
 
-        loadProjects();
+        await loadProjects();
       } catch(err) {
         alert('Lỗi khi ghép video: ' + err.message);
       } finally {
@@ -1259,7 +1439,12 @@
 
         tbody.innerHTML = accounts.map(a => `
           <tr class="hover:bg-white/5">
-            <td class="py-2.5 px-3 text-white font-medium truncate max-w-[200px]">${a.email}</td>
+            <td class="py-2.5 px-3 text-white font-medium truncate max-w-[200px]">
+              ${a.email}
+              <span class="ml-1.5 px-1.5 py-0.5 rounded text-[9px] font-mono ${a.auth_type === 'otp' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-700 text-slate-300'}">
+                ${a.auth_type === 'otp' ? 'OTP' : 'Cookie'}
+              </span>
+            </td>
             <td class="py-2.5 px-3">
               <span class="px-2 py-0.5 rounded text-[10px] ${a.status === 'active' ? 'bg-brand-emerald/20 text-brand-emerald' : 'bg-rose-500/20 text-rose-400'}">
                 ${a.status === 'active' ? 'Live' : 'Dead/Expired'}
@@ -1274,6 +1459,91 @@
           </tr>
         `).join('');
       } catch(e) {}
+    }
+
+    async function handleSendOTP() {
+      const emailInput = document.getElementById('otp-email-input');
+      const email = emailInput.value.trim();
+      const statusMsg = document.getElementById('otp-status-msg');
+      const btn = document.getElementById('btn-send-otp');
+      const verifyRow = document.getElementById('otp-verify-row');
+
+      if (!email || !email.includes('@')) {
+        alert('Vui lòng nhập email hợp lệ!');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">refresh</span><span>Đang gửi...</span>';
+      statusMsg.className = 'text-[11px] text-amber-400 block';
+      statusMsg.textContent = 'Đang kết nối tới Muse.ai để gửi mã OTP...';
+
+      try {
+        const res = await fetch('/api/accounts/otp/send', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email})
+        });
+        const data = await res.json();
+        if (data.success) {
+          statusMsg.className = 'text-[11px] text-emerald-400 block';
+          statusMsg.textContent = data.message || 'Mã OTP đã được gửi về email của bạn!';
+          verifyRow.classList.remove('hidden');
+          document.getElementById('otp-code-input').focus();
+        } else {
+          statusMsg.className = 'text-[11px] text-rose-400 block';
+          statusMsg.textContent = data.error || 'Gửi OTP thất bại.';
+        }
+      } catch (err) {
+        statusMsg.className = 'text-[11px] text-rose-400 block';
+        statusMsg.textContent = 'Lỗi kết nối: ' + err.message;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined text-sm">send</span><span>Gửi Lại OTP</span>';
+      }
+    }
+
+    async function handleConfirmOTP() {
+      const email = document.getElementById('otp-email-input').value.trim();
+      const codeInput = document.getElementById('otp-code-input');
+      const code = codeInput.value.trim();
+      const statusMsg = document.getElementById('otp-status-msg');
+      const btn = document.getElementById('btn-confirm-otp');
+
+      if (!code) {
+        alert('Vui lòng nhập mã OTP 6 số!');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">refresh</span><span>Đang xác nhận...</span>';
+
+      try {
+        const res = await fetch('/api/accounts/otp/confirm', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email, otp_code: code})
+        });
+        const data = await res.json();
+        if (data.success) {
+          statusMsg.className = 'text-[11px] text-emerald-400 block';
+          statusMsg.textContent = data.message || 'Đăng nhập thành công!';
+          alert('🎉 ' + (data.message || 'Đã thêm tài khoản thành công!'));
+          document.getElementById('otp-email-input').value = '';
+          codeInput.value = '';
+          document.getElementById('otp-verify-row').classList.add('hidden');
+          loadAccounts();
+        } else {
+          statusMsg.className = 'text-[11px] text-rose-400 block';
+          statusMsg.textContent = data.error || 'Mã OTP không đúng hoặc đã hết hạn.';
+        }
+      } catch (err) {
+        statusMsg.className = 'text-[11px] text-rose-400 block';
+        statusMsg.textContent = 'Lỗi xác nhận: ' + err.message;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined text-sm">verified</span><span>Xác Nhận & Thêm Vào Kho</span>';
+      }
     }
 
     async function submitBulkAccounts() {
@@ -1321,30 +1591,36 @@
       try {
         const res = await fetch('/api/config');
         const cfg = await res.json();
+        document.getElementById('cfg-provider').value = cfg.ai_provider || 'custom_proxy';
         document.getElementById('cfg-base-url').value = cfg.ai_base_url || 'https://api.openai.com/v1';
         document.getElementById('cfg-api-key').value = cfg.ai_api_key || '';
         document.getElementById('cfg-model').value = cfg.ai_model || 'gpt-4o';
+        document.getElementById('cfg-image-model').value = cfg.ai_image_model || '';
         document.getElementById('cfg-network-proxy').value = cfg.ai_network_proxy || '';
+        document.getElementById('cfg-free-fallback').checked = cfg.free_image_fallback !== false;
       } catch(e) {}
     }
 
     async function saveSettings() {
       const payload = {
-        ai_provider: "custom_proxy",
+        ai_provider: document.getElementById('cfg-provider').value,
         ai_base_url: document.getElementById('cfg-base-url').value.trim(),
         ai_api_key: document.getElementById('cfg-api-key').value.trim(),
         ai_model: document.getElementById('cfg-model').value.trim(),
+        ai_image_model: document.getElementById('cfg-image-model').value.trim(),
         ai_network_proxy: document.getElementById('cfg-network-proxy').value.trim() || null,
-        concurrency: 3,
-        rotation_mode: "round_robin",
-        auto_failover: true
+        free_image_fallback: document.getElementById('cfg-free-fallback').checked
       };
 
-      await fetch('/api/config', {
+      const res = await fetch('/api/config', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload)
       });
+      if (!res.ok) {
+        alert('Lỗi lưu cấu hình!');
+        return;
+      }
       alert('Đã lưu cấu hình AI thành công!');
       closeModal('modal-settings');
     }
@@ -1353,7 +1629,7 @@
       const btn = document.getElementById('btn-ping-ai');
       btn.disabled = true;
       const payload = {
-        provider: "custom_proxy",
+        provider: document.getElementById('cfg-provider').value,
         base_url: document.getElementById('cfg-base-url').value.trim(),
         api_key: document.getElementById('cfg-api-key').value.trim(),
         model: document.getElementById('cfg-model').value.trim(),
