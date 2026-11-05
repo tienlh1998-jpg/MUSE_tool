@@ -407,23 +407,16 @@ class MuseEngine:
                 report(40, "Đang gửi prompt tạo ảnh chất lượng cao tới Muse AI...")
 
             clean_prompt = prompt.strip()
-            events = await client.chat_stream(prompt=clean_prompt, stream_timeout=35.0)
+            # 1. Fresh session to prevent inheriting old project/clown context
+            session_id = str(uuid.uuid4())
 
-            from core.muse_ai.media import extract_session_ids
-            session_id = None
-            if events:
-                for ev in events:
-                    if isinstance(ev, dict) and ev.get("session_id"):
-                        session_id = ev.get("session_id")
-                        break
-            if not session_id:
-                try:
-                    s_list = await client.sessions_list()
-                    s_ids = extract_session_ids(s_list)
-                    if s_ids:
-                        session_id = s_ids[0]
-                except Exception:
-                    pass
+            # 2. Add clear image generation directive if needed
+            if not any(kw in clean_prompt.lower() for kw in ("create", "generate", "render", "photorealistic", "image", "ảnh", "tạo ảnh")):
+                send_prompt = f"Create a photorealistic image: {clean_prompt}"
+            else:
+                send_prompt = clean_prompt
+
+            events = await client.chat_stream(prompt=send_prompt, session_id=session_id, stream_timeout=35.0)
 
             if report:
                 report(55, "Đang chờ Muse AI kết xuất ảnh độ phân giải cao...")

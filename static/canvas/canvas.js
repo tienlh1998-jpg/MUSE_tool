@@ -642,20 +642,108 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
   }
 
   function buildSceneNodesFromScript(){
-    const status=$('#scriptImportStatus'),scenes=parseSceneScript($('#scriptInput').value);
+    const status=$('#scriptImportStatus'),scriptText=$('#scriptInput').value,scenes=parseSceneScript(scriptText);
     if(!scenes.length){status.className='error';status.textContent='No scenes found. Use headings like “CẢNH 1 (0:00–0:07): Title” or “Scene 1 (0:00–0:05): Title”, then add Prompt ảnh or Prompt video.';return;}
-    createUndoSnapshot('Create nodes from script');const baseY=Math.max(40,...state.nodes.filter(node=>!node.data?.dockOnly).map(node=>node.y+360)),createdVideos=[];let made=0;
+    createUndoSnapshot('Create nodes from script (3-Stage Workflow)');
+    const baseY=Math.max(40,...state.nodes.filter(node=>!node.data?.dockOnly).map(node=>node.y+360)),createdVideos=[];
+    let made=0;
+
+    // GIAI ĐOẠN 1 – KHÓA TÀI NGUYÊN (ASSET LOCKS)
+    const preambleMatch=scriptText.search(/^\s*(?:[-*•]\s*)?(?:#{1,6}\s*)?(?:\*{1,2}\s*)?(?:(?:PHÂN\s*)?C[AẢÀÁẠÃÂẬẦẤ]NH|SCENE|SHOT|CLIP)\s*\d+/im);
+    const preamble=preambleMatch!==-1?scriptText.slice(0,preambleMatch):'';
+    const namedLocks=extractBracketLocks(preamble);
+    const charLock=namedLocks['char lock']||namedLocks['character lock']||'';
+    const setLock=namedLocks['set lock']||namedLocks.set||'';
+    const styleLock=namedLocks['style lock']||namedLocks.style||'';
+    const hasAssetLocks=Boolean(charLock||setLock);
+
+    let masterReferences=null;
+    if(hasAssetLocks){
+      let currentAssetY=baseY;
+      let charImgNode=null, setImgNode=null;
+      if(charLock){
+        const promptText=withPromptContext(charLock,[styleLock]);
+        const charPrompt=makeNode('prompt',80,currentAssetY);
+        charPrompt.data={text:promptText,sceneLabel:'GIAI ĐOẠN 1: [CHAR LOCK] Nhân vật Gốc'};
+        charImgNode=makeNode('generateImage',410,currentAssetY);
+        charImgNode.data={model:'muse-image',size:scenes[0]?.size||'16:9',status:'idle',sceneLabel:'Tạo [CHAR LOCK] Nhân vật Gốc'};
+        state.nodes.push(charPrompt,charImgNode);
+        state.edges.push({id:uid('edge'),source:charPrompt.id,sourcePort:'text',target:charImgNode.id,targetPort:'prompt'});
+        made+=2;
+        currentAssetY+=340;
+      }
+      if(setLock){
+        const promptText=withPromptContext(setLock,[styleLock]);
+        const setPrompt=makeNode('prompt',80,currentAssetY);
+        setPrompt.data={text:promptText,sceneLabel:'GIAI ĐOẠN 1: [SET LOCK] Bối cảnh Gốc'};
+        setImgNode=makeNode('generateImage',410,currentAssetY);
+        setImgNode.data={model:'muse-image',size:scenes[0]?.size||'16:9',status:'idle',sceneLabel:'Tạo [SET LOCK] Bối cảnh Gốc'};
+        state.nodes.push(setPrompt,setImgNode);
+        state.edges.push({id:uid('edge'),source:setPrompt.id,sourcePort:'text',target:setImgNode.id,targetPort:'prompt'});
+        made+=2;
+        currentAssetY+=340;
+      }
+      masterReferences=makeNode('references',740,baseY+120);
+      masterReferences.data={sceneLabel:'Tập ảnh tham chiếu gốc (Master References)'};
+      state.nodes.push(masterReferences);
+      if(charImgNode)state.edges.push({id:uid('edge'),source:charImgNode.id,sourcePort:'image',target:masterReferences.id,targetPort:'reference1'});
+      if(setImgNode)state.edges.push({id:uid('edge'),source:setImgNode.id,sourcePort:'image',target:masterReferences.id,targetPort:'reference2'});
+      made++;
+    }
+
+    const sceneBaseX=hasAssetLocks?1120:80;
     scenes.forEach((scene,index)=>{
-      const column=index%4,row=Math.floor(index/4),x=80+column*650,y=baseY+row*1100,label=`Scene ${scene.number}${scene.title?`: ${scene.title}`:''}`;
+      const column=index%4,row=Math.floor(index/4),x=sceneBaseX+column*650,y=baseY+row*1100,label=`Scene ${scene.number}${scene.title?`: ${scene.title}`:''}`;
       let imageNode=null,videoNode=null;
-      if(scene.hasImagePrompt){const prompt=makeNode('prompt',x,y);prompt.data={text:scene.imagePrompt,sceneLabel:label};const image=makeNode('generateImage',x+330,y);image.data={model:'muse-image',size:scene.size,status:'idle',sceneLabel:label};state.nodes.push(prompt,image);state.edges.push({id:uid('edge'),source:prompt.id,sourcePort:'text',target:image.id,targetPort:'prompt'});imageNode=image;made+=2;}
-      if(scene.hasVideoPrompt){const prompt=makeNode('prompt',x,y+540);prompt.data={text:scene.videoPrompt,sceneLabel:label};const requestedDuration=[5,6,8,10].reduce((best,value)=>Math.abs(value-scene.seconds)<Math.abs(best-scene.seconds)?value:best,5);videoNode=makeNode('generateVideo',x+330,y+540);videoNode.data={model:'muse-video',size:scene.size,duration:requestedDuration,continuity:createdVideos.length>0,status:'idle',sceneLabel:label};state.nodes.push(prompt,videoNode);state.edges.push({id:uid('edge'),source:prompt.id,sourcePort:'text',target:videoNode.id,targetPort:'prompt'});if(imageNode)state.edges.push({id:uid('edge'),source:imageNode.id,sourcePort:'image',target:videoNode.id,targetPort:'reference'});made+=2;createdVideos.push({node:videoNode,seconds:requestedDuration});}
-      if(scene.negative){const negative=makeNode('negativePrompt',x,y+270);negative.data={text:scene.negative,sceneLabel:label};state.nodes.push(negative);if(imageNode)state.edges.push({id:uid('edge'),source:negative.id,sourcePort:'text',target:imageNode.id,targetPort:'negative'});if(videoNode)state.edges.push({id:uid('edge'),source:negative.id,sourcePort:'text',target:videoNode.id,targetPort:'negative'});made++;}
+      // GIAI ĐOẠN 2 – TẠO ẢNH KEYFRAME
+      if(scene.hasImagePrompt){
+        const prompt=makeNode('prompt',x,y);
+        prompt.data={text:scene.imagePrompt,sceneLabel:label};
+        const image=makeNode('generateImage',x+330,y);
+        image.data={model:'muse-image',size:scene.size,status:'idle',sceneLabel:label};
+        state.nodes.push(prompt,image);
+        state.edges.push({id:uid('edge'),source:prompt.id,sourcePort:'text',target:image.id,targetPort:'prompt'});
+        if(masterReferences){
+          state.edges.push({id:uid('edge'),source:masterReferences.id,sourcePort:'image',target:image.id,targetPort:'reference'});
+        }
+        imageNode=image;
+        made+=2;
+      }
+      // GIAI ĐOẠN 3 – TẠO VIDEO (Ảnh tham chiếu gốc + Keyframe cảnh)
+      if(scene.hasVideoPrompt){
+        const prompt=makeNode('prompt',x,y+540);
+        prompt.data={text:scene.videoPrompt,sceneLabel:label};
+        const requestedDuration=[5,6,8,10].reduce((best,value)=>Math.abs(value-scene.seconds)<Math.abs(best-scene.seconds)?value:best,5);
+        videoNode=makeNode('generateVideo',x+330,y+540);
+        videoNode.data={model:'muse-video',size:scene.size,duration:requestedDuration,continuity:createdVideos.length>0,status:'idle',sceneLabel:label};
+        state.nodes.push(prompt,videoNode);
+        state.edges.push({id:uid('edge'),source:prompt.id,sourcePort:'text',target:videoNode.id,targetPort:'prompt'});
+        // Video = Keyframe cảnh làm khung đầu
+        if(imageNode)state.edges.push({id:uid('edge'),source:imageNode.id,sourcePort:'image',target:videoNode.id,targetPort:'reference'});
+        // Video = Ảnh tham chiếu gốc (Master References)
+        if(masterReferences)state.edges.push({id:uid('edge'),source:masterReferences.id,sourcePort:'image',target:videoNode.id,targetPort:'reference'});
+        made+=2;
+        createdVideos.push({node:videoNode,seconds:requestedDuration});
+      }
+      if(scene.negative){
+        const negative=makeNode('negativePrompt',x,y+270);
+        negative.data={text:scene.negative,sceneLabel:label};
+        state.nodes.push(negative);
+        if(imageNode)state.edges.push({id:uid('edge'),source:negative.id,sourcePort:'text',target:imageNode.id,targetPort:'negative'});
+        if(videoNode)state.edges.push({id:uid('edge'),source:negative.id,sourcePort:'text',target:videoNode.id,targetPort:'negative'});
+        made++;
+      }
     });
-    let references=state.nodes.find(node=>node.type==='references');if(!references){const minX=Math.min(80,...state.nodes.filter(node=>!node.data?.dockOnly).map(node=>node.x));references=makeNode('references',minX-360,baseY);references.data={};state.nodes.push(references);made++;}syncReferenceFanOut(references);
-    const timeline=ensureDockTimeline();timeline.data.clipOrder=createdVideos.map(item=>item.node.id);timeline.data.durations=timeline.data.durations||{};createdVideos.forEach(({node,seconds})=>{timeline.data.durations[node.id]=seconds;});
-    $('#scriptModal').classList.add('hidden');render();saveState();if($('#timelineDock').classList.contains('collapsed'))toggleTimeline();
-    setRunStatus(`Created ${scenes.length} scenes · ${made} nodes · ${createdVideos.length} video clips ordered on the Timeline.`,'ok');
+
+    const timeline=ensureDockTimeline();
+    timeline.data.clipOrder=createdVideos.map(item=>item.node.id);
+    timeline.data.durations=timeline.data.durations||{};
+    createdVideos.forEach(({node,seconds})=>{timeline.data.durations[node.id]=seconds;});
+    $('#scriptModal').classList.add('hidden');
+    render();
+    saveState();
+    if($('#timelineDock').classList.contains('collapsed'))toggleTimeline();
+    setRunStatus(`Created ${scenes.length} scenes (3-Stage Workflow) · ${made} nodes · ${createdVideos.length} video clips ordered on the Timeline.`,'ok');
   }
 
   function screenToCanvas(x,y){const rect=$('#viewport').getBoundingClientRect();return{x:x-rect.left,y:y-rect.top};}
