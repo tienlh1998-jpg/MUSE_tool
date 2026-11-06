@@ -53,7 +53,7 @@ class AppConfig(BaseModel):
     strict_ai_video: bool = False if IS_ISOLATED else True
 
     # Muse Engine settings
-    concurrency: int = 3
+    concurrency: int = 1
     rotation_mode: str = "round_robin"  # "round_robin", "least_used"
     auto_failover: bool = True
     auto_download: bool = True

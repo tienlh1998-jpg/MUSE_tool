@@ -177,7 +177,8 @@ class TaskManager:
         if recovered:
             print(f"[TaskManager] Da khoi phuc {recovered} task vao hang doi.")
 
-        concurrency = max(1, min(int(cfg.concurrency or 1), 10))
+        # Strictly sequential worker loop (concurrency=1) to prevent overloading Muse AI
+        concurrency = max(1, min(int(cfg.concurrency or 1), 1))
         for _ in range(concurrency):
             worker = asyncio.create_task(self._worker_loop(cfg))
             self._workers.append(worker)
@@ -247,6 +248,7 @@ class TaskManager:
                 ref_image_base64=task.ref_image,
                 source_image_path=task.source_image_path,
                 ref_images=getattr(task, "ref_images", None) or ([task.ref_image] if task.ref_image else None),
+                project_id=task.project_id,
                 on_progress=progress_cb,
             )
         except Exception as exc:

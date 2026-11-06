@@ -2323,6 +2323,14 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
               // Priority: Dedicated shot reference image ALWAYS takes precedence over previous frame!
               const sourceImage = directImage || continuityStartFrame?.url || (n.data.source_image_url || null);
 
+              // Require keyframe to be ready if wired to a Generate Image node
+              const keyframeSrc = getIncoming(n.id, 'reference')
+                .map(edge => nodeById(edge.source))
+                .find(src => src && src.type === 'generateImage');
+              if (keyframeSrc && !keyframeSrc.data?.asset?.url) {
+                throw new Error(`Node [${n.data.customName || 'Tạo Video'}] cần ảnh từ [${keyframeSrc.data.customName || 'Tạo Ảnh Keyframe'}]. Vui lòng bấm 'Tạo Ảnh' trước hoặc bấm 'Chạy Workflow' để hệ thống tự tạo theo thứ tự!`);
+              }
+
               setRunStatus(`Tạo video [${n.id}]: Đang gửi lệnh render tới backend...`, 'warn');
               const res = await fetch('/api/render-shot', {
                 method: 'POST',

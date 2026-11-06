@@ -32,6 +32,34 @@ from PIL import Image, ImageOps
 from core.config import AppConfig
 from core.image_engine import ImageEngine, ImageGenerationError, normalise_aspect
 
+# Global mutex lock to strictly serialize Muse AI calls per account
+_MUSE_ACCOUNT_LOCK: Optional[asyncio.Lock] = None
+_PROJECT_MUSE_SESSIONS: Dict[str, str] = {}
+
+
+def _get_muse_account_lock() -> asyncio.Lock:
+    global _MUSE_ACCOUNT_LOCK
+    try:
+        current_loop = asyncio.get_running_loop()
+    except RuntimeError:
+        current_loop = None
+    if _MUSE_ACCOUNT_LOCK is None or getattr(_MUSE_ACCOUNT_LOCK, "_loop", None) != current_loop:
+        _MUSE_ACCOUNT_LOCK = asyncio.Lock()
+    return _MUSE_ACCOUNT_LOCK
+
+
+def get_or_create_muse_session(project_id: Optional[str] = None) -> str:
+    key = (project_id or "").strip() or "muse_studio_main"
+    if key not in _PROJECT_MUSE_SESSIONS:
+        _PROJECT_MUSE_SESSIONS[key] = str(uuid.uuid4())
+    return _PROJECT_MUSE_SESSIONS[key]
+
+
+def reset_muse_session(project_id: Optional[str] = None) -> str:
+    key = (project_id or "").strip() or "muse_studio_main"
+    _PROJECT_MUSE_SESSIONS[key] = str(uuid.uuid4())
+    return _PROJECT_MUSE_SESSIONS[key]
+
 
 class MuseAuthError(Exception):
     """The provided Muse session cookie is expired/invalid (HTTP 401)."""
@@ -144,6 +172,7 @@ class MuseEngine:
         source_image_path: Optional[str] = None,
         ref_images: Optional[List[str]] = None,
         state_dir: Optional[str] = None,
+        project_id: Optional[str] = None,
         on_progress=None,
     ) -> Dict[str, Any]:
         aspect = normalise_aspect(aspect)
@@ -187,6 +216,7 @@ class MuseEngine:
                     prompt=prompt,
                     aspect=aspect,
                     ref_images=resolved_ref_paths if resolved_ref_paths else None,
+                    project_id=project_id,
                     report=report,
                 )
                 if muse_img:
@@ -214,17 +244,15 @@ class MuseEngine:
                 raise
 
         # ---------------- Video modes ----------------
-        source_path = await self._resolve_source_image(
-            source_image_path=source_image_path,
-            ref_image_base64=ref_image_base64,
-            prompt=prompt,
-            aspect=aspect,
-            cookie=cookie,
-            state_dir=state_dir,
-            report=report,
-        )
+        # 1. Resolve source image path if directly specified or uploaded
+        source_path = None
+        candidate = (source_image_path or "").strip()
+        if candidate:
+            source_path = await self._resolve_image_to_local_path(candidate)
+        if not source_path and ref_image_base64:
+            source_path = await self._resolve_image_to_local_path(ref_image_base64)
 
-        # Attempt rendering with real Muse AI via WebSocket if session is available
+        # 2. Render directly with Muse AI (one single request, native text-to-video or image-to-video)
         muse_video_path = None
         if has_session:
             report(45, "Đang kết nối WebSocket tạo video từ máy chủ Muse AI...")
@@ -234,6 +262,7 @@ class MuseEngine:
                 prompt=prompt,
                 source_image=source_path,
                 ref_images=ref_images or ([ref_image_base64] if ref_image_base64 and ref_image_base64 != source_path else None),
+                project_id=project_id,
                 report=report,
             )
 
@@ -247,6 +276,18 @@ class MuseEngine:
                 raise RuntimeError("Máy chủ Muse AI không thể render video cho shot này (quá tải hoặc timeout). Vui lòng bấm 'Tạo lại' để Muse AI sinh video chuyển động thật!")
             motion = detect_camera_motion(prompt)
             report(55, f"Đang render chuyển động camera ({motion})...")
+
+            # Local FFmpeg requires a physical keyframe to pan/zoom
+            if not source_path or not os.path.exists(source_path):
+                source_path = await self._resolve_source_image(
+                    source_image_path=source_image_path,
+                    ref_image_base64=ref_image_base64,
+                    prompt=prompt,
+                    aspect=aspect,
+                    cookie=cookie,
+                    state_dir=state_dir,
+                    report=report,
+                )
 
             filename = f"video_{int(time.time())}_{uuid.uuid4().hex[:6]}.mp4"
             local_path = os.path.join(self.downloads_dir, filename)
@@ -457,160 +498,168 @@ class MuseEngine:
         prompt: str,
         aspect: str = "16:9",
         ref_images: Optional[List[str]] = None,
+        project_id: Optional[str] = None,
+        session_id: Optional[str] = None,
         report=None,
     ) -> Optional[Dict[str, Any]]:
-        client = None
-        auth = None
-        try:
-            from core.muse_ai.auth import MuseAuth
-            from core.muse_ai.client import MuseClient
-            from core.account_manager import cookie_string_to_jar
-            from core.config import DATA_DIR
-            from core.image_engine import ASPECT_SIZES
+        # Enforce strict serial execution on the Muse account
+        lock = _get_muse_account_lock()
+        async with lock:
+            client = None
+            auth = None
+            try:
+                from core.muse_ai.auth import MuseAuth
+                from core.muse_ai.client import MuseClient
+                from core.account_manager import cookie_string_to_jar
+                from core.config import DATA_DIR
+                from core.image_engine import ASPECT_SIZES
 
-            effective_state = state_dir
-            if not effective_state or not os.path.exists(effective_state):
-                temp_state = os.path.join(
-                    DATA_DIR, "muse_states", f"img_run_{int(time.time())}_{uuid.uuid4().hex[:4]}"
-                )
-                os.makedirs(temp_state, exist_ok=True)
-                cookie_file = os.path.join(temp_state, "cookies.json")
-                jar = cookie_string_to_jar(cookie)
-                with open(cookie_file, "w", encoding="utf-8") as f:
-                    json.dump(jar, f, indent=2, ensure_ascii=False)
-                effective_state = temp_state
+                effective_state = state_dir
+                if not effective_state or not os.path.exists(effective_state):
+                    temp_state = os.path.join(
+                        DATA_DIR, "muse_states", f"img_run_{int(time.time())}_{uuid.uuid4().hex[:4]}"
+                    )
+                    os.makedirs(temp_state, exist_ok=True)
+                    cookie_file = os.path.join(temp_state, "cookies.json")
+                    jar = cookie_string_to_jar(cookie)
+                    with open(cookie_file, "w", encoding="utf-8") as f:
+                        json.dump(jar, f, indent=2, ensure_ascii=False)
+                    effective_state = temp_state
 
-            auth = MuseAuth(state_dir=effective_state)
-            cookie_path = os.path.join(effective_state, "cookies.json")
-            if os.path.exists(cookie_path):
-                await auth.load_cookies(cookie_path)
+                auth = MuseAuth(state_dir=effective_state)
+                cookie_path = os.path.join(effective_state, "cookies.json")
+                if os.path.exists(cookie_path):
+                    await auth.load_cookies(cookie_path)
 
-            client = MuseClient(auth=auth, state_dir=effective_state)
-            if report:
-                report(30, "Đang kết nối WebSocket Noise tới tài khoản Muse AI...")
-            await client.connect()
-
-            # Resolve reference image paths to attach to Muse AI
-            valid_ref_paths = []
-            if ref_images:
-                for img in ref_images:
-                    lp = await self._resolve_image_to_local_path(img)
-                    if lp and os.path.exists(lp) and lp not in valid_ref_paths:
-                        valid_ref_paths.append(lp)
-
-            if report:
-                if valid_ref_paths:
-                    report(38, f"Đang gửi prompt kèm {len(valid_ref_paths)} ảnh tham chiếu gốc tới Muse AI...")
-                else:
-                    report(38, "Đang gửi prompt tạo ảnh chất lượng cao tới Muse AI...")
-
-            clean_prompt = prompt.strip()
-            # 1. Fresh session to prevent inheriting old project/clown context
-            session_id = str(uuid.uuid4())
-
-            # 2. Add clear image generation directive if needed
-            if not any(kw in clean_prompt.lower() for kw in ("create", "generate", "render", "photorealistic", "image", "ảnh", "tạo ảnh")):
-                send_prompt = f"Create a photorealistic image: {clean_prompt}"
-            else:
-                send_prompt = clean_prompt
-
-            events = await client.chat_stream(
-                prompt=send_prompt,
-                images=valid_ref_paths or None,
-                session_id=session_id,
-                stream_timeout=35.0,
-            )
-
-            # Check if chat_stream already yielded image presentation events
-            extracted = self._extract_image_refs(events)
-
-            if not extracted:
+                client = MuseClient(auth=auth, state_dir=effective_state)
                 if report:
-                    report(50, "Đang chờ Muse AI kết xuất ảnh độ phân giải cao...")
+                    report(30, "Đang kết nối WebSocket Noise tới tài khoản Muse AI...")
+                await client.connect()
 
-                timeout = 180.0  # 3 minutes for high-detail / peak queue renders
-                start_time = time.time()
-                deadline = start_time + timeout
-                while time.time() < deadline:
-                    await asyncio.sleep(2.5)
-                    elapsed = time.time() - start_time
-                    pct = min(88, int(48 + (elapsed / 120.0) * 40))
+                # Resolve reference image paths to attach to Muse AI
+                valid_ref_paths = []
+                if ref_images:
+                    for img in ref_images:
+                        lp = await self._resolve_image_to_local_path(img)
+                        if lp and os.path.exists(lp) and lp not in valid_ref_paths:
+                            valid_ref_paths.append(lp)
+
+                if report:
+                    if valid_ref_paths:
+                        report(38, f"Đang gửi prompt kèm {len(valid_ref_paths)} ảnh tham chiếu gốc tới Muse AI...")
+                    else:
+                        report(38, "Đang gửi prompt tạo ảnh chất lượng cao tới Muse AI...")
+
+                clean_prompt = prompt.strip()
+                # Use persistent project session to keep all project shots in one chat
+                effective_session = session_id or get_or_create_muse_session(project_id)
+
+                # Add clear image generation directive if needed
+                if not any(kw in clean_prompt.lower() for kw in ("create", "generate", "render", "photorealistic", "image", "ảnh", "tạo ảnh")):
+                    send_prompt = f"Create a photorealistic image: {clean_prompt}"
+                else:
+                    send_prompt = clean_prompt
+
+                events = await client.chat_stream(
+                    prompt=send_prompt,
+                    images=valid_ref_paths or None,
+                    session_id=effective_session,
+                    stream_timeout=35.0,
+                )
+
+                # Check if chat_stream already yielded image presentation events
+                extracted = self._extract_image_refs(events)
+
+                if not extracted:
                     if report:
-                        report(pct, f"Đang chờ Muse AI kết xuất ảnh độ phân giải cao ({int(elapsed)}s)...")
+                        report(50, "Đang chờ Muse AI kết xuất ảnh độ phân giải cao...")
 
-                    try:
-                        h = await client.history(session_id=session_id, limit=30)
-                        events_list = h.get("result", {}).get("chat_events", []) if isinstance(h, dict) else []
-                        extracted = self._extract_image_refs(events_list)
-                        if extracted:
+                    timeout = 180.0  # 3 minutes for high-detail / peak queue renders
+                    start_time = time.time()
+                    deadline = start_time + timeout
+                    while time.time() < deadline:
+                        await asyncio.sleep(2.5)
+                        elapsed = time.time() - start_time
+                        pct = min(88, int(48 + (elapsed / 120.0) * 40))
+                        if report:
+                            report(pct, f"Đang chờ Muse AI kết xuất ảnh độ phân giải cao ({int(elapsed)}s)...")
+
+                        try:
+                            h = await client.history(session_id=effective_session, limit=30)
+                            events_list = h.get("result", {}).get("chat_events", []) if isinstance(h, dict) else []
+                            extracted = self._extract_image_refs(events_list)
+                            if extracted:
+                                break
+                        except Exception as poll_err:
+                            print(f"[MuseEngine] Image poll error: {poll_err}")
+
+                found_image_data = None
+                if extracted:
+                    for raw_path, img_url in extracted:
+                        if raw_path:
+                            if report:
+                                report(90, "Đang tải ảnh gốc từ Muse AI qua WebSocket...")
+                            try:
+                                found_image_data = await client._fs().raw(raw_path)
+                            except Exception as fs_err:
+                                print(f"[MuseEngine] _fs().raw failed for {raw_path}: {fs_err}")
+                                found_image_data = None
+                        if not found_image_data and img_url:
+                            if report:
+                                report(90, "Đang tải ảnh từ đường dẫn Muse CDN...")
+                            try:
+                                timeout_dl = httpx.Timeout(60.0, connect=15.0)
+                                async with httpx.AsyncClient(timeout=timeout_dl, follow_redirects=True, proxy=self.cfg.ai_network_proxy) as hc:
+                                    dl_resp = await hc.get(img_url)
+                                    if dl_resp.status_code == 200 and dl_resp.content:
+                                        found_image_data = dl_resp.content
+                            except Exception as dl_err:
+                                print(f"[MuseEngine] CDN download failed: {dl_err}")
+                        if found_image_data:
                             break
-                    except Exception as poll_err:
-                        print(f"[MuseEngine] Image poll error: {poll_err}")
 
-            found_image_data = None
-            if extracted:
-                for raw_path, img_url in extracted:
-                    if raw_path:
-                        if report:
-                            report(90, "Đang tải ảnh gốc từ Muse AI qua WebSocket...")
-                        try:
-                            found_image_data = await client._fs().raw(raw_path)
-                        except Exception as fs_err:
-                            print(f"[MuseEngine] _fs().raw failed for {raw_path}: {fs_err}")
-                            found_image_data = None
-                    if not found_image_data and img_url:
-                        if report:
-                            report(90, "Đang tải ảnh từ đường dẫn Muse CDN...")
-                        try:
-                            timeout_dl = httpx.Timeout(60.0, connect=15.0)
-                            async with httpx.AsyncClient(timeout=timeout_dl, follow_redirects=True, proxy=self.cfg.ai_network_proxy) as hc:
-                                dl_resp = await hc.get(img_url)
-                                if dl_resp.status_code == 200 and dl_resp.content:
-                                    found_image_data = dl_resp.content
-                        except Exception as dl_err:
-                            print(f"[MuseEngine] CDN download failed: {dl_err}")
-                    if found_image_data:
-                        break
+                if not found_image_data:
+                    print(f"[MuseEngine] Không tìm thấy ảnh trả về từ Muse AI trong 180s.")
+                    return None
 
-            if not found_image_data:
-                print(f"[MuseEngine] Không tìm thấy ảnh trả về từ Muse AI trong 180s.")
+                if report:
+                    report(95, "Đang chuẩn hóa tỷ lệ khung hình...")
+
+                target_size = ASPECT_SIZES.get(aspect, (1280, 720))
+                img_obj = Image.open(io.BytesIO(found_image_data))
+                if img_obj.mode in ("RGBA", "P"):
+                    img_obj = img_obj.convert("RGB")
+
+                img_resized = ImageOps.fit(img_obj, target_size, method=Image.Resampling.LANCZOS)
+                filename = f"muse_img_{int(time.time())}_{uuid.uuid4().hex[:6]}.png"
+                images_dir = os.path.join(self.downloads_dir, "images")
+                os.makedirs(images_dir, exist_ok=True)
+                local_path = os.path.join(images_dir, filename)
+                img_resized.save(local_path, format="PNG", quality=95)
+
+                # Rest briefly to let Muse server finalize before releasing lock
+                await asyncio.sleep(2.5)
+
+                return {
+                    "status": "completed",
+                    "filename": filename,
+                    "local_path": local_path,
+                    "url": f"/downloads/images/{filename}",
+                    "aspect": aspect,
+                    "width": target_size[0],
+                    "height": target_size[1],
+                    "prompt": prompt,
+                    "engine": "muse_ai",
+                }
+            except Exception as exc:
+                print(f"[MuseEngine] Tạo ảnh Muse AI thất bại ({exc}); chuyển sang fallback.")
                 return None
-
-            if report:
-                report(95, "Đang chuẩn hóa tỷ lệ khung hình...")
-
-            target_size = ASPECT_SIZES.get(aspect, (1280, 720))
-            img_obj = Image.open(io.BytesIO(found_image_data))
-            if img_obj.mode in ("RGBA", "P"):
-                img_obj = img_obj.convert("RGB")
-
-            img_resized = ImageOps.fit(img_obj, target_size, method=Image.Resampling.LANCZOS)
-            filename = f"muse_img_{int(time.time())}_{uuid.uuid4().hex[:6]}.png"
-            images_dir = os.path.join(self.downloads_dir, "images")
-            os.makedirs(images_dir, exist_ok=True)
-            local_path = os.path.join(images_dir, filename)
-            img_resized.save(local_path, format="PNG", quality=95)
-
-            return {
-                "status": "completed",
-                "filename": filename,
-                "local_path": local_path,
-                "url": f"/downloads/images/{filename}",
-                "aspect": aspect,
-                "width": target_size[0],
-                "height": target_size[1],
-                "prompt": prompt,
-                "engine": "muse_ai",
-            }
-        except Exception as exc:
-            print(f"[MuseEngine] Tạo ảnh Muse AI thất bại ({exc}); chuyển sang fallback.")
-            return None
-        finally:
-            if client:
-                try:
-                    await client.close()
-                except Exception:
-                    pass
+            finally:
+                if client:
+                    try:
+                        await client.close()
+                    except Exception:
+                        pass
 
     def _resolve_local_media_path(self, path_or_url: str) -> Optional[str]:
         if not path_or_url:
@@ -631,78 +680,90 @@ class MuseEngine:
         prompt: str = "",
         source_image: Optional[str] = None,
         ref_images: Optional[List[str]] = None,
+        project_id: Optional[str] = None,
+        session_id: Optional[str] = None,
         report=None,
     ) -> Optional[str]:
-        client = None
-        auth = None
-        try:
-            from core.muse_ai.auth import MuseAuth
-            from core.muse_ai.client import MuseClient
-            from core.account_manager import cookie_string_to_jar
-            from core.config import DATA_DIR
+        # Enforce strict serial execution on the Muse account
+        lock = _get_muse_account_lock()
+        async with lock:
+            client = None
+            auth = None
+            try:
+                from core.muse_ai.auth import MuseAuth
+                from core.muse_ai.client import MuseClient
+                from core.account_manager import cookie_string_to_jar
+                from core.config import DATA_DIR
 
-            effective_state = state_dir
-            if not effective_state or not os.path.exists(effective_state):
-                temp_state = os.path.join(
-                    DATA_DIR, "muse_states", f"run_{int(time.time())}_{uuid.uuid4().hex[:4]}"
+                effective_state = state_dir
+                if not effective_state or not os.path.exists(effective_state):
+                    temp_state = os.path.join(
+                        DATA_DIR, "muse_states", f"run_{int(time.time())}_{uuid.uuid4().hex[:4]}"
+                    )
+                    os.makedirs(temp_state, exist_ok=True)
+                    cookie_file = os.path.join(temp_state, "cookies.json")
+                    jar = cookie_string_to_jar(cookie)
+                    with open(cookie_file, "w", encoding="utf-8") as f:
+                        json.dump(jar, f, indent=2, ensure_ascii=False)
+                    effective_state = temp_state
+
+                auth = MuseAuth(state_dir=effective_state)
+                cookie_file = os.path.join(effective_state, "cookies.json")
+                if os.path.exists(cookie_file):
+                    await auth.load_cookies(cookie_file)
+
+                client = MuseClient(auth=auth, state_dir=effective_state)
+                if report:
+                    report(48, "Đang kết nối WebSocket tạo video từ máy chủ Muse AI...")
+                await client.connect()
+
+                if report:
+                    report(55, "Đang gửi prompt và ảnh sang Muse AI...")
+
+                images = [source_image] if source_image and os.path.exists(source_image) else []
+                if ref_images:
+                    for rf in ref_images:
+                        if not rf:
+                            continue
+                        local_rf = self._resolve_local_media_path(rf)
+                        if local_rf and os.path.exists(local_rf) and local_rf not in images:
+                            images.append(local_rf)
+                cleaned_core = sanitize_muse_video_prompt(prompt)
+                video_prompt = cleaned_core.strip()
+                if images and not any(w in video_prompt.lower() for w in ("animate", "animation", "video")):
+                    video_prompt = f"Animate this image into video: {video_prompt}"
+
+                effective_session = session_id or get_or_create_muse_session(project_id)
+
+                res = await asyncio.wait_for(
+                    client.generate_video(
+                        prompt=video_prompt,
+                        images=images,
+                        output_dir=self.downloads_dir,
+                        session_id=effective_session,
+                        timeout=200.0,
+                        min_videos=1,
+                        download=True,
+                    ),
+                    timeout=220.0,
                 )
-                os.makedirs(temp_state, exist_ok=True)
-                cookie_file = os.path.join(temp_state, "cookies.json")
-                jar = cookie_string_to_jar(cookie)
-                with open(cookie_file, "w", encoding="utf-8") as f:
-                    json.dump(jar, f, indent=2, ensure_ascii=False)
-                effective_state = temp_state
 
-            auth = MuseAuth(state_dir=effective_state)
-            cookie_file = os.path.join(effective_state, "cookies.json")
-            if os.path.exists(cookie_file):
-                await auth.load_cookies(cookie_file)
+                # Rest briefly to let Muse server finalize before releasing lock
+                await asyncio.sleep(2.5)
 
-            client = MuseClient(auth=auth, state_dir=effective_state)
-            if report:
-                report(48, "Đang kết nối WebSocket tạo video từ máy chủ Muse AI...")
-            await client.connect()
-
-            if report:
-                report(55, "Đang gửi prompt và ảnh sang Muse AI...")
-
-            images = [source_image] if source_image and os.path.exists(source_image) else []
-            if ref_images:
-                for rf in ref_images:
-                    if not rf:
-                        continue
-                    local_rf = self._resolve_local_media_path(rf)
-                    if local_rf and os.path.exists(local_rf) and local_rf not in images:
-                        images.append(local_rf)
-            cleaned_core = sanitize_muse_video_prompt(prompt)
-            video_prompt = cleaned_core.strip()
-            if images and not any(w in video_prompt.lower() for w in ("animate", "animation", "video")):
-                video_prompt = f"Animate this image into video: {video_prompt}"
-
-            res = await asyncio.wait_for(
-                client.generate_video(
-                    prompt=video_prompt,
-                    images=images,
-                    output_dir=self.downloads_dir,
-                    timeout=200.0,
-                    min_videos=1,
-                    download=True,
-                ),
-                timeout=220.0,
-            )
-            if res.downloaded and len(res.downloaded) > 0:
-                downloaded_file = str(res.downloaded[0])
-                if os.path.exists(downloaded_file) and os.path.getsize(downloaded_file) > 1024:
-                    return downloaded_file
-        except Exception as exc:
-            print(f"[MuseEngine] MuseClient render không khả dụng ({exc}); chuyển sang fallback cục bộ.")
-        finally:
-            if client:
-                try:
-                    await client.close()
-                except Exception:
-                    pass
-        return None
+                if res.downloaded and len(res.downloaded) > 0:
+                    downloaded_file = str(res.downloaded[0])
+                    if os.path.exists(downloaded_file) and os.path.getsize(downloaded_file) > 1024:
+                        return downloaded_file
+            except Exception as exc:
+                print(f"[MuseEngine] MuseClient render không khả dụng ({exc}); chuyển sang fallback cục bộ.")
+            finally:
+                if client:
+                    try:
+                        await client.close()
+                    except Exception:
+                        pass
+            return None
 
     # ------------------------------------------------------------------
     # Muse session
