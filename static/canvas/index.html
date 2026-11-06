@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>MUSE AI MV Studio · Workflow Canvas</title>
   <link rel="icon" type="image/png" sizes="128x128" href="./icons/icon128.png" />
-  <link rel="stylesheet" href="./styles.css?v=3.5.1" />
+  <link rel="stylesheet" href="./styles.css?v=3.6.0" />
   <style>
     .back-studio-link {
       display: inline-flex;
@@ -90,6 +90,10 @@
       <input id="workflowFileInput" type="file" accept=".json,application/json" hidden />
       <button id="resetBtn" class="danger">Xóa Canvas</button>
       <button id="runBtn" class="primary" title="Chạy toàn bộ các node tạo ảnh/video theo thứ tự phụ thuộc">▶ Chạy Workflow</button>
+      <button id="autoPipelineBtn" type="button" class="accent-btn" style="background:linear-gradient(135deg, #7c3aed, #db2777);color:#fff;font-weight:700;border:none;box-shadow:0 0 14px rgba(219,39,119,0.4);display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:6px;cursor:pointer;" title="1 Phát Xong Luôn: Tự động chạy toàn bộ các node tuần tự, tự động ghép video, lồng file nhạc và burn phụ đề SRT khớp 100% thành phẩm!">
+        <span>🚀</span>
+        <span>1 Phát Xong Luôn</span>
+      </button>
     </div>
   </header>
 
@@ -166,6 +170,9 @@
       <div class="timeline-dock-actions">
         <input type="file" id="timelineAudioInput" accept="audio/*" hidden />
         <button id="timelineAddAudioBtn" type="button" class="btn-highlight-audio" title="Thêm file nhạc nền BGM (.mp3 / .wav) trực tiếp vào timeline">🎵 Thêm Audio</button>
+        <input type="file" id="timelineSrtInput" accept=".srt,.lrc,text/plain" hidden />
+        <button id="timelineAddSrtBtn" type="button" style="background:#1e293b;border:1px solid #475569;color:#e2e8f0;font-size:12px;padding:4px 8px;border-radius:6px;cursor:pointer;" title="Thêm file phụ đề (.srt / .lrc) khớp lời">💬 Thêm Phụ Đề (SRT)</button>
+        <span id="timelineSrtBadge" class="timeline-meta-badge srt-meta-badge hidden" title="Phụ đề SRT">💬 SRT</span>
         <button id="timelineImportAllBtn" type="button" title="Thêm tất cả các node Generate Video vào timeline">＋ Nhập tất cả video</button>
         <div class="timeline-output-picker">
           <button id="timelineAddVideoBtn" type="button" title="Thêm một clip video hoặc tạo phân cảnh mới">＋ Thêm clip</button>
@@ -250,11 +257,26 @@
       <p class="script-template-hint">Tải mẫu kịch bản chuẩn để điền hoặc gửi cho AI tạo theo định dạng này.</p>
       <label for="scriptInput">Kịch bản:</label>
       <textarea id="scriptInput" placeholder="CẢNH 1 (0:00 đến 0:07): Tên cảnh&#10;Khung đầu: Mô tả khung mở đầu...&#10;Khung cuối: Mô tả khung kết thúc...&#10;Diễn biến: 1. 0-2s: Diễn biến chi tiết...&#10;Prompt ảnh khung đầu: A beautiful cinematic portrait...&#10;Prompt video: Slow motion camera dolly in...&#10;Audio: Tiếng gió và đàn piano du dương..."></textarea>
+      <div class="script-media-inputs" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0;background:#141724;padding:10px 14px;border-radius:8px;border:1px solid #282d44;">
+        <div>
+          <label for="scriptAudioInput" style="font-size:12px;font-weight:600;color:#94a3b8;display:block;margin-bottom:4px;">🎵 File Audio (Nhạc / Lồng tiếng):</label>
+          <input type="file" id="scriptAudioInput" accept="audio/*" style="font-size:12px;color:#cbd5e1;width:100%;" />
+          <small id="scriptAudioInfo" style="color:#64748b;font-size:11px;display:block;margin-top:2px;">Chưa chọn audio</small>
+        </div>
+        <div>
+          <label for="scriptSrtFileInput" style="font-size:12px;font-weight:600;color:#94a3b8;display:block;margin-bottom:4px;">💬 File Phụ đề SRT (Khớp 100%):</label>
+          <input type="file" id="scriptSrtFileInput" accept=".srt,.lrc,text/plain" style="font-size:12px;color:#cbd5e1;width:100%;" />
+          <small id="scriptSrtInfo" style="color:#64748b;font-size:11px;display:block;margin-top:2px;">Chưa chọn file SRT</small>
+        </div>
+      </div>
       <div id="scriptImportStatus" role="status"></div>
-      <div class="modal-actions">
+      <div class="modal-actions" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
         <a id="downloadScriptTemplate" class="script-template-download" href="./templates/museflow-scene-script-template-vi.txt" download="MuseFlow_Scene_Script_Template_VI.txt">⇩ Tải mẫu kịch bản tiếng Việt</a>
-        <button id="cancelScriptImport" type="button">Hủy</button>
-        <button id="buildScriptNodes" type="button" class="primary">Tạo các node phân cảnh</button>
+        <div style="display:flex;gap:8px;">
+          <button id="cancelScriptImport" type="button">Hủy</button>
+          <button id="buildScriptNodes" type="button">Tạo các node phân cảnh</button>
+          <button id="buildAndRunScriptNodes" type="button" class="accent-btn" style="background:linear-gradient(135deg, #7c3aed, #db2777);color:#fff;font-weight:700;border:none;padding:7px 16px;border-radius:6px;box-shadow:0 0 10px rgba(219,39,119,0.3);cursor:pointer;" title="Tự động tạo các node phân cảnh, tự đẩy qua Muse AI render tuần tự và tự động ghép video + nhạc + SRT thành phẩm!">🚀 Tạo Node &amp; Chạy 1 Phát Xong Luôn</button>
+        </div>
       </div>
     </section>
   </div>
@@ -433,11 +455,16 @@
         </div>
       </div>
 
-      <footer class="modal-actions" style="padding:14px 20px; background:#141724; border-top:1px solid #282d44;">
+      <footer class="modal-actions" style="padding:14px 20px; background:#141724; border-top:1px solid #282d44; display:flex; justify-content:space-between; align-items:center;">
         <button id="cancelAiDirectorBtn" type="button">Hủy</button>
-        <button id="submitAiDirectorBtn" type="button" class="ai-director-btn" style="font-size:13px; padding:8px 18px;">
-          <span>✨ Phân Tích &amp; Dựng Dàn Node Tự Động</span>
-        </button>
+        <div style="display:flex; gap:10px;">
+          <button id="submitAiDirectorBtn" type="button" class="ai-director-btn" style="font-size:13px; padding:8px 18px;">
+            <span>✨ Dựng Dàn Node</span>
+          </button>
+          <button id="submitAiDirectorAutoRunBtn" type="button" class="accent-btn" style="background:linear-gradient(135deg, #7c3aed, #db2777);color:#fff;font-weight:700;border:none;font-size:13px;padding:8px 18px;border-radius:6px;box-shadow:0 0 12px rgba(219,39,119,0.35);cursor:pointer;" title="Dựng kịch bản chuẩn timecode SRT, tự động render tuần tự qua Muse AI và tự động ghép video + nhạc + phụ đề thành phẩm!">
+            <span>🚀 Dựng &amp; Chạy 1 Phát Xong Luôn</span>
+          </button>
+        </div>
       </footer>
     </div>
   </div>
@@ -546,7 +573,99 @@
     </section>
   </div>
 
+
+
+  <!-- Modal Khởi Động Quy Trình 1-Phát-Xong-Luôn -->
+  <div id="autoPipelineModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-card" style="max-width:540px;background:#10121d;border:1px solid #2e344e;border-radius:12px;padding:24px;color:#f8fafc;box-shadow:0 16px 40px rgba(0,0,0,0.6);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg, #7c3aed, #db2777);display:flex;align-items:center;justify-content:center;font-size:22px;">🚀</div>
+        <div>
+          <h2 style="margin:0;font-size:18px;font-weight:700;">Quy Trình 1-Phát-Xong-Luôn (Full Auto Produce)</h2>
+          <p style="margin:2px 0 0;font-size:12px;color:#94a3b8;">Hệ thống tự động đẩy qua Muse AI render tuần tự 100% ➔ Tự ghép Video ➔ Lồng Nhạc ➔ Burn Phụ Đề SRT.</p>
+        </div>
+      </div>
+
+      <div style="background:#141724;border:1px solid #23273c;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+          <span style="color:#94a3b8;">🎬 Tổng số phân cảnh cần tạo:</span>
+          <strong id="pipelineShotCount" style="color:#38bdf8;">0 clips</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="color:#94a3b8;">🎵 File Nhạc / Audio BGM:</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span id="pipelineAudioLabel" style="font-weight:600;color:#cbd5e1;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Chưa có</span>
+            <input type="file" id="pipelineAudioFileInput" accept="audio/*" hidden />
+            <button type="button" id="pipelineChangeAudioBtn" style="font-size:11px;padding:2px 8px;background:#282f48;color:#cbd5e1;border:none;border-radius:4px;cursor:pointer;">Đổi</button>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="color:#94a3b8;">💬 Phụ đề SRT (Khớp lời 100%):</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span id="pipelineSrtLabel" style="font-weight:600;color:#cbd5e1;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Chưa có</span>
+            <input type="file" id="pipelineSrtFileInput" accept=".srt,.lrc,text/plain" hidden />
+            <button type="button" id="pipelineChangeSrtBtn" style="font-size:11px;padding:2px 8px;background:#282f48;color:#cbd5e1;border:none;border-radius:4px;cursor:pointer;">Đổi</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#161928;border:1px solid #23273c;border-radius:8px;padding:12px;margin-bottom:18px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#e2e8f0;margin-bottom:6px;cursor:pointer;">
+          <input type="checkbox" id="pipelineOptSequential" checked disabled />
+          <span>Khóa tuần tự 100% cấp tài khoản Muse AI (chống lỗi quá tải)</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#e2e8f0;margin-bottom:6px;cursor:pointer;">
+          <input type="checkbox" id="pipelineOptStitch" checked />
+          <span>Tự động nối toàn bộ clip thành video hoàn chỉnh (Studio FFmpeg)</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#e2e8f0;cursor:pointer;">
+          <input type="checkbox" id="pipelineOptBurnSrt" checked />
+          <span>Tự động burn phụ đề SRT đẹp mắt vào video (Hardsub 1080p viền nét)</span>
+        </label>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;">
+        <button type="button" id="cancelAutoPipelineBtn" style="padding:8px 16px;background:#24283b;color:#cbd5e1;border:1px solid #373e5b;border-radius:6px;cursor:pointer;">Hủy</button>
+        <button type="button" id="confirmAutoPipelineBtn" style="padding:8px 20px;background:linear-gradient(135deg, #7c3aed, #db2777);color:#fff;font-weight:700;border:none;border-radius:6px;cursor:pointer;box-shadow:0 0 14px rgba(219,39,119,0.35);">▶ BẮT ĐẦU CHẠY 1 PHÁT XONG LUÔN</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Thành Phẩm Video Cuối Cùng -->
+  <div id="autoPipelineSuccessModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-card" style="max-width:720px;background:#0f111a;border:1px solid #2e344e;border-radius:14px;padding:22px;color:#f8fafc;box-shadow:0 20px 50px rgba(0,0,0,0.8);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="font-size:24px;">🎉</div>
+          <div>
+            <h2 style="margin:0;font-size:18px;font-weight:700;color:#38bdf8;">Video Thành Phẩm Đã Hoàn Thành 100%!</h2>
+            <p id="pipelineSuccessSubtitle" style="margin:2px 0 0;font-size:12px;color:#94a3b8;">Đã ghép tất cả các phân cảnh, lồng nhạc và hoàn tất phụ đề SRT.</p>
+          </div>
+        </div>
+        <button type="button" id="closeSuccessModalBtn" style="background:transparent;border:none;color:#94a3b8;font-size:20px;cursor:pointer;">×</button>
+      </div>
+
+      <div style="border-radius:10px;overflow:hidden;background:#000;border:1px solid #1e293b;margin-bottom:14px;">
+        <video id="pipelineSuccessPlayer" controls autoplay style="width:100%;max-height:400px;display:block;"></video>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div id="pipelineSuccessMeta" style="font-size:12px;color:#94a3b8;">
+          <span>Thời lượng: <strong>0s</strong></span> · <span>Số cảnh: <strong>0</strong></span>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <a id="pipelineDownloadBtn" href="#" download class="primary" style="padding:8px 18px;background:linear-gradient(135deg, #059669, #10b981);color:#fff;font-weight:700;border-radius:6px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+            <span>⬇️</span>
+            <span>Tải Video MP4 Về Máy</span>
+          </a>
+          <button type="button" id="pipelineCloseDoneBtn" style="padding:8px 16px;background:#1e2438;color:#cbd5e1;border:1px solid #333d5e;border-radius:6px;cursor:pointer;">Đóng</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
   <script src="./vendor/ffmpeg/ffmpeg.js"></script>
-  <script src="./canvas.js?v=3.5.2"></script>
+  <script src="./canvas.js?v=3.6.0"></script>
 </body>
 </html>
