@@ -943,3 +943,219 @@ body{grid-template-rows:58px auto minmax(0,1fr) auto}
   max-width: 170px;
   margin-top: 2px;
 }
+
+/* ==========================================================================
+   PORT LABELS: Hidden by default for clean canvas view, revealed on hover
+   ========================================================================== */
+.port-label {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.18s !important;
+  transform: scale(0.92);
+  transform-origin: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  background: rgba(18, 20, 28, 0.94) !important;
+  border-color: #3b3f52 !important;
+}
+
+/* Reveal labels when hovering over the node or port, or when dragging a wire */
+.node:hover .port-label,
+.port:hover ~ .port-label,
+.port:hover + .port-label,
+body.wire-dragging .port-label,
+.port-label.visible {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: scale(1);
+}
+
+/* Hovering directly on a specific port dot */
+.port {
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
+}
+.port:hover {
+  transform: scale(1.4) !important;
+  box-shadow: 0 0 0 4px rgba(139, 111, 255, 0.4), 0 0 14px #8b6fff !important;
+  z-index: 30 !important;
+}
+.port:hover ~ .port-label,
+.port:hover + .port-label {
+  background: #232042 !important;
+  border-color: #8b6fff !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(139, 111, 255, 0.5) !important;
+  z-index: 35 !important;
+}
+
+/* ==========================================================================
+   STYLIZED ANIMATED WIRE / EDGE EFFECTS
+   ========================================================================== */
+@keyframes wire-flow {
+  from {
+    stroke-dashoffset: 40;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes wire-pulse-glow {
+  0%, 100% { opacity: 0.3; stroke-width: 6.5px; }
+  50% { opacity: 0.65; stroke-width: 9px; }
+}
+@keyframes wire-draft-dash {
+  from { stroke-dashoffset: 28; }
+  to { stroke-dashoffset: 0; }
+}
+
+#edges {
+  overflow: visible;
+  pointer-events: none;
+}
+
+.edge-group {
+  pointer-events: none;
+}
+
+/* Layer 1: Ambient Neon Glow */
+.edge-glow {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 7px;
+  opacity: 0.35;
+  filter: blur(2.5px);
+  transition: stroke-width 0.2s ease, opacity 0.2s ease;
+}
+
+/* Layer 2: Solid Core Wire */
+.edge-core {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.6px;
+  opacity: 0.95;
+  transition: stroke-width 0.2s ease, stroke 0.2s ease, filter 0.2s ease;
+}
+
+/* Layer 3: Flowing Energy Particles / Pulse */
+.edge-flow {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.65);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8px;
+  stroke-dasharray: 6 14;
+  animation: wire-flow 1.4s linear infinite;
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+/* Layer 4: Interactive Hit Area */
+.edge-hit {
+  fill: none;
+  stroke: transparent !important;
+  stroke-width: 24px;
+  stroke-linecap: round;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+/* Color variations by data type */
+/* Text / Prompt: Vibrant Purple */
+.edge-text .edge-core { stroke: #a855f7; }
+.edge-text .edge-glow { stroke: #9333ea; }
+.edge-text .edge-flow { stroke: rgba(243, 232, 255, 0.85); }
+
+/* Negative Prompt: Coral / Rose */
+.edge-negative .edge-core { stroke: #fb7185; }
+.edge-negative .edge-glow { stroke: #e11d48; }
+.edge-negative .edge-flow { stroke: rgba(255, 228, 230, 0.85); }
+
+/* Image / References: Electric Cyan / Sky */
+.edge-image .edge-core { stroke: #38bdf8; }
+.edge-image .edge-glow { stroke: #0284c7; }
+.edge-image .edge-flow { stroke: rgba(224, 242, 254, 0.9); }
+
+/* Video: Mint / Emerald */
+.edge-video .edge-core { stroke: #34d399; }
+.edge-video .edge-glow { stroke: #059669; }
+.edge-video .edge-flow { stroke: rgba(209, 250, 229, 0.9); }
+
+/* Generic Media: Indigo */
+.edge-media .edge-core { stroke: #818cf8; }
+.edge-media .edge-glow { stroke: #4f46e5; }
+.edge-media .edge-flow { stroke: rgba(224, 231, 255, 0.85); }
+
+/* Hover State on Wire */
+.edge-group:hover .edge-core,
+.edge-hit:hover ~ .edge-core {
+  stroke: #ffffff !important;
+  stroke-width: 3.8px !important;
+  filter: drop-shadow(0 0 8px currentColor) !important;
+}
+.edge-group:hover .edge-glow,
+.edge-hit:hover ~ .edge-glow {
+  stroke-width: 11px !important;
+  opacity: 0.7 !important;
+}
+.edge-group:hover .edge-flow,
+.edge-hit:hover ~ .edge-flow {
+  stroke: #ffffff !important;
+  stroke-width: 2.2px !important;
+  animation-duration: 0.7s !important;
+}
+
+/* Active / Generating Edge State (Pulsing fast stream) */
+.edge-active .edge-flow {
+  stroke: #ffffff !important;
+  stroke-width: 2.4px !important;
+  animation: wire-flow 0.6s linear infinite !important;
+  filter: drop-shadow(0 0 6px #60a5fa) !important;
+  opacity: 1 !important;
+}
+.edge-active .edge-glow {
+  animation: wire-pulse-glow 1.2s ease-in-out infinite !important;
+}
+
+/* Selected Edge */
+.edge-selected .edge-core {
+  stroke: #f59e0b !important;
+  stroke-width: 4px !important;
+  filter: drop-shadow(0 0 10px #f59e0b) !important;
+}
+.edge-selected .edge-glow {
+  stroke: #d97706 !important;
+  stroke-width: 12px !important;
+  opacity: 0.75 !important;
+}
+.edge-selected .edge-flow {
+  stroke: #fef08a !important;
+  animation-duration: 0.6s !important;
+}
+
+/* Draft Wire while dragging */
+.edge-draft-glow {
+  fill: none;
+  stroke: #a855f7 !important;
+  stroke-width: 8px;
+  opacity: 0.45;
+  filter: blur(3px);
+}
+.edge-draft {
+  fill: none;
+  stroke: #c084fc !important;
+  stroke-width: 2.8px !important;
+  stroke-linecap: round;
+  stroke-dasharray: 8 6;
+  animation: wire-draft-dash 0.8s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.7));
+}
+.edge-draft-dot {
+  fill: #ffffff;
+  stroke: #a855f7;
+  stroke-width: 2.5px;
+  filter: drop-shadow(0 0 8px #a855f7);
+}
+
