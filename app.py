@@ -522,15 +522,21 @@ class AutoStitchAPIRequest(BaseModel):
     project_id: Optional[str] = None
     video_paths: Optional[List[str]] = None
     audio_path: Optional[str] = None
+    srt_path: Optional[str] = None
+    srt_content: Optional[str] = None
+    burn_subtitles: Optional[bool] = True
     aspect: Optional[str] = None
     output_filename: Optional[str] = None
 
 
 @app.post("/api/auto-stitch")
 def api_auto_stitch(req: AutoStitchAPIRequest):
-    """Direct video stitching endpoint for Canvas Timeline and Auto-Stitch."""
+    """Direct video stitching endpoint for Canvas Timeline and Auto-Stitch with Audio & Subtitles."""
     video_paths: List[str] = req.video_paths or []
     audio_path = req.audio_path
+    srt_path = req.srt_path
+    srt_content = req.srt_content
+    burn_subtitles = True if req.burn_subtitles is None else req.burn_subtitles
     aspect = req.aspect or "16:9"
     proj_name = "Canvas_MV"
 
@@ -543,6 +549,10 @@ def api_auto_stitch(req: AutoStitchAPIRequest):
             ).strip().replace(" ", "_") or "Project"
             if not audio_path:
                 audio_path = project_manager.resolve_media_path(proj.get("audio_path"))
+            if not srt_content and proj.get("srt_content"):
+                srt_content = proj.get("srt_content")
+            if not srt_path and proj.get("srt_path"):
+                srt_path = project_manager.resolve_media_path(proj.get("srt_path"))
             if not video_paths:
                 completed = project_manager.ordered_shot_videos(req.project_id)
                 video_paths = [s["resolved_path"] for s in completed]
@@ -552,6 +562,8 @@ def api_auto_stitch(req: AutoStitchAPIRequest):
 
     if audio_path:
         audio_path = project_manager.resolve_media_path(audio_path)
+    if srt_path:
+        srt_path = project_manager.resolve_media_path(srt_path)
 
     out_filename = req.output_filename or f"Full_MV_{proj_name}_{int(time.time())}.mp4"
     target_size = VIDEO_SIZES.get(aspect, VIDEO_SIZES["16:9"])
@@ -560,8 +572,11 @@ def api_auto_stitch(req: AutoStitchAPIRequest):
         res = video_stitcher.stitch_videos(
             video_paths=video_paths,
             audio_path=audio_path,
+            srt_path=srt_path,
+            srt_content=srt_content,
             output_filename=out_filename,
             target_size=target_size,
+            burn_subtitles=burn_subtitles,
         )
         if req.project_id:
             project_manager.set_final_video(req.project_id, res["url"], res["output_path"])
@@ -575,6 +590,7 @@ def api_auto_stitch(req: AutoStitchAPIRequest):
 ALLOWED_UPLOAD_EXT = {
     ".png", ".jpg", ".jpeg", ".webp", ".gif",
     ".mp3", ".wav", ".m4a", ".aac", ".ogg", ".mp4", ".webm",
+    ".srt", ".lrc",
 }
 
 

@@ -120,10 +120,44 @@ def test_api_render_shot_validation_and_creation(client):
 
 
 def test_api_auto_stitch_validation(client):
-    """Test POST /api/auto-stitch input validation."""
+    """Test POST /api/auto-stitch input validation and audio/srt stitching."""
     # 1. Empty video list without project rejected
     res_bad = client.post("/api/auto-stitch", json={"video_paths": []})
     assert res_bad.status_code == 400
+
+    # 2. Test auto-stitch with dummy video, audio and SRT subtitles
+    import subprocess, imageio_ffmpeg, os, time
+    exe = imageio_ffmpeg.get_ffmpeg_exe()
+    downloads_dir = "data/downloads"
+    os.makedirs(downloads_dir, exist_ok=True)
+    v_test = os.path.join(downloads_dir, f"_test_v_{int(time.time())}.mp4")
+    a_test = os.path.join(downloads_dir, f"_test_a_{int(time.time())}.m4a")
+    out_name = f"_test_final_mv_{int(time.time())}.mp4"
+
+    try:
+        subprocess.run([exe, "-y", "-f", "lavfi", "-i", "color=c=navy:s=640x360:d=1", "-c:v", "libx264", v_test], capture_output=True, check=True)
+        subprocess.run([exe, "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=1", "-c:a", "aac", a_test], capture_output=True, check=True)
+
+        srt_data = "1\n00:00:00,100 --> 00:00:00,900\n1 Phát Xong Luôn: Test phụ đề tiếng Việt\n"
+        res = client.post("/api/auto-stitch", json={
+            "video_paths": [v_test],
+            "audio_path": a_test,
+            "srt_content": srt_data,
+            "burn_subtitles": True,
+            "output_filename": out_name,
+        })
+        assert res.status_code == 200, res.text
+        data = res.json()
+        assert data["success"] is True
+        assert data["has_audio"] is True
+        assert data["has_subtitles"] is True
+        assert os.path.exists(data["output_path"])
+        assert os.path.getsize(data["output_path"]) > 1000
+    finally:
+        for p in [v_test, a_test, os.path.join(downloads_dir, out_name)]:
+            if os.path.exists(p):
+                try: os.remove(p)
+                except Exception: pass
 
 
 def test_main_studio_index_contains_canvas_button(client):

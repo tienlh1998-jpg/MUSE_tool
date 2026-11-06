@@ -308,6 +308,8 @@ class ProjectManager:
         if not url_or_path:
             return None
         value = str(url_or_path).strip()
+        if os.path.exists(value):
+            return os.path.abspath(value)
         if os.path.isabs(value):
             return value if os.path.exists(value) else None
         if value.startswith("/downloads/"):

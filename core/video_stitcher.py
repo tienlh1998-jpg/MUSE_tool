@@ -16,6 +16,7 @@ import os
 import re
 import subprocess
 import time
+import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
 import imageio_ffmpeg
@@ -34,8 +35,11 @@ class VideoStitcher:
         self,
         video_paths: List[str],
         audio_path: Optional[str] = None,
+        srt_path: Optional[str] = None,
+        srt_content: Optional[str] = None,
         output_filename: Optional[str] = None,
         target_size: Optional[Tuple[int, int]] = None,
+        burn_subtitles: bool = True,
     ) -> Dict[str, Any]:
         if not video_paths:
             raise ValueError("Không có video nào trong danh sách để ghép!")
@@ -56,26 +60,57 @@ class VideoStitcher:
         width, height = target_size or self._detect_size(valid_videos[0])
         fps = 30
 
+        # Resolve Audio
+        resolved_audio = self._resolve(audio_path) if audio_path else None
+
+        # Resolve or prepare Subtitles (.srt)
+        resolved_srt = None
+        temp_srt_path = None
+        if srt_content and srt_content.strip():
+            temp_srt_name = f"sub_{int(time.time())}_{uuid.uuid4().hex[:6]}.srt" if 'uuid' in globals() else f"sub_{int(time.time())}.srt"
+            temp_srt_path = os.path.join(self.downloads_dir, temp_srt_name)
+            with open(temp_srt_path, "w", encoding="utf-8") as f:
+                f.write(srt_content.strip() + "\n")
+            resolved_srt = temp_srt_path
+        elif srt_path:
+            resolved_srt = self._resolve(srt_path)
+
+        has_subtitles = bool(resolved_srt and os.path.exists(resolved_srt) and burn_subtitles)
+        has_audio = bool(resolved_audio and os.path.exists(resolved_audio))
+
+        # Determine intermediate joining path
         joined_path = output_path
         temp_joined = None
-        resolved_audio = self._resolve(audio_path) if audio_path else None
-        if resolved_audio and os.path.exists(resolved_audio):
+        if has_audio or has_subtitles:
             temp_joined = os.path.join(
                 self.downloads_dir, f".join_{os.getpid()}_{abs(hash(tuple(valid_videos))) % 100000}.mp4"
             )
             joined_path = temp_joined
 
         try:
+            # 1. Concat all normalised video clips
             self._concat_normalised(valid_videos, joined_path, width, height, fps)
             duration = self._probe_duration(joined_path)
 
-            if resolved_audio and os.path.exists(resolved_audio):
-                self._mux_audio(joined_path, resolved_audio, output_path)
+            # 2. Mux Audio and/or Burn Subtitles if provided
+            if has_audio or has_subtitles:
+                self._mux_audio_and_subtitles(
+                    video_path=joined_path,
+                    audio_path=resolved_audio if has_audio else None,
+                    srt_path=resolved_srt if has_subtitles else None,
+                    output_path=output_path,
+                    height=height,
+                )
                 duration = self._probe_duration(output_path)
         finally:
             if temp_joined and os.path.exists(temp_joined):
                 try:
                     os.remove(temp_joined)
+                except Exception:
+                    pass
+            if temp_srt_path and os.path.exists(temp_srt_path):
+                try:
+                    os.remove(temp_srt_path)
                 except Exception:
                     pass
 
@@ -91,7 +126,8 @@ class VideoStitcher:
             "duration": round(duration, 2),
             "width": width,
             "height": height,
-            "has_audio": bool(resolved_audio and os.path.exists(resolved_audio)),
+            "has_audio": has_audio,
+            "has_subtitles": has_subtitles,
         }
 
     # ------------------------------------------------------------------
@@ -164,42 +200,78 @@ class VideoStitcher:
         self._run(cmd, timeout=900)
 
     def _mux_audio(self, video_path: str, audio_path: str, output_path: str) -> None:
+        self._mux_audio_and_subtitles(
+            video_path=video_path,
+            audio_path=audio_path,
+            srt_path=None,
+            output_path=output_path,
+        )
+
+    def _mux_audio_and_subtitles(
+        self,
+        video_path: str,
+        output_path: str,
+        audio_path: Optional[str] = None,
+        srt_path: Optional[str] = None,
+        height: int = 1080,
+    ) -> None:
+        video_path = os.path.abspath(video_path)
+        output_path = os.path.abspath(output_path)
+        if audio_path:
+            audio_path = os.path.abspath(audio_path)
+        if srt_path:
+            srt_path = os.path.abspath(srt_path)
+
         video_duration = self._probe_duration(video_path)
-        audio_duration = self._probe_duration(audio_path)
+        audio_duration = self._probe_duration(audio_path) if audio_path else 0.0
 
-        if audio_duration > video_duration + 0.15:
-            # Loop the picture so the MV covers the whole song.
-            cmd = [
-                self.ffmpeg_exe, "-y",
-                "-stream_loop", "-1", "-i", video_path,
-                "-i", audio_path,
-                "-map", "0:v:0", "-map", "1:a:0",
-                "-c:v", "libx264", "-preset", "medium", "-crf", "18",
-                "-pix_fmt", "yuv420p",
-                "-c:a", "aac", "-b:a", "192k",
-                "-shortest",
-                "-movflags", "+faststart",
-                output_path,
-            ]
+        # Subtitle filter if srt_path provided
+        sub_filter = None
+        cwd = None
+        if srt_path and os.path.exists(srt_path):
+            font_size = max(18, int(height * 0.024))
+            sub_dir = os.path.dirname(os.path.abspath(srt_path))
+            sub_name = os.path.basename(srt_path)
+            cwd = sub_dir
+            # Style: Font size scaled to height, crisp white with black outline and subtle shadow, centered at bottom
+            style_str = f"FontSize={font_size},PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=1,Alignment=2,MarginV=35"
+            sub_filter = f"subtitles={sub_name}:force_style='{style_str}'"
+
+        cmd = [self.ffmpeg_exe, "-y"]
+
+        has_audio = bool(audio_path and os.path.exists(audio_path))
+        if has_audio and audio_duration > video_duration + 0.15:
+            # Loop video to cover the whole song
+            cmd.extend(["-stream_loop", "-1", "-i", video_path, "-i", audio_path])
+        elif has_audio:
+            cmd.extend(["-i", video_path, "-i", audio_path])
         else:
-            # Audio is shorter: pad it so no rendered shot is cut off.
-            cmd = [
-                self.ffmpeg_exe, "-y",
-                "-i", video_path,
-                "-i", audio_path,
-                "-map", "0:v:0", "-map", "1:a:0",
-                "-c:v", "copy",
-                "-c:a", "aac", "-b:a", "192k",
-                "-af", "apad",
-                "-shortest",
-                "-movflags", "+faststart",
-                output_path,
-            ]
-        self._run(cmd, timeout=900)
+            cmd.extend(["-i", video_path])
 
-    def _run(self, cmd: List[str], timeout: int = 600):
+        if sub_filter:
+            cmd.extend(["-vf", sub_filter])
+
+        if has_audio:
+            cmd.extend(["-map", "0:v:0", "-map", "1:a:0"])
+            cmd.extend(["-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p"])
+            cmd.extend(["-c:a", "aac", "-b:a", "192k"])
+            if audio_duration < video_duration - 0.15:
+                cmd.extend(["-af", "apad"])
+            cmd.append("-shortest")
+        else:
+            cmd.extend(["-map", "0:v:0"])
+            if sub_filter:
+                cmd.extend(["-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p"])
+            else:
+                cmd.extend(["-c:v", "copy"])
+            cmd.append("-an")
+
+        cmd.extend(["-movflags", "+faststart", output_path])
+        self._run(cmd, timeout=900, cwd=cwd)
+
+    def _run(self, cmd: List[str], timeout: int = 600, cwd: Optional[str] = None):
         result = subprocess.run(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=timeout
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=timeout, cwd=cwd
         )
         if result.returncode != 0:
             raise RuntimeError("FFmpeg lỗi: " + (result.stderr or "")[-800:])

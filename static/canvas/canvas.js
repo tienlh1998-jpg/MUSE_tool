@@ -231,6 +231,9 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
     notes: [],
     selectedNodeId: null,
     selectedNodeIds: [],
+    autoStitchOnComplete: false,
+    audioUrl: null,
+    srtContent: null,
     selectedEdgeIds: [],
     selectionMarquee: null,
     groupMarquee: null,
@@ -1230,6 +1233,100 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
     setRunStatus(`Đã tạo phân cảnh mới (Shot ${shotNum}) trên Canvas và đưa vào Timeline!`, 'ok');
   }
 
+
+  async function uploadAndAttachTimelineSrt(file) {
+    if (!file) return;
+    setRunStatus(`Đang đọc file phụ đề "${file.name}"...`, 'warn');
+    try {
+      const text = await file.text();
+      const node = ensureDockTimeline();
+      node.data.srtContent = text;
+      node.data.srtFilename = file.name;
+      state.srtContent = text;
+      syncTimelineDock();
+      render();
+      saveState();
+      setRunStatus(`✅ Đã nạp file phụ đề "${file.name}" khớp 100% vào Timeline!`, 'ok');
+    } catch (err) {
+      setRunStatus(`Lỗi đọc file phụ đề: ${err.message}`, 'error');
+    }
+  }
+
+  async function runAutoStitchPipeline() {
+    state.autoStitchOnComplete = false;
+    const node = ensureDockTimeline();
+    const clips = (node.data.clipOrder || [])
+      .map(id => nodeById(id))
+      .filter(c => c && c.type === 'generateVideo' && c.data?.asset?.url);
+
+    // Fallback: collect all generateVideo nodes that have generated assets
+    const finalClips = clips.length ? clips : state.nodes.filter(n => n.type === 'generateVideo' && n.data?.asset?.url);
+
+    if (!finalClips.length) {
+      setRunStatus('Không tìm thấy video nào hoàn thành để ghép!', 'error');
+      return;
+    }
+
+    setRunStatus('🚀 Đang tự động ghép video, lồng file nhạc & burn phụ đề SRT thành phẩm...', 'warn');
+
+    const activeProjectId = $('#projectSelect')?.value || null;
+    const videoUrls = finalClips.map(c => c.data.asset.url);
+    const audioPath = node.data?.audioUrl || state.audioUrl || undefined;
+    const srtContent = node.data?.srtContent || state.srtContent || undefined;
+
+    try {
+      const res = await fetch('/api/auto-stitch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: activeProjectId,
+          video_paths: videoUrls,
+          audio_path: audioPath,
+          srt_content: srtContent,
+          burn_subtitles: true,
+          aspect: finalClips[0]?.data?.size || '16:9'
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Lỗi ghép video: HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      const finalUrl = data.url;
+
+      // Show in success modal
+      const modal = $('#autoPipelineSuccessModal');
+      const player = $('#pipelineSuccessPlayer');
+      const downloadBtn = $('#pipelineDownloadBtn');
+      const meta = $('#pipelineSuccessMeta');
+      const subtitle = $('#pipelineSuccessSubtitle');
+
+      if (player) {
+        player.src = finalUrl;
+        player.load();
+        player.play().catch(() => {});
+      }
+      if (downloadBtn) {
+        downloadBtn.href = finalUrl;
+        downloadBtn.download = data.output_filename || 'Full_MV_Hoan_Thien.mp4';
+      }
+      if (meta) {
+        meta.innerHTML = `<span>Thời lượng: <strong>${data.duration || 0}s</strong></span> · <span>Số phân cảnh: <strong>${data.shot_count || finalClips.length}</strong></span> · <span>Kích thước: <strong>${data.width}x${data.height}</strong></span> ${data.has_audio ? '· <span style="color:#10b981;">🎵 Có nhạc BGM</span>' : ''} ${data.has_subtitles ? '· <span style="color:#a855f7;">💬 Đã burn SRT</span>' : ''}`;
+      }
+      if (subtitle) {
+        subtitle.textContent = `Đã ghép hoàn thiện ${finalClips.length} phân cảnh video${data.has_audio ? ' + khớp nhạc 100%' : ''}${data.has_subtitles ? ' + burn phụ đề SRT điện ảnh' : ''}!`;
+      }
+
+      if (modal) modal.classList.remove('hidden');
+      setRunStatus(`🎉 Video thành phẩm 1-Phát-Xong-Luôn đã hoàn tất thành công!`, 'ok');
+    } catch (err) {
+      setRunStatus(`Lỗi ghép video tự động: ${err.message}`, 'error');
+      alert(`Lỗi ghép video tự động: ${err.message}`);
+    }
+  }
+
   async function uploadAndAttachTimelineAudio(file) {
     if (!file) return;
     setRunStatus(`Đang tải file nhạc "${file.name}" vào Timeline...`, 'warn');
@@ -1365,6 +1462,15 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
         audioBadge.textContent = `🎵 BGM: ${node.data.audioFilename || 'Audio'} (${formatTime(node.data.audioDuration || 0)})`;
       } else {
         audioBadge.classList.add('hidden');
+      }
+    }
+    const srtBadge = $('#timelineSrtBadge');
+    if (srtBadge) {
+      if (node.data.srtContent) {
+        srtBadge.classList.remove('hidden');
+        srtBadge.textContent = `💬 SRT: ${node.data.srtFilename || 'Khớp 100%'}`;
+      } else {
+        srtBadge.classList.add('hidden');
       }
     }
 
@@ -1831,6 +1937,8 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
           project_id: activeProjectId,
           video_paths: videoUrls,
           audio_path: node.data?.audioUrl || undefined,
+          srt_content: node.data?.srtContent || undefined,
+          burn_subtitles: true,
           aspect: clips[0]?.data?.size || '16:9'
         })
       });
@@ -2425,6 +2533,9 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
         }
       }
       clearTimeout(autoSaveTimer);setRunStatus(targetId?'Node generation completed.':'Workflow completed.','ok');
+      if (state.autoStitchOnComplete) {
+        await runAutoStitchPipeline();
+      }
       // Persistence can be slow when a workflow contains large local media.
       // Never keep generation controls locked while IndexedDB/storage finishes.
       void queueWorkflowSave().catch(saveError=>{if(!state.isRunning)setRunStatus(`Generation completed, but workflow could not be saved: ${saveError?.message||String(saveError)}`,'warn');});
@@ -2611,6 +2722,109 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
       if (file) uploadAndAttachTimelineAudio(file);
     };
   }
+  const timelineAddSrtBtn = $('#timelineAddSrtBtn');
+  const timelineSrtInput = $('#timelineSrtInput');
+  if (timelineAddSrtBtn && timelineSrtInput) {
+    timelineAddSrtBtn.onclick = () => timelineSrtInput.click();
+    timelineSrtInput.onchange = () => {
+      const file = timelineSrtInput.files[0];
+      if (file) uploadAndAttachTimelineSrt(file);
+    };
+  }
+
+  // Script Modal audio and srt file attachments
+  $('#scriptAudioInput')?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      $('#scriptAudioInfo').textContent = `Đang tải: ${file.name}...`;
+      await uploadAndAttachTimelineAudio(file);
+      $('#scriptAudioInfo').textContent = `✅ Đã chọn: ${file.name}`;
+    }
+  });
+  $('#scriptSrtFileInput')?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      $('#scriptSrtInfo').textContent = `Đang đọc: ${file.name}...`;
+      await uploadAndAttachTimelineSrt(file);
+      $('#scriptSrtInfo').textContent = `✅ Đã chọn: ${file.name}`;
+    }
+  });
+
+  $('#buildAndRunScriptNodes')?.addEventListener('click', async () => {
+    buildSceneNodesFromScript();
+    const vNodes = state.nodes.filter(n => n.type === 'generateVideo');
+    if (vNodes.length > 0) {
+      state.autoStitchOnComplete = true;
+      setRunStatus(`🚀 1-Phát-Xong-Luôn: Bắt đầu chuỗi render tự động qua Muse AI (${vNodes.length} cảnh)...`, 'warn');
+      void execute();
+    }
+  });
+
+  // Dedicated Auto Pipeline Modal & Buttons
+  const autoPipelineBtn = $('#autoPipelineBtn');
+  const autoPipelineModal = $('#autoPipelineModal');
+  if (autoPipelineBtn && autoPipelineModal) {
+    autoPipelineBtn.onclick = () => {
+      const vNodes = state.nodes.filter(n => n.type === 'generateVideo');
+      if (!vNodes.length) {
+        alert('Hiện tại chưa có phân cảnh video nào trên Canvas!\n\nHãy bấm "+ Kịch bản → Nodes" hoặc "✨ AI Đạo Diễn Suno" để dựng các phân cảnh trước nhé.');
+        return;
+      }
+      const tl = ensureDockTimeline();
+      $('#pipelineShotCount').textContent = `${vNodes.length} clips`;
+      $('#pipelineAudioLabel').textContent = tl.data?.audioFilename || (tl.data?.audioUrl ? 'Đã có sẵn (100% khớp)' : 'Chưa có');
+      $('#pipelineSrtLabel').textContent = tl.data?.srtFilename || (tl.data?.srtContent ? 'Đã có sẵn (100% khớp)' : 'Chưa có');
+      autoPipelineModal.classList.remove('hidden');
+    };
+
+    $('#cancelAutoPipelineBtn')?.addEventListener('click', () => {
+      autoPipelineModal.classList.add('hidden');
+    });
+
+    $('#pipelineChangeAudioBtn')?.addEventListener('click', () => {
+      $('#pipelineAudioFileInput')?.click();
+    });
+    $('#pipelineAudioFileInput')?.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        $('#pipelineAudioLabel').textContent = `Đang tải: ${file.name}...`;
+        await uploadAndAttachTimelineAudio(file);
+        $('#pipelineAudioLabel').textContent = file.name;
+      }
+    });
+
+    $('#pipelineChangeSrtBtn')?.addEventListener('click', () => {
+      $('#pipelineSrtFileInput')?.click();
+    });
+    $('#pipelineSrtFileInput')?.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        $('#pipelineSrtLabel').textContent = `Đang đọc: ${file.name}...`;
+        await uploadAndAttachTimelineSrt(file);
+        $('#pipelineSrtLabel').textContent = file.name;
+      }
+    });
+
+    $('#confirmAutoPipelineBtn')?.addEventListener('click', () => {
+      autoPipelineModal.classList.add('hidden');
+      state.autoStitchOnComplete = true;
+      const vNodes = state.nodes.filter(n => n.type === 'generateVideo');
+      setRunStatus(`🚀 1-Phát-Xong-Luôn: Bắt đầu chuỗi render tự động qua Muse AI (${vNodes.length} cảnh)...`, 'warn');
+      void execute();
+    });
+  }
+
+  // Final Video Success Modal handlers
+  $('#closeSuccessModalBtn')?.addEventListener('click', () => {
+    const player = $('#pipelineSuccessPlayer');
+    if (player) player.pause();
+    $('#autoPipelineSuccessModal')?.classList.add('hidden');
+  });
+  $('#pipelineCloseDoneBtn')?.addEventListener('click', () => {
+    const player = $('#pipelineSuccessPlayer');
+    if (player) player.pause();
+    $('#autoPipelineSuccessModal')?.classList.add('hidden');
+  });
   $('#timelineExportBtn').onclick=exportTimelineVideo;
   $('#timelineExportStopBtn').onclick=stopTimelineExport;
   $('#timelineImportAllBtn').onclick=importAllVideosToTimeline;
@@ -2916,6 +3130,12 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
     $('#aiUseCustomProxy')?.addEventListener('change', (e) => {
       const fields = $('#aiCustomProxyFields');
       if (fields) fields.classList.toggle('hidden', !e.target.checked);
+    });
+
+    let aiDirectorAutoRunMode = false;
+    $('#submitAiDirectorAutoRunBtn')?.addEventListener('click', () => {
+      aiDirectorAutoRunMode = true;
+      $('#submitAiDirectorBtn')?.click();
     });
 
     // Submit handler
@@ -3297,6 +3517,11 @@ Kịch bản Narrative Storyboard tối ưu cho Muse AI & Veo!`
             timeline.data.audioFilename = currentAiAudio.filename;
             timeline.data.audioDuration = currentAiAudio.duration;
           }
+          if (currentAiSrt && currentAiSrt.content) {
+            timeline.data.srtContent = currentAiSrt.content;
+            timeline.data.srtFilename = currentAiSrt.filename || 'Phụ đề Suno';
+            state.srtContent = currentAiSrt.content;
+          }
           syncTimelineDock();
         }
 
@@ -3314,6 +3539,13 @@ Kịch bản Narrative Storyboard tối ưu cho Muse AI & Veo!`
         aiDirectorModal.classList.add('hidden');
 
         setRunStatus(`✨ AI Đạo Diễn đã dựng thành công ${shots.length} phân cảnh cho "${songTitle}"!`, 'ok');
+
+        if (aiDirectorAutoRunMode) {
+          aiDirectorAutoRunMode = false;
+          state.autoStitchOnComplete = true;
+          setRunStatus(`🚀 1-Phát-Xong-Luôn: Bắt đầu chuỗi render tự động qua Muse AI (${shots.length} cảnh)...`, 'warn');
+          void execute();
+        }
       } catch (err) {
         if (aiLoadingOverlay) aiLoadingOverlay.classList.add('hidden');
         alert(`Lỗi phân tích AI: ${err.message || String(err)}`);
