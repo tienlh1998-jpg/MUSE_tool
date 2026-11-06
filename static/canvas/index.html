@@ -325,8 +325,19 @@
         <!-- Cột Trái: Thông Tin Bài Hát -->
         <div class="ai-main-fields">
           <div class="ai-form-group">
-            <label for="aiSongTitle">🎵 Tên bài hát:</label>
-            <input type="text" id="aiSongTitle" placeholder="Ví dụ: Mặt Nạ Bôi Vôi" />
+            <label for="aiSongTitle">🎵 Tên dự án / Bài hát:</label>
+            <input type="text" id="aiSongTitle" placeholder="Ví dụ: Mặt Nạ Bôi Vôi / Podcast Công Nghệ / Tiểu Phẩm Hài" />
+          </div>
+
+          <div class="ai-form-group">
+            <label for="aiModeSelect">🎬 Chế độ Đạo Diễn (Smart Mode Detector):</label>
+            <select id="aiModeSelect" style="width:100%; padding:8px 12px; background:#0d0e17; border:1px solid #7c3aed; color:#e2e8f0; border-radius:6px; font-size:13px; font-weight:600;">
+              <option value="auto">⚡ Tự động nhận diện (Smart Mode Detector - Phân tích nội dung)</option>
+              <option value="MUSIC_VIDEO">🎵 Mode 1: Music Video Director (MV ca nhạc / Trình diễn / Minh họa)</option>
+              <option value="COMEDY">😂 Mode 2: Comedy Director (Video hài / Tiểu phẩm / Parody)</option>
+              <option value="PODCAST">🎙️ Mode 3: Podcast Director (Talkshow / Phỏng vấn / Đối thoại 2+ người)</option>
+              <option value="CINEMATIC_STORY">🎥 Mode 4: Cinematic Story Director (Phim ngắn / Trailer / Điện ảnh)</option>
+            </select>
           </div>
 
           
@@ -372,6 +383,8 @@
             <label for="aiGenreStyle">🎨 Style nhạc Suno đầy đủ (Paste nguyên Style Prompt từ Suno vào đây):</label>
             <textarea id="aiGenreStyle" rows="3" placeholder="Ví dụ: dark avant-garde Vietnamese theatrical folk, sarcastic Cheo clown talk-singing, dramatic raspy Hat Boi guttural vocal belt, piercing weeping Ken Bau horn solo, clashing traditional bronze gongs, rustic battle drums, eerie village satire, 96 bpm, -autotune, -western brass, -modern EDM synth..."></textarea>
             <div class="ai-chips-wrap">
+              <span class="ai-chip" data-style="professional multi-camera podcast studio, warm ambient amber lighting with teal rim light, two hosts talking and laughing, broadcast microphones Shure SM7B, 35mm shallow depth of field">🎙️ Podcast Talkshow</span>
+              <span class="ai-chip" data-style="witty satirical comedy sketch, bright modern cinematography, funny facial expressions, whip pan transitions, comedic timing, 16:9 photorealistic">😂 Hài Kịch / Tiểu Phẩm</span>
               <span class="ai-chip" data-style="dark avant-garde Vietnamese theatrical folk, sarcastic Cheo clown talk-singing, dramatic raspy Hat Boi guttural vocal belt, piercing weeping Ken Bau horn solo, clashing traditional bronze gongs, rustic battle drums, eerie village satire, 96 bpm, -autotune, -western brass, -modern EDM synth">🎭 Hề Chèo / Hát Bội Folk</span>
               <span class="ai-chip" data-style="80s synthwave, energetic, nostalgic, night drive, neon city, retro synthesizer, female vocal, 110 bpm, -modern pop">🌆 80s Synthwave</span>
               <span class="ai-chip" data-style="acoustic pop ballad, emotional sad piano, deep female vocal, rainy window, soft cello, 80 bpm, -heavy bass">☕ Acoustic Ballad</span>

@@ -3419,13 +3419,15 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
       }
 
       const useCustom = $('#aiUseCustomProxy')?.checked;
+      const selectedMode = $('#aiModeSelect')?.value || 'auto';
       const payload = {
         song_title: songTitle,
         genre_style: genreStyle,
         bpm: 'Auto (from Suno style)',
         vocal: 'Auto (from Suno style)',
         lyrics: lyrics,
-        mood: genreStyle
+        mood: genreStyle,
+        mode: selectedMode
       };
 
       // Check audio duration from file or manual input or timeline dock
@@ -3497,135 +3499,140 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
           state.selectedNodeIds = [];
         }
 
-        // 1. Create Master Info Note Card with Visual Bible & Inviolables
+        // 1. Create Master Info Note Card with Production Engine & Treatment
+        const projectInfo = data.project_info || {};
+        const creativeTreatment = data.creative_treatment || {};
+        const visualLocks = data.visual_locks || {};
+        const refLibrary = data.reference_asset_library || [];
         const visualBible = data.visual_bible || {};
-        const visualMotif = data.visual_motif || '';
+        const visualMotif = data.visual_motif || creativeTreatment.theme || creativeTreatment.concept || '';
         const refPack = data.reference_pack || {};
 
         let bibleSummary = '';
-        if (visualBible.inviolables && Array.isArray(visualBible.inviolables) && visualBible.inviolables.length) {
-          bibleSummary += `\n🔒 3 ĐIỀU BẤT BIẾN (INVIOLABLES):\n` + visualBible.inviolables.map((inv, i) => `${i+1}. ${inv}`).join('\n') + '\n';
+        const charLocks = visualLocks.char_locks || [];
+        const setLocks = visualLocks.set_locks || [];
+        const propLocks = visualLocks.prop_locks || [];
+        const styleLocks = visualLocks.style_locks || [];
+
+        if (charLocks.length) {
+          bibleSummary += `\n👤 NHÂN VẬT (CHAR LOCK):\n` + charLocks.map(c => `• [${c.id || 'CHAR'}] ${c.name || 'Nhân vật'}: ${c.description || ''}`).join('\n') + '\n';
+        } else if (visualBible.character_lock) {
+          bibleSummary += `\n👤 NHÂN VẬT: ${visualBible.character_lock}\n`;
         }
-        if (visualBible.character_lock) bibleSummary += `\n👤 NHÂN VẬT: ${visualBible.character_lock}\n`;
-        if (visualBible.wardrobe_lock) bibleSummary += `\n👔 TRANG PHỤC: ${visualBible.wardrobe_lock}\n`;
-        if (visualBible.location_lock) bibleSummary += `\n🏛️ BỐI CẢNH: ${visualBible.location_lock}\n`;
-        if (visualBible.style_lock) bibleSummary += `\n🎨 PHONG CÁCH: ${visualBible.style_lock}\n`;
+
+        if (setLocks.length) {
+          bibleSummary += `\n🏛️ BỐI CẢNH (SET LOCK):\n` + setLocks.map(s => `• [${s.id || 'SET'}] ${s.name || 'Bối cảnh'}: ${s.description || ''}`).join('\n') + '\n';
+        } else if (visualBible.location_lock) {
+          bibleSummary += `\n🏛️ BỐI CẢNH: ${visualBible.location_lock}\n`;
+        }
+
+        if (propLocks.length) {
+          bibleSummary += `\n🎭 ĐẠO CỤ (PROP LOCK):\n` + propLocks.map(p => `• [${p.id || 'PROP'}] ${p.name || 'Đạo cụ'}: ${p.description || ''}`).join('\n') + '\n';
+        }
+
+        if (styleLocks.length) {
+          bibleSummary += `\n🎨 PHONG CÁCH (STYLE LOCK):\n` + styleLocks.map(st => `• ${st.description || st.name || ''}`).join('\n') + '\n';
+        } else if (visualBible.style_lock) {
+          bibleSummary += `\n🎨 PHONG CÁCH: ${visualBible.style_lock}\n`;
+        }
+
+        const modeDisplay = projectInfo.mode_display || (projectInfo.mode ? `MODE: ${projectInfo.mode}` : 'MODE 1 — MUSIC VIDEO DIRECTOR');
 
         state.notes = state.notes || [];
         state.notes.push({
           id: uid('note'),
           x: -300,
           y: 80,
-          width: 340,
-          text: `🎬 KẾ HOẠCH ĐẠO DIỄN MV: ${songTitle}
+          width: 350,
+          text: `🎬 KẾ HOẠCH SẢN XUẤT: ${songTitle}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 CHẾ ĐỘ: ${modeDisplay}
+${creativeTreatment.concept ? `\n💡 Ý TƯỞNG (CONCEPT):\n${creativeTreatment.concept}\n` : ''}${creativeTreatment.creative_vision ? `\n👁️ TẦM NHÌN ĐẠO DIỄN:\n${creativeTreatment.creative_vision}\n` : ''}${creativeTreatment.color_palette ? `\n🎨 BẢNG MÀU ĐIỆN ẢNH:\n${creativeTreatment.color_palette}\n` : ''}
 🎭 MOTIF TRUNG TÂM:
-${visualMotif || 'Narrative Storyboard Cinema'}
+${visualMotif || 'AI Video Storyboard Cinema'}
 
-🎵 STYLE SUNO:
+🎵 STYLE / MOOD:
 ${genreStyle}
 ${bibleSummary}
 ${currentAiAudio ? `🎧 FILE NHẠC: ${currentAiAudio.filename} (${currentAiAudio.duration}s)\n` : ''}✨ TỔNG PHÂN CẢNH: ${shots.length} Shots
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Kịch bản Narrative Storyboard tối ưu cho Muse AI & Veo!`
+Kế hoạch Storyboard đa chế độ chuẩn điện ảnh!`
         });
 
         // 2. GIAI ĐOẠN 1 – KHÓA TÀI NGUYÊN GỐC (ASSET LOCKS & REFERENCES HUB)
         const colPromptX = 80;
         const colImageX = 410;
         let assetRowY = 80;
+        const createdAssetImageNodes = [];
 
-        // Extract or derive master prompts
-        const primaryCharPrompt = refPack.character_primary || refPack.character_prompt || (visualBible.character_lock ? `Cinematic portrait of ${visualBible.character_lock}, photorealistic 16:9` : "Cinematic close-up portrait of a 40-year-old gaunt Vietnamese folk clown actor, chalk-white painted lime face, smeared red lipstick smile, raw cotton ao tu than, 16:9");
-        const hasPhuOngInSong = /phú\s*ông|lão\s*phú|rich\s*man|bụng\s*phệ/i.test(lyrics + ' ' + songTitle);
-        const secondaryCharPrompt = refPack.character_secondary || (hasPhuOngInSong ? "Cinematic portrait of a 55-year-old wealthy Northern Vietnamese feudal landlord / Phu Ong, portly plump belly, arrogant double chin, wearing luxurious dark emerald green embroidered silk robe, carved ivory fan, 16:9" : "");
-        const locationPrompt = refPack.location_main || refPack.location_prompt || (visualBible.location_lock ? `Master establishing shot of ${visualBible.location_lock}, 16:9` : "Master architectural establishing shot of an ancient 19th-century Northern Vietnamese communal village courtyard (Sân Đình Làng Cổ) at midnight, mossy curved tile roof, bamboo torches, 16:9");
-        const hasPropsInSong = /mặt\s*nạ|quạt\s*nan|thau\s*đồng|nước\s*vôi/i.test(lyrics + ' ' + songTitle);
-        const propPrompt = refPack.prop_primary || (hasPropsInSong ? "Close-up macro shot of symbolic theatrical folk props: rough-carved wooden clown mask covered in flaking chalk-white paint, beside a tattered bamboo hand fan and an antique bronze water basin on damp stone floor, 16:9" : "");
+        // Dynamic generation from Reference Asset Library
+        if (Array.isArray(refLibrary) && refLibrary.length > 0) {
+          refLibrary.forEach((asset, aIdx) => {
+            const assetId = asset.asset_id || `REF_${aIdx+1}`;
+            const lockGroup = asset.lock_group || 'LOCK';
+            const assetName = asset.name || `Tài nguyên ${aIdx+1}`;
+            const assetPrompt = asset.prompt || '';
+            const assetAspect = asset.aspect || '16:9';
 
-        let masterClownNode = null;
-        let masterRichManNode = null;
-        let masterLocationNode = null;
-        let masterPropNode = null;
+            const pNode = makeNode('prompt', colPromptX, assetRowY);
+            pNode.data.text = assetPrompt;
+            pNode.data.customName = `📌 Neo: ${assetName}`;
+            pNode.data.sceneLabel = `GIAI ĐOẠN 1: [${lockGroup}] ${assetId}`;
+            state.nodes.push(pNode);
 
-        // Anchor 1: Nhân vật chính (Gã Kép Hề)
-        if (primaryCharPrompt) {
-          const pNode = makeNode('prompt', colPromptX, assetRowY);
-          pNode.data.text = primaryCharPrompt;
-          pNode.data.customName = `📌 Neo: Chân Dung Nhân Vật Chính (Gã Hề)`;
-          pNode.data.sceneLabel = `GIAI ĐOẠN 1: [CHAR LOCK] Nhân vật Gốc`;
-          state.nodes.push(pNode);
+            const imgNode = makeNode('generateImage', colImageX, assetRowY);
+            imgNode.data.model = 'muse-image';
+            imgNode.data.size = assetAspect;
+            imgNode.data.status = 'idle';
+            imgNode.data.customName = `🖼️ Ảnh Gốc: ${assetName}`;
+            imgNode.data.sceneLabel = `Tạo [${lockGroup}] ${assetId}`;
+            imgNode.data.assetId = assetId;
+            state.nodes.push(imgNode);
 
-          masterClownNode = makeNode('generateImage', colImageX, assetRowY);
-          masterClownNode.data.model = 'muse-image';
-          masterClownNode.data.size = '16:9';
-          masterClownNode.data.status = 'idle';
-          masterClownNode.data.customName = `🖼️ Ảnh Gốc: Nhân Vật Chính (Gã Hề)`;
-          masterClownNode.data.sceneLabel = `Tạo [CHAR LOCK] Nhân vật Gốc`;
-          state.nodes.push(masterClownNode);
+            state.edges.push({
+              id: uid('edge'),
+              source: pNode.id,
+              sourcePort: 'text',
+              target: imgNode.id,
+              targetPort: 'prompt'
+            });
 
-          state.edges.push({ id: uid('edge'), source: pNode.id, sourcePort: 'text', target: masterClownNode.id, targetPort: 'prompt' });
-          assetRowY += 340;
-        }
+            createdAssetImageNodes.push(imgNode);
+            assetRowY += 340;
+          });
+        } else {
+          // Legacy Fallback
+          const primaryCharPrompt = refPack.character_primary || refPack.character_prompt || (visualBible.character_lock ? `Cinematic portrait of ${visualBible.character_lock}, photorealistic 16:9` : "");
+          const secondaryCharPrompt = refPack.character_secondary || "";
+          const locationPrompt = refPack.location_main || refPack.location_prompt || (visualBible.location_lock ? `Master establishing shot of ${visualBible.location_lock}, 16:9` : "");
+          const propPrompt = refPack.prop_primary || "";
 
-        // Anchor 2: Nhân vật phụ (Lão Phú Ông nếu có)
-        if (secondaryCharPrompt) {
-          const pNode = makeNode('prompt', colPromptX, assetRowY);
-          pNode.data.text = secondaryCharPrompt;
-          pNode.data.customName = `📌 Neo: Nhân Vật Phụ (Lão Phú Ông)`;
-          pNode.data.sceneLabel = `GIAI ĐOẠN 1: [CHAR LOCK 2] Nhân vật Phụ`;
-          state.nodes.push(pNode);
+          const legacyAssets = [
+            { prompt: primaryCharPrompt, name: "Nhân Vật Chính", group: "CHAR LOCK" },
+            { prompt: secondaryCharPrompt, name: "Nhân Vật Phụ", group: "CHAR LOCK 2" },
+            { prompt: locationPrompt, name: "Bối Cảnh Chính", group: "SET LOCK" },
+            { prompt: propPrompt, name: "Đạo Cụ Biểu Tượng", group: "PROP LOCK" }
+          ].filter(a => !!a.prompt);
 
-          masterRichManNode = makeNode('generateImage', colImageX, assetRowY);
-          masterRichManNode.data.model = 'muse-image';
-          masterRichManNode.data.size = '16:9';
-          masterRichManNode.data.status = 'idle';
-          masterRichManNode.data.customName = `🖼️ Ảnh Gốc: Lão Phú Ông`;
-          masterRichManNode.data.sceneLabel = `Tạo [CHAR LOCK 2] Nhân vật Phụ`;
-          state.nodes.push(masterRichManNode);
+          legacyAssets.forEach(la => {
+            const pNode = makeNode('prompt', colPromptX, assetRowY);
+            pNode.data.text = la.prompt;
+            pNode.data.customName = `📌 Neo: ${la.name}`;
+            pNode.data.sceneLabel = `GIAI ĐOẠN 1: [${la.group}]`;
+            state.nodes.push(pNode);
 
-          state.edges.push({ id: uid('edge'), source: pNode.id, sourcePort: 'text', target: masterRichManNode.id, targetPort: 'prompt' });
-          assetRowY += 340;
-        }
+            const imgNode = makeNode('generateImage', colImageX, assetRowY);
+            imgNode.data.model = 'muse-image';
+            imgNode.data.size = '16:9';
+            imgNode.data.status = 'idle';
+            imgNode.data.customName = `🖼️ Ảnh Gốc: ${la.name}`;
+            imgNode.data.sceneLabel = `Tạo [${la.group}]`;
+            state.nodes.push(imgNode);
 
-        // Anchor 3: Bối Cảnh Chính (Sân Đình Làng Cổ)
-        if (locationPrompt) {
-          const pNode = makeNode('prompt', colPromptX, assetRowY);
-          pNode.data.text = locationPrompt;
-          pNode.data.customName = `📌 Neo: Đại Cảnh Bối Cảnh Chính`;
-          pNode.data.sceneLabel = `GIAI ĐOẠN 1: [SET LOCK] Bối cảnh Gốc`;
-          state.nodes.push(pNode);
-
-          masterLocationNode = makeNode('generateImage', colImageX, assetRowY);
-          masterLocationNode.data.model = 'muse-image';
-          masterLocationNode.data.size = '16:9';
-          masterLocationNode.data.status = 'idle';
-          masterLocationNode.data.customName = `🖼️ Ảnh Gốc: Bối Cảnh Đình Làng`;
-          masterLocationNode.data.sceneLabel = `Tạo [SET LOCK] Bối cảnh Gốc`;
-          state.nodes.push(masterLocationNode);
-
-          state.edges.push({ id: uid('edge'), source: pNode.id, sourcePort: 'text', target: masterLocationNode.id, targetPort: 'prompt' });
-          assetRowY += 340;
-        }
-
-        // Anchor 4: Đạo Cụ Biểu Tượng (Mặt Nạ Vôi & Quạt Nan & Thau Đồng)
-        if (propPrompt) {
-          const pNode = makeNode('prompt', colPromptX, assetRowY);
-          pNode.data.text = propPrompt;
-          pNode.data.customName = `📌 Neo: Đạo Cụ & Đồ Vật Biểu Tượng`;
-          pNode.data.sceneLabel = `GIAI ĐOẠN 1: [PROP LOCK] Đạo cụ Biểu Tượng`;
-          state.nodes.push(pNode);
-
-          masterPropNode = makeNode('generateImage', colImageX, assetRowY);
-          masterPropNode.data.model = 'muse-image';
-          masterPropNode.data.size = '16:9';
-          masterPropNode.data.status = 'idle';
-          masterPropNode.data.customName = `🖼️ Ảnh Gốc: Mặt Nạ & Đạo Cụ`;
-          masterPropNode.data.sceneLabel = `Tạo [PROP LOCK] Đạo cụ`;
-          state.nodes.push(masterPropNode);
-
-          state.edges.push({ id: uid('edge'), source: pNode.id, sourcePort: 'text', target: masterPropNode.id, targetPort: 'prompt' });
-          assetRowY += 340;
+            state.edges.push({ id: uid('edge'), source: pNode.id, sourcePort: 'text', target: imgNode.id, targetPort: 'prompt' });
+            createdAssetImageNodes.push(imgNode);
+            assetRowY += 340;
+          });
         }
 
         // Tạo HUB: Tập ảnh tham chiếu (References) gom toàn bộ các ảnh neo gốc vào một mối
@@ -3636,19 +3643,15 @@ Kịch bản Narrative Storyboard tối ưu cho Muse AI & Veo!`
         };
         state.nodes.push(masterReferences);
 
-        let refIndex = 1;
-        if (masterClownNode) {
-          state.edges.push({ id: uid('edge'), source: masterClownNode.id, sourcePort: 'image', target: masterReferences.id, targetPort: `reference${refIndex++}` });
-        }
-        if (masterRichManNode) {
-          state.edges.push({ id: uid('edge'), source: masterRichManNode.id, sourcePort: 'image', target: masterReferences.id, targetPort: `reference${refIndex++}` });
-        }
-        if (masterLocationNode) {
-          state.edges.push({ id: uid('edge'), source: masterLocationNode.id, sourcePort: 'image', target: masterReferences.id, targetPort: `reference${refIndex++}` });
-        }
-        if (masterPropNode) {
-          state.edges.push({ id: uid('edge'), source: masterPropNode.id, sourcePort: 'image', target: masterReferences.id, targetPort: `reference${refIndex++}` });
-        }
+        createdAssetImageNodes.forEach((imgNode, idx) => {
+          state.edges.push({
+            id: uid('edge'),
+            source: imgNode.id,
+            sourcePort: 'image',
+            target: masterReferences.id,
+            targetPort: `reference${idx + 1}`
+          });
+        });
 
         const sceneBaseX = 1120;
         const gridBaseY = 80;
@@ -3673,9 +3676,10 @@ Kịch bản Narrative Storyboard tối ưu cho Muse AI & Veo!`
           // GIAI ĐOẠN 2: TẠO ẢNH KEYFRAME (Cảnh tĩnh)
           if (optPromptImageVideo) {
             const imgPromptNode = makeNode('prompt', x, y);
-            let imgText = shot.prompt || '';
-            if (shot.start_frame && !imgText.toLowerCase().includes(shot.start_frame.toLowerCase())) {
-              imgText = `${imgText}\n\nOpening frame composition: ${shot.start_frame}`;
+            let imgText = shot.image_prompt || shot.prompt || '';
+            const openFrame = shot.first_frame_description || shot.start_frame;
+            if (openFrame && !imgText.toLowerCase().includes(openFrame.toLowerCase())) {
+              imgText = `${imgText}\n\nOpening frame composition: ${openFrame}`;
             }
             imgPromptNode.data.text = imgText;
             imgPromptNode.data.customName = `Prompt (Văn bản) · Shot ${shotNum}${shot.section ? ` (${shot.section})` : ''}`;
@@ -3734,7 +3738,7 @@ Kịch bản Narrative Storyboard tối ưu cho Muse AI & Veo!`
           const vidNodeY = optPromptImageVideo ? y + 540 : y;
 
           const vidPromptNode = makeNode('prompt', x, vidPromptY);
-          let vidText = shot.prompt || '';
+          let vidText = shot.video_prompt || shot.prompt || '';
           const motionDetails = [];
           if (shot.camera_motion) motionDetails.push(`Camera motion: ${shot.camera_motion}`);
           if (shot.end_frame) motionDetails.push(`Final frame to reach: ${shot.end_frame}`);

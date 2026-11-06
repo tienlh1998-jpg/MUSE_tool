@@ -634,6 +634,7 @@ class MVPlanRequest(BaseModel):
     audio_duration: Optional[float] = None
     audio_filename: Optional[str] = None
     srt_content: Optional[str] = None
+    mode: Optional[str] = "auto"
     ai_provider: Optional[str] = None
     ai_base_url: Optional[str] = None
     ai_api_key: Optional[str] = None
@@ -688,6 +689,7 @@ async def generate_director_plan(req: MVPlanRequest):
             audio_duration=req.audio_duration,
             audio_url=req.audio_url,
             srt_content=req.srt_content,
+            mode=req.mode or "auto",
         )
     except Exception as exc:
         raise HTTPException(500, f"Lỗi tạo kịch bản MV: {str(exc)}")
