@@ -588,10 +588,18 @@
 
       <div style="background:#141724;border:1px solid #23273c;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;">
         <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-          <span style="color:#94a3b8;">🎬 Tổng số phân cảnh cần tạo:</span>
+          <span style="color:#94a3b8;">🎬 Tổng số phân cảnh:</span>
           <strong id="pipelineShotCount" style="color:#38bdf8;">0 clips</strong>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+          <span style="color:#94a3b8;">✅ Đã tạo hoàn thành:</span>
+          <strong id="pipelineDoneCount" style="color:#10b981;">0 node (Giữ nguyên)</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+          <span style="color:#94a3b8;">⏳ Còn lại cần tạo tiếp:</span>
+          <strong id="pipelinePendingCount" style="color:#f59e0b;">0 node</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-top:6px;border-top:1px dashed #282f48;">
           <span style="color:#94a3b8;">🎵 File Nhạc / Audio BGM:</span>
           <div style="display:flex;align-items:center;gap:6px;">
             <span id="pipelineAudioLabel" style="font-weight:600;color:#cbd5e1;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Chưa có</span>
@@ -610,6 +618,10 @@
       </div>
 
       <div style="background:#161928;border:1px solid #23273c;border-radius:8px;padding:12px;margin-bottom:18px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#a7f3d0;margin-bottom:8px;cursor:pointer;background:#064e3b33;padding:6px 10px;border-radius:6px;border:1px solid #05966955;">
+          <input type="checkbox" id="pipelineOptSkipDone" checked />
+          <span><strong>Bỏ qua các cảnh đã có</strong> (chỉ render tiếp các cảnh còn thiếu, không tạo lại từ đầu)</span>
+        </label>
         <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#e2e8f0;margin-bottom:6px;cursor:pointer;">
           <input type="checkbox" id="pipelineOptSequential" checked disabled />
           <span>Khóa tuần tự 100% cấp tài khoản Muse AI (chống lỗi quá tải)</span>

@@ -2372,7 +2372,7 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
     try{clearTimeout(autoSaveTimer);void queueWorkflowSave();}catch{}
   }
 
-  async function execute(targetId=null,{again=false,generationOrder=null}={}) {
+  async function execute(targetId=null,{again=false,generationOrder=null,skipCompleted=true}={}) {
     if(state.isRunning)return;
     // Keep runtime graph references valid even if an older saved workflow or
     // an interrupted UI action left stale node IDs behind.
@@ -2388,7 +2388,15 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
     try{
       if(targetId)validateTargetPrompt(targetId);
       const selectedGenerations=generationOrder?new Set(generationOrder):null;
-      const order=targetId?requiredNodeOrder(targetId).filter(id=>{const prerequisite=nodeById(id);return id===targetId||!['generateImage','generateVideo'].includes(prerequisite?.type)||!prerequisite.data?.asset?.url;}):topoOrder(generationOrder).filter(id=>{const node=nodeById(id);return !selectedGenerations||!['generateImage','generateVideo'].includes(node?.type)||selectedGenerations.has(id);});
+      const order=targetId
+        ? requiredNodeOrder(targetId).filter(id=>{const prerequisite=nodeById(id);return id===targetId||!['generateImage','generateVideo'].includes(prerequisite?.type)||!prerequisite.data?.asset?.url;})
+        : topoOrder(generationOrder).filter(id=>{
+            const node=nodeById(id);
+            if(selectedGenerations && !selectedGenerations.has(id)) return false;
+            if(!['generateImage','generateVideo'].includes(node?.type)) return true;
+            if(skipCompleted && !again && node.data?.asset?.url) return false;
+            return true;
+          });
       for(const n of state.nodes){
         if(n.type==='imageInput'&&n.data.localDataUrl)n.data.asset={id:n.data.asset?.id||uid('asset'),kind:'image',url:n.data.localDataUrl,sourceNodeId:n.id};
       }
@@ -2405,6 +2413,10 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
           state.edges.filter(e=>e.source===n.id).forEach(e=>{const target=nodeById(e.target);if(target?.type==='preview')target.data.asset=n.data.asset;});render();continue;
         }
         if(['generateImage','generateVideo'].includes(n.type)){
+          if(skipCompleted && !again && !targetId && n.data?.asset?.url){
+            console.log(`[Canvas] Giữ nguyên thành phẩm cũ của node ${n.id}`);
+            continue;
+          }
           const isVideo=n.type==='generateVideo';
           generationStep++;
           const prompt=resolvePrompt(n.id); if(!String(prompt).trim()) throw new Error(`${(nodeDefs[n.type]?.title || n.type || 'Node')} ${n.id}: connect a Prompt, Text Append, or Text Merge node first.`);
@@ -2771,9 +2783,15 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
         return;
       }
       const tl = ensureDockTimeline();
-      $('#pipelineShotCount').textContent = `${vNodes.length} clips`;
-      $('#pipelineAudioLabel').textContent = tl.data?.audioFilename || (tl.data?.audioUrl ? 'Đã có sẵn (100% khớp)' : 'Chưa có');
-      $('#pipelineSrtLabel').textContent = tl.data?.srtFilename || (tl.data?.srtContent ? 'Đã có sẵn (100% khớp)' : 'Chưa có');
+      const allGen = state.nodes.filter(n => ['generateImage', 'generateVideo'].includes(n.type));
+      const doneGen = allGen.filter(n => n.data?.asset?.url);
+      const pendingGen = allGen.filter(n => !n.data?.asset?.url);
+
+      if ($('#pipelineShotCount')) $('#pipelineShotCount').textContent = `${vNodes.length} video clips (${allGen.length} node)`;
+      if ($('#pipelineDoneCount')) $('#pipelineDoneCount').textContent = `${doneGen.length} node (Đã có, giữ nguyên ✅)`;
+      if ($('#pipelinePendingCount')) $('#pipelinePendingCount').textContent = `${pendingGen.length} node còn thiếu`;
+      if ($('#pipelineAudioLabel')) $('#pipelineAudioLabel').textContent = tl.data?.audioFilename || (tl.data?.audioUrl ? 'Đã có sẵn (100% khớp)' : 'Chưa có');
+      if ($('#pipelineSrtLabel')) $('#pipelineSrtLabel').textContent = tl.data?.srtFilename || (tl.data?.srtContent ? 'Đã có sẵn (100% khớp)' : 'Chưa có');
       autoPipelineModal.classList.remove('hidden');
     };
 
@@ -2808,9 +2826,16 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
     $('#confirmAutoPipelineBtn')?.addEventListener('click', () => {
       autoPipelineModal.classList.add('hidden');
       state.autoStitchOnComplete = true;
-      const vNodes = state.nodes.filter(n => n.type === 'generateVideo');
-      setRunStatus(`🚀 1-Phát-Xong-Luôn: Bắt đầu chuỗi render tự động qua Muse AI (${vNodes.length} cảnh)...`, 'warn');
-      void execute();
+      const skipDone = $('#pipelineOptSkipDone')?.checked ?? true;
+      const allGen = state.nodes.filter(n => ['generateImage', 'generateVideo'].includes(n.type));
+      const pendingGen = allGen.filter(n => !n.data?.asset?.url);
+      const countToRun = skipDone ? pendingGen.length : allGen.length;
+      if (countToRun === 0) {
+        setRunStatus('🚀 Tất cả phân cảnh đã có sẵn! Đang ghép thành phẩm ngay lập tức...', 'warn');
+      } else {
+        setRunStatus(`🚀 1-Phát-Xong-Luôn: Bỏ qua các cảnh đã có, bắt đầu render tiếp ${countToRun} node còn lại...`, 'warn');
+      }
+      void execute(null, { skipCompleted: skipDone });
     });
   }
 
