@@ -164,6 +164,20 @@ class MuseEngine:
             report(8, "Không có phiên Muse — dùng engine render cục bộ...")
 
         if mode in ("text-to-image", "image-to-image"):
+            # Gather all reference image candidates (Character Lock, Set Lock, Master References)
+            candidate_refs = []
+            if ref_images:
+                candidate_refs.extend(ref_images)
+            for single_ref in (ref_image_base64, source_image_path):
+                if single_ref and single_ref not in candidate_refs:
+                    candidate_refs.append(single_ref)
+
+            resolved_ref_paths = []
+            for r in candidate_refs:
+                p = await self._resolve_image_to_local_path(r)
+                if p and os.path.exists(p) and p not in resolved_ref_paths:
+                    resolved_ref_paths.append(p)
+
             # Priority 1: Muse AI direct image generation via WebSocket
             if has_session:
                 report(25, "Đang tạo ảnh chất lượng cao từ tài khoản Muse AI qua WebSocket...")
@@ -172,23 +186,32 @@ class MuseEngine:
                     state_dir=state_dir,
                     prompt=prompt,
                     aspect=aspect,
+                    ref_images=resolved_ref_paths if resolved_ref_paths else None,
                     report=report,
                 )
                 if muse_img:
                     report(100, "Đã tạo ảnh từ Muse AI hoàn tất!")
                     return muse_img
 
-            report(30, "Đang tạo ảnh qua image engine...")
+            report(30, "Đang tạo ảnh qua image engine dự phòng...")
             ref_data = ref_image_base64 or source_image_path
-            result = await self.image_engine.generate_image(
-                prompt=prompt,
-                aspect=aspect,
-                negative_prompt=negative_prompt,
-                ref_image_base64=ref_data,
-                on_progress=lambda p, m: report(30 + int(p * 0.65), m),
-            )
-            report(100, "Đã tạo ảnh hoàn tất!")
-            return result
+            try:
+                result = await self.image_engine.generate_image(
+                    prompt=prompt,
+                    aspect=aspect,
+                    negative_prompt=negative_prompt,
+                    ref_image_base64=ref_data,
+                    on_progress=lambda p, m: report(30 + int(p * 0.65), m),
+                )
+                report(100, "Đã tạo ảnh hoàn tất!")
+                return result
+            except Exception as fb_exc:
+                if has_session:
+                    raise RuntimeError(
+                        f"Máy chủ Muse AI chưa trả kết quả ảnh sau thời gian chờ (180s) và kênh dự phòng không khả dụng ({fb_exc}). "
+                        f"Vui lòng bấm 'Tạo lại' để Muse AI tiếp tục kết xuất!"
+                    ) from fb_exc
+                raise
 
         # ---------------- Video modes ----------------
         source_path = await self._resolve_source_image(
@@ -319,16 +342,79 @@ class MuseEngine:
         return result["local_path"]
 
     def _to_local_path(self, value: str) -> Optional[str]:
+        if not value or not isinstance(value, str):
+            return None
+        value = value.strip()
         if os.path.isabs(value) and os.path.exists(value):
             return value
         if value.startswith("/downloads/"):
             rel = value[len("/downloads/"):]
-            return os.path.join(self.downloads_dir, *rel.split("/"))
+            p = os.path.join(self.downloads_dir, *rel.split("/"))
+            if os.path.exists(p):
+                return p
         if value.startswith("downloads/"):
             rel = value[len("downloads/"):]
-            return os.path.join(self.downloads_dir, *rel.split("/"))
+            p = os.path.join(self.downloads_dir, *rel.split("/"))
+            if os.path.exists(p):
+                return p
         maybe = os.path.join(self.downloads_dir, os.path.basename(value))
-        return maybe if os.path.exists(maybe) else None
+        if os.path.exists(maybe):
+            return maybe
+        maybe_img = os.path.join(self.downloads_dir, "images", os.path.basename(value))
+        if os.path.exists(maybe_img):
+            return maybe_img
+        return None
+
+    async def _resolve_image_to_local_path(self, value: Optional[str]) -> Optional[str]:
+        if not value or not isinstance(value, str):
+            return None
+        value = value.strip()
+        if not value:
+            return None
+        local = self._to_local_path(value)
+        if local and os.path.exists(local):
+            return local
+        if value.startswith(("http://", "https://")):
+            return await self._download_image(value)
+        if value.startswith("data:") or len(value) > 256:
+            return self._decode_base64_image(value)
+        return None
+
+    @staticmethod
+    def _extract_image_refs(events_list: list) -> list:
+        """Extract (raw_path, url) pairs from Muse presentation or message events."""
+        found = []
+        for ev in reversed(events_list or []):
+            if not isinstance(ev, dict):
+                continue
+            name = ev.get("event_name", "")
+            p = ev.get("payload", {}) if isinstance(ev.get("payload"), dict) else {}
+
+            # 1. Check delta.presentation
+            if name == "delta.presentation":
+                data_block = p.get("data", {}) if isinstance(p.get("data"), dict) else {}
+                images = data_block.get("images", []) if isinstance(data_block.get("images"), list) else []
+                for img in images:
+                    if isinstance(img, dict):
+                        raw_path = img.get("path")
+                        variants = img.get("variants") if isinstance(img.get("variants"), dict) else {}
+                        url = variants.get("original") or img.get("url")
+                        if raw_path or url:
+                            found.append((raw_path, url))
+                if p.get("image_path"):
+                    ipath = p.get("image_path")
+                    raw_p = ipath if ipath.startswith("sandbox://") else f"sandbox://{ipath.lstrip('/')}"
+                    found.append((raw_p, None))
+
+            # 2. Check general message payload items or media
+            items = p.get("items", []) if isinstance(p.get("items"), list) else []
+            for it in items:
+                if isinstance(it, dict) and it.get("type") == "image":
+                    raw_path = it.get("path") or it.get("media_path")
+                    url = it.get("url") or it.get("src")
+                    if raw_path or url:
+                        found.append((raw_path, url))
+        return found
 
     async def _download_image(self, url: str) -> Optional[str]:
         try:
@@ -370,6 +456,7 @@ class MuseEngine:
         state_dir: Optional[str],
         prompt: str,
         aspect: str = "16:9",
+        ref_images: Optional[List[str]] = None,
         report=None,
     ) -> Optional[Dict[str, Any]]:
         client = None
@@ -403,8 +490,19 @@ class MuseEngine:
                 report(30, "Đang kết nối WebSocket Noise tới tài khoản Muse AI...")
             await client.connect()
 
+            # Resolve reference image paths to attach to Muse AI
+            valid_ref_paths = []
+            if ref_images:
+                for img in ref_images:
+                    lp = await self._resolve_image_to_local_path(img)
+                    if lp and os.path.exists(lp) and lp not in valid_ref_paths:
+                        valid_ref_paths.append(lp)
+
             if report:
-                report(40, "Đang gửi prompt tạo ảnh chất lượng cao tới Muse AI...")
+                if valid_ref_paths:
+                    report(38, f"Đang gửi prompt kèm {len(valid_ref_paths)} ảnh tham chiếu gốc tới Muse AI...")
+                else:
+                    report(38, "Đang gửi prompt tạo ảnh chất lượng cao tới Muse AI...")
 
             clean_prompt = prompt.strip()
             # 1. Fresh session to prevent inheriting old project/clown context
@@ -416,40 +514,70 @@ class MuseEngine:
             else:
                 send_prompt = clean_prompt
 
-            events = await client.chat_stream(prompt=send_prompt, session_id=session_id, stream_timeout=35.0)
+            events = await client.chat_stream(
+                prompt=send_prompt,
+                images=valid_ref_paths or None,
+                session_id=session_id,
+                stream_timeout=35.0,
+            )
 
-            if report:
-                report(55, "Đang chờ Muse AI kết xuất ảnh độ phân giải cao...")
+            # Check if chat_stream already yielded image presentation events
+            extracted = self._extract_image_refs(events)
 
-            deadline = time.time() + 60.0
+            if not extracted:
+                if report:
+                    report(50, "Đang chờ Muse AI kết xuất ảnh độ phân giải cao...")
+
+                timeout = 180.0  # 3 minutes for high-detail / peak queue renders
+                start_time = time.time()
+                deadline = start_time + timeout
+                while time.time() < deadline:
+                    await asyncio.sleep(2.5)
+                    elapsed = time.time() - start_time
+                    pct = min(88, int(48 + (elapsed / 120.0) * 40))
+                    if report:
+                        report(pct, f"Đang chờ Muse AI kết xuất ảnh độ phân giải cao ({int(elapsed)}s)...")
+
+                    try:
+                        h = await client.history(session_id=session_id, limit=30)
+                        events_list = h.get("result", {}).get("chat_events", []) if isinstance(h, dict) else []
+                        extracted = self._extract_image_refs(events_list)
+                        if extracted:
+                            break
+                    except Exception as poll_err:
+                        print(f"[MuseEngine] Image poll error: {poll_err}")
+
             found_image_data = None
-            while time.time() < deadline:
-                try:
-                    h = await client.history(session_id=session_id, limit=20)
-                    events_list = h.get("result", {}).get("chat_events", []) if isinstance(h, dict) else []
-                    for ev in reversed(events_list):
-                        if ev.get("event_name") == "delta.presentation":
-                            p = ev.get("payload", {})
-                            data_block = p.get("data", {})
-                            images = data_block.get("images", [])
-                            for img in images:
-                                raw_path = img.get("path")
-                                if raw_path:
-                                    if report:
-                                        report(75, "Đang tải ảnh gốc từ Muse AI qua WebSocket...")
-                                    found_image_data = await client._fs().raw(raw_path)
-                                    break
-                            if found_image_data:
-                                break
+            if extracted:
+                for raw_path, img_url in extracted:
+                    if raw_path:
+                        if report:
+                            report(90, "Đang tải ảnh gốc từ Muse AI qua WebSocket...")
+                        try:
+                            found_image_data = await client._fs().raw(raw_path)
+                        except Exception as fs_err:
+                            print(f"[MuseEngine] _fs().raw failed for {raw_path}: {fs_err}")
+                            found_image_data = None
+                    if not found_image_data and img_url:
+                        if report:
+                            report(90, "Đang tải ảnh từ đường dẫn Muse CDN...")
+                        try:
+                            timeout_dl = httpx.Timeout(60.0, connect=15.0)
+                            async with httpx.AsyncClient(timeout=timeout_dl, follow_redirects=True, proxy=self.cfg.ai_network_proxy) as hc:
+                                dl_resp = await hc.get(img_url)
+                                if dl_resp.status_code == 200 and dl_resp.content:
+                                    found_image_data = dl_resp.content
+                        except Exception as dl_err:
+                            print(f"[MuseEngine] CDN download failed: {dl_err}")
                     if found_image_data:
                         break
-                except Exception as poll_err:
-                    print(f"[MuseEngine] Image poll error: {poll_err}")
-                await asyncio.sleep(2.0)
 
             if not found_image_data:
-                print("[MuseEngine] Không tìm thấy ảnh trả về từ Muse AI trong 60s.")
+                print(f"[MuseEngine] Không tìm thấy ảnh trả về từ Muse AI trong 180s.")
                 return None
+
+            if report:
+                report(95, "Đang chuẩn hóa tỷ lệ khung hình...")
 
             target_size = ASPECT_SIZES.get(aspect, (1280, 720))
             img_obj = Image.open(io.BytesIO(found_image_data))

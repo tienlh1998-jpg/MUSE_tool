@@ -362,8 +362,9 @@ class GenerateImageAPIRequest(BaseModel):
     negative_prompt: Optional[str] = ""
     project_id: Optional[str] = None
     ref_image: Optional[str] = None
+    ref_images: Optional[List[str]] = None
     wait: Optional[bool] = False
-    timeout: Optional[int] = 120
+    timeout: Optional[int] = 180
 
 
 @app.post("/api/generate-image")
@@ -373,14 +374,17 @@ async def api_generate_image(req: GenerateImageAPIRequest):
     if not prompt:
         raise HTTPException(400, "Prompt không được để trống.")
 
+    ref_list = req.ref_images or ([req.ref_image] if req.ref_image else [])
+    first_ref = ref_list[0] if ref_list else (req.ref_image or None)
     task_payload = {
         "project_id": req.project_id or None,
         "prompt": prompt,
         "negative_prompt": req.negative_prompt or "",
-        "mode": "image-to-image" if req.ref_image else "text-to-image",
+        "mode": "image-to-image" if first_ref else "text-to-image",
         "aspect": req.aspect or "16:9",
-        "source_image_path": req.ref_image,
-        "ref_image": req.ref_image,
+        "source_image_path": first_ref,
+        "ref_image": first_ref,
+        "ref_images": ref_list if ref_list else None,
     }
     tasks = task_manager.add_tasks_bulk([task_payload])
     if not tasks:

@@ -2369,6 +2369,7 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
               try { n.data.endFrame = await extractVideoEndFrame(url); } catch (e) { console.warn('Could not extract video end frame:', e); }
             } else {
               const refUrl = referenceImages.length ? referenceImages[0].url : (n.data.refImage || null);
+              const allRefUrls = referenceImages.length ? referenceImages.map(r => r.url).filter(Boolean) : (n.data.refImage ? [n.data.refImage] : []);
               setRunStatus(`Tạo ảnh [${n.id}]: Đang gửi yêu cầu tới backend...`, 'warn');
               const res = await fetch('/api/generate-image', {
                 method: 'POST',
@@ -2379,6 +2380,7 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
                   negative_prompt: negativePrompt || '',
                   project_id: activeProjectId,
                   ref_image: refUrl,
+                  ref_images: allRefUrls,
                   wait: false
                 }),
                 signal: abortController.signal

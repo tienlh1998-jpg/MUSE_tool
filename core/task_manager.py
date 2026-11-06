@@ -34,6 +34,7 @@ class RenderTask(BaseModel):
     duration: int = 7
     ref_image: Optional[str] = None
     source_image_path: Optional[str] = None
+    ref_images: Optional[List[str]] = None
     status: str = "pending"  # "pending", "running", "completed", "failed"
     progress: int = 0
     status_message: str = "Đang chờ trong hàng đợi..."
@@ -125,6 +126,7 @@ class TaskManager:
                 duration=int(item.get("duration", 7) or 7),
                 ref_image=item.get("ref_image"),
                 source_image_path=item.get("source_image_path"),
+                ref_images=item.get("ref_images"),
                 created_at=now,
             )
             self.tasks.append(task)
@@ -244,6 +246,7 @@ class TaskManager:
                 duration=task.duration,
                 ref_image_base64=task.ref_image,
                 source_image_path=task.source_image_path,
+                ref_images=getattr(task, "ref_images", None) or ([task.ref_image] if task.ref_image else None),
                 on_progress=progress_cb,
             )
         except Exception as exc:
