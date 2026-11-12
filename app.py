@@ -29,7 +29,6 @@ from core.config import (
     save_config,
 )
 from core.muse_engine import VIDEO_SIZES
-from core.mv_director import extract_shots_from_script, generate_mv_plan
 from core.project_manager import project_manager
 from core.task_manager import task_manager
 from core.video_stitcher import VideoStitcher
@@ -48,7 +47,7 @@ async def lifespan(app: FastAPI):
     await task_manager.stop_workers()
 
 
-app = FastAPI(title="MUSE Multi-Account AI Studio", version="3.1.0", lifespan=lifespan)
+app = FastAPI(title="Minh Âm Studio", version="3.2.0", lifespan=lifespan)
 
 os.makedirs(DOWNLOADS_DIR, exist_ok=True)
 app.mount("/downloads", StaticFiles(directory=DOWNLOADS_DIR), name="downloads")
@@ -620,31 +619,18 @@ async def upload_media_file(file: UploadFile = File(...)):
     }
 
 
-# ==================== AI MV DIRECTOR ====================
+# ==================== AI COPILOT & QUICK COMMANDER ====================
 
-class MVPlanRequest(BaseModel):
-    song_title: str
-    lyrics: str
-    genre_style: str = "Pop Ballad"
-    bpm: str = "85 BPM"
-    vocal: str = "Nữ trầm ấm, da diết"
-    mood: str = "Hoài niệm, buồn sâu lắng"
-    extra_notes: Optional[str] = ""
-    audio_url: Optional[str] = None
-    audio_duration: Optional[float] = None
-    audio_filename: Optional[str] = None
-    srt_content: Optional[str] = None
+class CopilotChatRequest(BaseModel):
+    message: str
+    selected_prompts: Optional[List[str]] = None
+    aspect: Optional[str] = "16:9"
     mode: Optional[str] = "auto"
-    ai_provider: Optional[str] = None
-    ai_base_url: Optional[str] = None
-    ai_api_key: Optional[str] = None
-    ai_model: Optional[str] = None
-    network_proxy: Optional[str] = None
 
 
-@app.get("/api/director/config")
-def get_director_config():
-    """Get current AI configuration for Canvas AI Director."""
+@app.get("/api/copilot/config")
+def get_copilot_config():
+    """Get current AI configuration for Minh Âm Studio Copilot."""
     cfg = load_config()
     key = cfg.ai_api_key or ""
     masked = (key[:4] + "..." + key[-4:]) if len(key) > 8 else ("***" if key else "")
@@ -654,55 +640,166 @@ def get_director_config():
         "ai_model": cfg.ai_model or "gpt-4o",
         "has_api_key": bool(key),
         "api_key_masked": masked,
-        "network_proxy": cfg.ai_network_proxy or ""
+        "network_proxy": cfg.ai_network_proxy or "",
     }
 
 
-@app.post("/api/director/generate")
-async def generate_director_plan(req: MVPlanRequest):
+@app.post("/api/copilot/chat")
+async def copilot_chat(req: CopilotChatRequest):
+    """AI Copilot assistant for refining prompts or generating multi-shot prompt lists."""
     cfg = load_config()
+    msg = (req.message or "").strip()
+    if not msg:
+        raise HTTPException(400, "Vui lòng nhập yêu cầu cho Copilot.")
 
-    # Allow overriding AI settings directly from request
-    if req.ai_provider:
-        cfg.ai_provider = req.ai_provider
-    if req.ai_base_url:
-        cfg.ai_base_url = req.ai_base_url
-    if req.ai_api_key:
-        cfg.ai_api_key = req.ai_api_key
-    if req.ai_model:
-        cfg.ai_model = req.ai_model
-    if req.network_proxy:
-        cfg.ai_network_proxy = req.network_proxy
+    selected = req.selected_prompts or []
+    aspect = req.aspect or "16:9"
 
-    if not cfg.ai_api_key:
-        raise HTTPException(400, "Vui lòng nhập API Key hoặc cấu hình trong mục Cài đặt trước.")
-    try:
-        return await generate_mv_plan(
-            cfg=cfg,
-            song_title=req.song_title,
-            lyrics=req.lyrics,
-            genre_style=req.genre_style,
-            bpm=req.bpm,
-            vocal=req.vocal,
-            mood=req.mood,
-            extra_notes=req.extra_notes or "",
-            audio_duration=req.audio_duration,
-            audio_url=req.audio_url,
-            srt_content=req.srt_content,
-            mode=req.mode or "auto",
+    # If user has an AI API key configured, try calling LLM first for rich prompt generation
+    if cfg.ai_api_key:
+        sys_prompt = (
+            "Bạn là AI Copilot của Minh Âm Studio (bàn dựng Node tạo Ảnh & Video AI). "
+            "Khi người dùng yêu cầu viết/sửa prompt hoặc tạo danh sách cảnh, hãy trả về JSON hợp lệ với cấu trúc:\n"
+            "{\n"
+            '  "reply": "Câu trả lời ngắn gọn tiếng Việt giải thích những gì vừa chuẩn bị",\n'
+            '  "prompts": ["Prompt 1 chi tiết chuẩn điện ảnh (8k photorealistic...)", "Prompt 2..."],\n'
+            '  "video_prompts": ["Camera motion cho cảnh 1...", "Camera motion cho cảnh 2..."],\n'
+            '  "negative_prompt": "3D CGI, cartoon, anime, blurry, bad anatomy, deformed, watermark, text"\n'
+            "}\n"
+            "Chỉ trả về JSON thuần, không bọc markdown."
         )
-    except Exception as exc:
-        raise HTTPException(500, f"Lỗi tạo kịch bản MV: {str(exc)}")
+        user_content = f"Yêu cầu: {msg}\nKhung hình: {aspect}\n"
+        if selected:
+            user_content += "Các prompt đang chọn trên bàn dựng:\n" + "\n".join(
+                f"- {p}" for p in selected
+            )
+        try:
+            import json as _json
+            import re as _re
 
+            timeout = httpx.Timeout(25.0, connect=10.0)
+            raw_reply = ""
+            if cfg.ai_provider == "gemini" and (
+                "generativelanguage.googleapis.com" in (cfg.ai_base_url or "") or not cfg.ai_base_url
+            ):
+                url = (
+                    "https://generativelanguage.googleapis.com/v1beta/models/"
+                    f"{cfg.ai_model or 'gemini-1.5-flash'}:generateContent?key={cfg.ai_api_key}"
+                )
+                payload = {
+                    "contents": [
+                        {"role": "user", "parts": [{"text": sys_prompt + "\n\n" + user_content}]}
+                    ]
+                }
+                async with httpx.AsyncClient(timeout=timeout, proxy=cfg.ai_network_proxy) as client:
+                    res = await client.post(url, json=payload)
+                if res.status_code == 200:
+                    data = res.json()
+                    raw_reply = (
+                        data.get("candidates", [{}])[0]
+                        .get("content", {})
+                        .get("parts", [{}])[0]
+                        .get("text", "")
+                    )
+            else:
+                base = (cfg.ai_base_url or "https://api.openai.com/v1").rstrip("/")
+                url = base if base.endswith("/chat/completions") else f"{base}/chat/completions"
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {cfg.ai_api_key}",
+                }
+                payload = {
+                    "model": cfg.ai_model or "gpt-4o",
+                    "messages": [
+                        {"role": "system", "content": sys_prompt},
+                        {"role": "user", "content": user_content},
+                    ],
+                    "temperature": 0.7,
+                }
+                async with httpx.AsyncClient(timeout=timeout, proxy=cfg.ai_network_proxy) as client:
+                    res = await client.post(url, headers=headers, json=payload)
+                if res.status_code == 200:
+                    raw_reply = res.json()["choices"][0]["message"]["content"]
 
-class ParseTextRequest(BaseModel):
-    raw_script: str
+            if raw_reply:
+                cleaned = _re.sub(r"^```(?:json)?|```$", "", raw_reply.strip(), flags=_re.MULTILINE).strip()
+                parsed = _json.loads(cleaned)
+                if isinstance(parsed, dict) and parsed.get("prompts"):
+                    return {
+                        "success": True,
+                        "source": "llm",
+                        "reply": parsed.get("reply", "Đã tạo danh sách prompt theo yêu cầu!"),
+                        "prompts": parsed.get("prompts", []),
+                        "video_prompts": parsed.get("video_prompts", []),
+                        "negative_prompt": parsed.get(
+                            "negative_prompt",
+                            "3D CGI, cartoon, anime, plastic skin, blurry, bad anatomy, deformed, watermark, text",
+                        ),
+                    }
+        except Exception:
+            pass
 
+    # Smart Instant Built-in Copilot (works offline / without external API key)
+    import re as _re
 
-@app.post("/api/director/parse")
-def parse_raw_script(req: ParseTextRequest):
-    shots = extract_shots_from_script(req.raw_script)
-    return {"shots": shots, "count": len(shots)}
+    num_match = _re.search(r"(\d+)\s*(?:cảnh|node|shot|ảnh|prompt|tấm)", msg, _re.IGNORECASE)
+    count = min(max(int(num_match.group(1)), 1), 12) if num_match else (len(selected) if selected else 4)
+
+    cinematic_angles = [
+        "Wide establishing shot, cinematic composition, natural atmospheric lighting, 8k photorealistic, ARRI Alexa 35",
+        "Medium tracking shot, shallow depth of field, 35mm anamorphic lens, expressive emotion, warm rim light, photorealistic",
+        "Close-up portrait shot, detailed skin texture, expressive eyes, dramatic cinematic lighting, 85mm prime lens, 8k",
+        "Dynamic low-angle shot, volumetric lighting, rich environmental details, cinematic color grading, photorealistic",
+        "Over-the-shoulder cinematic shot, natural bokeh background, realistic film grain, high dynamic range",
+        "High-angle atmospheric shot, dramatic shadows and highlights, storytelling framing, 8k resolution",
+    ]
+    camera_motions = [
+        "Slow cinematic dolly in, subtle atmospheric movement, smooth camera stabilization",
+        "Gentle pan left to right following the subject, realistic motion blur, 24fps film look",
+        "Slow push-in toward the subject's face, natural breathing and subtle expression change",
+        "Smooth tracking shot moving alongside the subject, dynamic depth parallax",
+    ]
+
+    if selected:
+        enhanced = []
+        vid_motions = []
+        for idx, base_p in enumerate(selected):
+            angle = cinematic_angles[idx % len(cinematic_angles)]
+            enhanced.append(f"{base_p.strip()}\nStyle & Camera: {msg} — {angle}, aspect ratio {aspect}.")
+            vid_motions.append(f"{base_p.strip()} — {camera_motions[idx % len(camera_motions)]}")
+        return {
+            "success": True,
+            "source": "builtin",
+            "reply": f"Đã nâng cấp {len(enhanced)} prompt đang chọn với yêu cầu: \"{msg}\"!",
+            "prompts": enhanced,
+            "video_prompts": vid_motions,
+            "negative_prompt": "3D CGI, cartoon, anime, plastic smooth skin, blurry, bad anatomy, deformed eyes, extra fingers, text, watermark",
+        }
+
+    # Generate new multi-angle prompts from the user's topic
+    clean_topic = _re.sub(
+        r"^(?:hãy\s+)?(?:viết|tạo|생|làm|sinh|cho\s+mình)\s*(?:\d+\s*(?:cảnh|node|shot|ảnh|prompt|tấm)\s*)?(?:về\s*)?",
+        "",
+        msg,
+        flags=_re.IGNORECASE,
+    ).strip() or msg
+
+    prompts = []
+    video_prompts = []
+    for i in range(count):
+        angle = cinematic_angles[i % len(cinematic_angles)]
+        motion = camera_motions[i % len(camera_motions)]
+        prompts.append(f"[Cảnh {i + 1}] {clean_topic}. {angle}, aspect ratio {aspect}.")
+        video_prompts.append(f"[Chuyển động Cảnh {i + 1}] {clean_topic}. {motion}.")
+
+    return {
+        "success": True,
+        "source": "builtin",
+        "reply": f"Đã tạo {count} góc máy điện ảnh cho chủ đề: \"{clean_topic}\". Bạn có thể bấm nút bên dưới để đẻ thẳng ra bàn dựng hoặc điền vào các node đang chọn!",
+        "prompts": prompts,
+        "video_prompts": video_prompts,
+        "negative_prompt": "3D CGI, cartoon, anime, plastic smooth skin, blurry, bad anatomy, deformed eyes, extra fingers, text, watermark",
+    }
 
 
 # ==================== TASKS ====================

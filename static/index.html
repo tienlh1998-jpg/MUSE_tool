@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>MUSE AI STUDIO - Quản Lý Dự Án & Tạo Video Tự Động</title>
+  <title>Minh Âm Studio - Sản Xuất Ảnh &amp; Video AI Đa Năng</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -61,12 +61,12 @@
     <!-- Brand & Version -->
     <div class="flex items-center space-x-3">
       <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-accent flex items-center justify-center shadow-lg shadow-brand-indigo/30 text-white font-bold text-lg">
-        M
+        MÂ
       </div>
       <div>
         <div class="flex items-center space-x-2">
-          <span class="font-extrabold text-white text-base tracking-tight">MUSE AI STUDIO</span>
-          <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-brand-accent/20 text-brand-accent border border-brand-accent/30">PRO V3</span>
+          <span class="font-extrabold text-white text-base tracking-tight">MINH ÂM STUDIO</span>
+          <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-brand-accent/20 text-brand-accent border border-brand-accent/30">PRO V3.2</span>
         </div>
         <p class="text-[11px] text-slate-400 font-mono" id="current-project-label">Dự án: Đang tải...</p>
       </div>
@@ -955,7 +955,6 @@
         if (!res.ok) throw new Error(data.detail || 'Không gửi được yêu cầu tạo ảnh');
 
         const task = data.tasks[0];
-        document.getElementById('img-prompt-input').value = '';
         showImageTaskProgress(task);
 
         const finalTask = await pollTask(task.id, (t) => showImageTaskProgress(t));
@@ -1059,8 +1058,9 @@
                   <span class="material-symbols-outlined text-xs">movie</span>
                   <span>Tạo Video</span>
                 </button>
-                <button onclick="regenerateImage('${img.id}')" class="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-brand-accent" title="Tạo lại ảnh">
-                  <span class="material-symbols-outlined text-sm">refresh</span>
+                <button onclick="regenerateImage('${img.id}')" class="px-2 py-1.5 rounded-lg bg-brand-accent/15 hover:bg-brand-accent/25 text-brand-accent border border-brand-accent/30 flex items-center space-x-1 text-[11px] font-semibold transition" title="Tạo lại ảnh mới từ prompt này">
+                  <span class="material-symbols-outlined text-xs">refresh</span>
+                  <span>Tạo lại</span>
                 </button>
                 <button onclick="deleteImage('${img.id}')" class="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-rose-400" title="Xóa ảnh">
                   <span class="material-symbols-outlined text-sm">delete</span>

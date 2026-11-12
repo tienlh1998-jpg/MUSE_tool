@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>MUSE AI MV Studio · Workflow Canvas</title>
+  <title>Minh Âm Studio · Bàn Dựng Node &amp; AI Copilot</title>
   <link rel="icon" type="image/png" sizes="128x128" href="./icons/icon128.png" />
-  <link rel="stylesheet" href="./styles.css?v=3.6.2" />
+  <link rel="stylesheet" href="./styles.css?v=3.7.0" />
   <style>
     .back-studio-link {
       display: inline-flex;
@@ -52,45 +52,139 @@
       font-size: 12px !important;
       font-weight: 600;
     }
+    /* Copilot Drawer Right Sidebar */
+    .copilot-drawer {
+      position: fixed;
+      top: 52px;
+      right: 0;
+      bottom: 0;
+      width: 400px;
+      max-width: 92vw;
+      background: #11131e;
+      border-left: 1px solid #2d334d;
+      box-shadow: -12px 0 36px rgba(0,0,0,0.65);
+      z-index: 95;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .copilot-drawer.hidden {
+      display: none !important;
+    }
+    .copilot-header {
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #1b1734, #141726);
+      border-bottom: 1px solid #2e3450;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .copilot-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      padding: 8px 12px;
+      background: #0c0e17;
+      border-bottom: 1px solid #23273e;
+    }
+    .copilot-tab-btn {
+      padding: 7px 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #94a3b8;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .copilot-tab-btn.active {
+      background: #231d42;
+      color: #e9d5ff;
+      border-color: #7c3aed;
+    }
+    .copilot-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .copilot-pane.hidden {
+      display: none !important;
+    }
+    .copilot-card {
+      background: #161929;
+      border: 1px solid #282e48;
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .copilot-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #1e2238;
+      border: 1px solid #383f61;
+      color: #cbd5e1;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .copilot-chip:hover {
+      background: #2e2559;
+      border-color: #8b5cf6;
+      color: #fff;
+    }
+    .node.collapsed .node-body {
+      display: none !important;
+    }
+    .node.collapsed {
+      min-height: 40px !important;
+      padding-bottom: 4px !important;
+    }
   </style>
 </head>
 <body>
   <header class="toolbar">
-    <a href="/" class="back-studio-link" title="Quay lại giao diện Studio chính">🎬 Quay lại Studio Chính</a>
+    <a href="/" class="back-studio-link" title="Quay lại giao diện Quản lý Dự án &amp; Nick Muse">🎬 Quản Lý &amp; Nick</a>
     <div class="brand">
-      <img class="brand-logo" src="./icons/26flow.svg" alt="Canvas" />
-      <strong class="brand-name">Workflow Canvas</strong>
-      <span class="brand-version">v3.1</span>
+      <img class="brand-logo" src="./icons/26flow.svg" alt="Minh Âm Studio" />
+      <strong class="brand-name">Minh Âm Studio</strong>
+      <span class="brand-version">v3.2</span>
     </div>
 
     <!-- Project Selector & Direct Loader -->
     <div class="project-picker-wrap">
       <label for="projectSelect" style="font-size:12px;color:#94a3b8;font-weight:600;">📁 Dự án:</label>
-      <select id="projectSelect" title="Chọn dự án trong MUSE Studio để nạp kịch bản vào Canvas">
+      <select id="projectSelect" title="Chọn dự án trong Minh Âm Studio để nạp vào Canvas">
         <option value="">-- Đang nạp danh sách dự án... --</option>
       </select>
-      <button id="loadProjectBtn" type="button" class="primary" title="Tự động bung toàn bộ Shots trong kịch bản thành mạng lưới Node đã nối dây">📥 Nạp vào Canvas</button>
+      <button id="loadProjectBtn" type="button" class="primary" title="Tự động bung toàn bộ Shots trong dự án thành mạng lưới Node đã nối dây">📥 Nạp</button>
     </div>
 
     <div class="toolbar-tools" aria-label="Thêm node vào quy trình">
-            <button id="aiDirectorBtn" type="button" class="ai-director-btn" title="Dùng AI phân tích lời bài hát và Style nhạc Suno để tự động dựng dàn Node phân cảnh">
-        <span class="ai-icon">✨</span>
-        <span>AI Đạo Diễn Suno</span>
+      <button id="copilotToggleBtn" type="button" class="ai-director-btn" title="Mở Trợ lý AI Copilot &amp; Tạo/Gán Node Nhanh (Ctrl+K)">
+        <span class="ai-icon">🤖</span>
+        <span>AI Copilot &amp; Gán Nhanh</span>
       </button>
-      <button id="workflowPresetsBtn" type="button" class="accent-btn" title="Nạp nhanh các mẫu workflow nối dây sẵn 1-click">⚡ Mẫu Workflow</button>
-      <button id="wireGuideBtn" type="button" class="help-btn" title="Xem hướng dẫn cách kéo thả và quy tắc nối dây giữa các node">📖 Hướng dẫn nối dây</button>
-      <button id="scriptImportBtn" type="button">＋ Kịch bản → Nodes</button>
-      <button id="addNodeMenuBtn" type="button" aria-haspopup="true" aria-expanded="false">＋ Thêm node</button>
+      <button id="addNodeMenuBtn" type="button" aria-haspopup="true" aria-expanded="false">＋ Thêm Node</button>
+      <button id="workflowPresetsBtn" type="button" class="accent-btn" title="Nạp nhanh các mẫu workflow nối dây sẵn 1-click">⚡ Mẫu</button>
+      <button id="scriptImportBtn" type="button" title="Dán danh sách Nhân vật hoặc Kịch bản để tạo cụm node">📋 Dán Kịch Bản / NV</button>
+      <button id="wireGuideBtn" type="button" class="help-btn" title="Xem hướng dẫn cách kéo thả và quy tắc nối dây">📖 Hướng dẫn</button>
     </div>
     <div class="toolbar-actions">
-      <button id="arrangeNodesBtn" type="button" title="Tự động sắp xếp dàn node ngay ngắn, giãn đều, không bị đè lên nhau">📐 Sắp xếp node</button>
-      <button id="saveBtn">Lưu Canvas</button>
+      <button id="arrangeNodesBtn" type="button" title="Tự động sắp xếp dàn node ngay ngắn, giãn đều">📐 Sắp xếp</button>
+      <button id="saveBtn">Lưu</button>
       <button id="workflowExportBtn" type="button" title="Xuất quy trình dạng JSON">Xuất JSON</button>
       <button id="workflowImportBtn" type="button" title="Nhập quy trình từ file JSON">Nhập JSON</button>
       <input id="workflowFileInput" type="file" accept=".json,application/json" hidden />
-      <button id="resetBtn" class="danger">Xóa Canvas</button>
+      <button id="resetBtn" class="danger">Xóa Bàn</button>
       <button id="runBtn" class="primary" title="Chạy toàn bộ các node tạo ảnh/video theo thứ tự phụ thuộc">▶ Chạy Workflow</button>
-      <button id="autoPipelineBtn" type="button" class="accent-btn" style="background:linear-gradient(135deg, #7c3aed, #db2777);color:#fff;font-weight:700;border:none;box-shadow:0 0 14px rgba(219,39,119,0.4);display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:6px;cursor:pointer;" title="1 Phát Xong Luôn: Tự động chạy toàn bộ các node tuần tự, tự động ghép video, lồng file nhạc và burn phụ đề SRT khớp 100% thành phẩm!">
+      <button id="autoPipelineBtn" type="button" class="accent-btn" style="background:linear-gradient(135deg, #7c3aed, #db2777);color:#fff;font-weight:700;border:none;box-shadow:0 0 14px rgba(219,39,119,0.4);display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:6px;cursor:pointer;" title="1 Phát Xong Luôn: Tự động chạy toàn bộ các node tuần tự, tự động ghép video, lồng file nhạc và burn phụ đề SRT!">
         <span>🚀</span>
         <span>1 Phát Xong Luôn</span>
       </button>
@@ -101,16 +195,16 @@
   <div id="presetsMenu" class="presets-menu hidden" role="menu" aria-label="Mẫu Workflow dựng sẵn">
     <div class="presets-menu-caption">⚡ Mẫu Quy Trình Nối Sẵn (1-Click)</div>
     <button type="button" role="menuitem" data-preset="image_gen">
-      <strong>🎨 1. Tạo Ảnh AI Chuẩn Muse</strong>
+      <strong>🎨 1. Tạo Ảnh AI Chuẩn Minh Âm</strong>
       <small>Prompt ➔ Tạo Ảnh (Muse AI) ➔ Xem trước</small>
     </button>
     <button type="button" role="menuitem" data-preset="image_to_video">
       <strong>🎬 2. Tạo Video từ Ảnh (Image-to-Video)</strong>
-      <small>Ảnh đầu vào ➔ Tạo Video ➔ Timeline MV</small>
+      <small>Ảnh đầu vào ➔ Tạo Video ➔ Timeline Dự Án</small>
     </button>
     <button type="button" role="menuitem" data-preset="full_mv">
-      <strong>🌟 3. Quy Trình MV Hoàn Chỉnh</strong>
-      <small>Prompt ➔ Tạo Ảnh ➔ Tạo Video ➔ Timeline ➔ Ghép MV</small>
+      <strong>🌟 3. Quy Trình Sản Xuất Video Hoàn Chỉnh</strong>
+      <small>Prompt ➔ Tạo Ảnh ➔ Tạo Video ➔ Timeline ➔ Xuất MP4</small>
     </button>
     <button type="button" role="menuitem" data-preset="continuity_shots">
       <strong>🔄 4. Nối Mạch 2 Cảnh Liên Tiếp</strong>
@@ -127,7 +221,8 @@
       <button type="button" role="menuitem" data-add="text">Ghi chú (Note)</button>
     </div>
     <div class="add-node-group"><span>Hình ảnh</span>
-      <button type="button" role="menuitem" data-add="imageInput">Ảnh đầu vào (Image input)</button>
+      <button type="button" role="menuitem" data-add="imageInput">Ảnh đầu vào (1 ảnh)</button>
+      <button type="button" role="menuitem" data-add="imageBatchInput">Tập ảnh đầu vào (Nhiều ảnh từ máy)</button>
       <button type="button" role="menuitem" data-add="references">Ảnh tham chiếu (References)</button>
       <button type="button" role="menuitem" data-add="generateImage">Tạo ảnh (Generate image)</button>
       <button type="button" role="menuitem" data-add="imageResize">Đổi cỡ ảnh (Resize)</button>
@@ -161,11 +256,11 @@
   <section id="timelineDock" class="timeline-dock collapsed" aria-label="Video timeline">
     <div class="timeline-dock-header">
       <div class="timeline-heading">
-        <strong>Timeline MV</strong>
+        <strong>Timeline Dự Án</strong>
         <span id="timelineClipCount">0 clips</span>
         <span id="timelineTotalDurationBadge" class="timeline-meta-badge" title="Tổng thời lượng video">⏱ 00:00</span>
         <span id="timelineAudioBadge" class="timeline-meta-badge audio-meta-badge hidden" title="Nhạc nền BGM">🎵 BGM</span>
-        <small>Trình dựng CapCut thu nhỏ · Sắp xếp, nhân bản & lồng nhạc</small>
+        <small>Trình dựng Video đa năng · Sắp xếp, nhân bản &amp; lồng nhạc / phụ đề</small>
       </div>
       <div class="timeline-dock-actions">
         <input type="file" id="timelineAudioInput" accept="audio/*" hidden />
@@ -252,11 +347,11 @@
 
   <div id="scriptModal" class="modal-backdrop hidden">
     <section class="modal script-modal" role="dialog" aria-modal="true" aria-labelledby="scriptModalTitle">
-      <h2 id="scriptModalTitle">Tạo các Node từ Kịch bản phân cảnh</h2>
-      <p>Dán kịch bản phân cảnh phân đoạn theo định dạng Cảnh 1, Cảnh 2... Canvas sẽ tự động đọc khung đầu, diễn biến, prompt ảnh, prompt video, âm thanh và tự động nối dây hoàn chỉnh lên Canvas và đưa vào Timeline!</p>
-      <p class="script-template-hint">Tải mẫu kịch bản chuẩn để điền hoặc gửi cho AI tạo theo định dạng này.</p>
-      <label for="scriptInput">Kịch bản:</label>
-      <textarea id="scriptInput" placeholder="CẢNH 1 (0:00 đến 0:07): Tên cảnh&#10;Khung đầu: Mô tả khung mở đầu...&#10;Khung cuối: Mô tả khung kết thúc...&#10;Diễn biến: 1. 0-2s: Diễn biến chi tiết...&#10;Prompt ảnh khung đầu: A beautiful cinematic portrait...&#10;Prompt video: Slow motion camera dolly in...&#10;Audio: Tiếng gió và đàn piano du dương..."></textarea>
+      <h2 id="scriptModalTitle">Tạo các Node từ Kịch bản / Danh sách Khóa Nhân vật</h2>
+      <p>Dán danh sách Khóa Nhân vật (CHAR_LOCK) hoặc Kịch bản phân cảnh (Cảnh 1, Cảnh 2...). Canvas sẽ tự động tạo cụm node chuẩn chỉnh (Prompt, Loại trừ, Tạo ảnh 1:1, Tập ảnh tham chiếu) và tự động nối dây hoàn chỉnh!</p>
+      <p class="script-template-hint">Hỗ trợ dán danh sách đặc điểm nhân vật (FACE, HAIR, BODY, OUTFIT) hoặc kịch bản phân cảnh đầy đủ.</p>
+      <label for="scriptInput">Kịch bản / Danh sách nhân vật:</label>
+      <textarea id="scriptInput" placeholder="• Anh Chồng (CHAR_01 — 28 tuổi):&#10;o CHAR_ID_LOCK_01 / FACE_LOCK_01: Nam miền Tây 28 tuổi, da rám nắng, mặt tròn hiền lành, ria mép mỏng, mắt một mí to tròn biểu cảm hóm hỉnh.&#10;o HAIR_LOCK_01: Tóc đen ngắn hơi rối tự nhiên.&#10;o BODY_LOCK_01: Dáng trung bình hơi gầy, cao 1m68.&#10;o OUTFIT_LOCK_01: Áo thun xanh dương bạc màu, quần đùi caro nâu ngang gối, dép lào cao su quai xanh đế trắng.&#10;&#10;Hoặc kịch bản phân cảnh:&#10;CẢNH 1 (0:00 đến 0:07): Tên cảnh&#10;Khung đầu: Mô tả khung mở đầu...&#10;Prompt ảnh khung đầu: A beautiful cinematic portrait...&#10;Prompt video: Slow motion camera dolly in..."></textarea>
       <div class="script-media-inputs" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0;background:#141724;padding:10px 14px;border-radius:8px;border:1px solid #282d44;">
         <div>
           <label for="scriptAudioInput" style="font-size:12px;font-weight:600;color:#94a3b8;display:block;margin-bottom:4px;">🎵 File Audio (Nhạc / Lồng tiếng):</label>
@@ -274,8 +369,8 @@
         <a id="downloadScriptTemplate" class="script-template-download" href="./templates/museflow-scene-script-template-vi.txt" download="MuseFlow_Scene_Script_Template_VI.txt">⇩ Tải mẫu kịch bản tiếng Việt</a>
         <div style="display:flex;gap:8px;">
           <button id="cancelScriptImport" type="button">Hủy</button>
-          <button id="buildScriptNodes" type="button">Tạo các node phân cảnh</button>
-          <button id="buildAndRunScriptNodes" type="button" class="accent-btn" style="background:linear-gradient(135deg, #7c3aed, #db2777);color:#fff;font-weight:700;border:none;padding:7px 16px;border-radius:6px;box-shadow:0 0 10px rgba(219,39,119,0.3);cursor:pointer;" title="Tự động tạo các node phân cảnh, tự đẩy qua Muse AI render tuần tự và tự động ghép video + nhạc + SRT thành phẩm!">🚀 Tạo Node &amp; Chạy 1 Phát Xong Luôn</button>
+          <button id="buildScriptNodes" type="button">Tạo các node</button>
+          <button id="buildAndRunScriptNodes" type="button" class="accent-btn" style="background:linear-gradient(135deg, #7c3aed, #db2777);color:#fff;font-weight:700;border:none;padding:7px 16px;border-radius:6px;box-shadow:0 0 10px rgba(219,39,119,0.3);cursor:pointer;" title="Tự động tạo các node, tự đẩy qua Muse AI render tuần tự và tự động ghép video + nhạc + SRT thành phẩm!">🚀 Tạo Node &amp; Chạy 1 Phát Xong Luôn</button>
         </div>
       </div>
     </section>
@@ -306,181 +401,156 @@
 
   <!-- Guide Modal: Hướng Dẫn Nối Dây -->
   
-  <!-- Modal AI Đạo Diễn Suno (Lyrics & Style to Nodes) -->
-  <div id="aiDirectorModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="aiDirectorTitle">
-    <div class="ai-modal-card modal-card" style="position:relative;">
-      <!-- Loading Overlay -->
-      <div id="aiLoadingOverlay" class="ai-loading-overlay hidden">
-        <div class="ai-loading-spinner"></div>
-        <div id="aiLoadingText" class="ai-loading-text">✨ AI đang lắng nghe và phân tích bài hát...</div>
-        <div class="ai-loading-subtext">Đang phân tích ca từ, nhịp điệu, file nhạc Suno, lập Visual Bible và chia phân cảnh...</div>
-      </div>
-
-      <header class="ai-modal-header">
-        <h2 id="aiDirectorTitle">✨ Trợ Lý AI Đạo Diễn MV từ Lyric &amp; Style Suno</h2>
-        <button id="closeAiDirectorBtn" type="button" class="close-btn" aria-label="Đóng">&times;</button>
-      </header>
-
-      <div class="ai-modal-body">
-        <!-- Cột Trái: Thông Tin Bài Hát -->
-        <div class="ai-main-fields">
-          <div class="ai-form-group">
-            <label for="aiSongTitle">🎵 Tên dự án / Bài hát:</label>
-            <input type="text" id="aiSongTitle" placeholder="Ví dụ: Mặt Nạ Bôi Vôi / Podcast Công Nghệ / Tiểu Phẩm Hài" />
-          </div>
-
-          <div class="ai-form-group">
-            <label for="aiModeSelect">🎬 Chế độ Đạo Diễn (Smart Mode Detector):</label>
-            <select id="aiModeSelect" style="width:100%; padding:8px 12px; background:#0d0e17; border:1px solid #7c3aed; color:#e2e8f0; border-radius:6px; font-size:13px; font-weight:600;">
-              <option value="auto">⚡ Tự động nhận diện (Smart Mode Detector - Phân tích nội dung)</option>
-              <option value="MUSIC_VIDEO">🎵 Mode 1: Music Video Director (MV ca nhạc / Trình diễn / Minh họa)</option>
-              <option value="COMEDY">😂 Mode 2: Comedy Director (Video hài / Tiểu phẩm / Parody)</option>
-              <option value="PODCAST">🎙️ Mode 3: Podcast Director (Talkshow / Phỏng vấn / Đối thoại 2+ người)</option>
-              <option value="CINEMATIC_STORY">🎥 Mode 4: Cinematic Story Director (Phim ngắn / Trailer / Điện ảnh)</option>
-            </select>
-          </div>
-
-          
-          <!-- Tải File Subtitle SRT (Khớp Lời & Thời Gian Chuẩn 100%) -->
-          <div class="ai-form-group" style="background:#131522; padding:10px 14px; border-radius:8px; border:1px solid #4a2e7a;">
-            <label style="color:#e9d5ff; font-weight:700; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
-              <span>📄 File Phụ Đề (.srt / .lrc) từ Subtitle Edit, CapCut, Karaoke — Khớp đúng 100% bối cảnh từng câu hát:</span>
-              <span style="font-size:10px; background:#7c3aed; color:#fff; padding:2px 6px; border-radius:4px; font-weight:bold;">ĐỘT PHÁ</span>
-            </label>
-            <p style="font-size:11px; color:#94a3b8; margin:0 0 8px;">
-              File .srt chứa mốc giây chính xác của từng câu hát. AI sẽ tự động đọc timecode, chia cảnh khớp chuẩn từng câu hát và phủ kín 100% video!
-            </p>
-            <input type="file" id="aiSrtFile" accept=".srt,.lrc,text/plain" hidden />
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-              <button type="button" id="aiUploadSrtBtn" class="ai-chip" style="font-size:12px; padding:6px 14px; background:#4c1d95; border-color:#a855f7; color:#fff; font-weight:bold;">
-                📄 Chọn File .SRT / .LRC
-              </button>
-              <span id="aiSrtInfo" style="font-size:12px; color:#cbd5e1;">Chưa tải file .srt / .lrc (Tùy chọn)</span>
-              <button type="button" id="aiClearSrtBtn" class="small-btn hidden" style="font-size:11px; color:#f87171; background:transparent; border:none; cursor:pointer;">✕ Xóa SRT</button>
-            </div>
-          </div>
-
-          <!-- Tải File Nhạc Suno -->
-          <div class="ai-form-group" style="background:#131522; padding:10px 14px; border-radius:8px; border:1px solid #2d2448;">
-            <label style="color:#d8b4fe; margin-bottom:4px;">🎧 File Nhạc Suno (.mp3 / .wav) — Giúp phân tích thời lượng &amp; khớp nhạc chuẩn 100%:</label>
-            <input type="file" id="aiAudioFile" accept="audio/*" hidden />
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:6px;">
-              <button type="button" id="aiUploadAudioBtn" class="ai-chip" style="font-size:12px; padding:6px 14px; background:#3b1e6d; border-color:#a855f7; color:#fff; font-weight:bold;">
-                📁 Chọn File Nhạc Suno
-              </button>
-              <span id="aiAudioInfo" style="font-size:12px; color:#cbd5e1;">Chưa chọn file nhạc (Tùy chọn)</span>
-              <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
-                <label for="aiAudioDurationManual" style="font-size:11px; color:#a78bfa; margin-bottom:0;">⏱ Thời lượng (s):</label>
-                <input type="number" id="aiAudioDurationManual" min="10" max="600" placeholder="Số giây..." style="width:90px; padding:4px 8px; font-size:12px; background:#090a12; border:1px solid #4c1d95; color:#f1f5f9; border-radius:6px;" title="Thời lượng bài hát tính theo giây (ví dụ: 180s, 225s). AI sẽ tự động sinh số phân cảnh phủ kín 100% thời gian bài hát!">
-              </div>
-            </div>
-            <div id="aiAudioPlayerWrap" class="hidden" style="margin-top:8px;">
-              <audio id="aiAudioPreview" controls style="width:100%; height:32px; border-radius:4px;"></audio>
-            </div>
-          </div>
-
-          <div class="ai-form-group">
-            <label for="aiGenreStyle">🎨 Style nhạc Suno đầy đủ (Paste nguyên Style Prompt từ Suno vào đây):</label>
-            <textarea id="aiGenreStyle" rows="3" placeholder="Ví dụ: dark avant-garde Vietnamese theatrical folk, sarcastic Cheo clown talk-singing, dramatic raspy Hat Boi guttural vocal belt, piercing weeping Ken Bau horn solo, clashing traditional bronze gongs, rustic battle drums, eerie village satire, 96 bpm, -autotune, -western brass, -modern EDM synth..."></textarea>
-            <div class="ai-chips-wrap">
-              <span class="ai-chip" data-style="professional multi-camera podcast studio, warm ambient amber lighting with teal rim light, two hosts talking and laughing, broadcast microphones Shure SM7B, 35mm shallow depth of field">🎙️ Podcast Talkshow</span>
-              <span class="ai-chip" data-style="witty satirical comedy sketch, bright modern cinematography, funny facial expressions, whip pan transitions, comedic timing, 16:9 photorealistic">😂 Hài Kịch / Tiểu Phẩm</span>
-              <span class="ai-chip" data-style="dark avant-garde Vietnamese theatrical folk, sarcastic Cheo clown talk-singing, dramatic raspy Hat Boi guttural vocal belt, piercing weeping Ken Bau horn solo, clashing traditional bronze gongs, rustic battle drums, eerie village satire, 96 bpm, -autotune, -western brass, -modern EDM synth">🎭 Hề Chèo / Hát Bội Folk</span>
-              <span class="ai-chip" data-style="80s synthwave, energetic, nostalgic, night drive, neon city, retro synthesizer, female vocal, 110 bpm, -modern pop">🌆 80s Synthwave</span>
-              <span class="ai-chip" data-style="acoustic pop ballad, emotional sad piano, deep female vocal, rainy window, soft cello, 80 bpm, -heavy bass">☕ Acoustic Ballad</span>
-              <span class="ai-chip" data-style="cyberpunk EDM, aggressive distorted bass, high-tech samurai, neon metropolis, intense drop, 130 bpm">⚡ Cyberpunk EDM</span>
-              <span class="ai-chip" data-style="lofi hip hop, chill beats, nostalgic acoustic guitar, peaceful night cafe, warm vinyl crackle, 85 bpm">🎧 Lofi Chill</span>
-              <span class="ai-chip" data-style="epic cinematic fantasy orchestral, dramatic war choir, thundering battle drums, brass fanfare, 95 bpm">⚔️ Epic Cinematic</span>
-            </div>
-          </div>
-
-          <div class="ai-form-group">
-            <label for="aiLyricsInput">📝 Lời bài hát hoàn chỉnh (Full Lyrics từ Suno):</label>
-            <textarea id="aiLyricsInput" rows="7" placeholder="[Haunting Village Intro - Tiếng mõ tre gõ lốc cốc lệch nhịp, tiếng kèn Bầu rít lên một vệt dài chua chát]&#10;&#10;[Verse 1 - Lối hát nói Hề Chèo tưng tửng, nhả chữ lả lơi trêu ngươi]&#10;Đầu đội khăn rách, tay cầm quạt nan&#10;Mặt bôi vôi trắng bước ra giữa đình&#10;Miệng cười toe toét, ai mắng cho vui?&#10;&#10;[Chorus]&#10;Đời là một vở tuồng hề&#10;Mặt nạ rơi xuống, ai về cùng ai..."></textarea>
-          </div>
-        </div>
-
-        <!-- Cột Phải: Cấu Hình Model AI & Tùy Chọn Dựng Node -->
-        <div class="ai-sidebar-fields">
-          <div class="ai-sidebar-box" style="margin-bottom:14px;">
-            <h3>⚙️ Tùy Chọn Dựng Nodes</h3>
-            <label class="ai-checkbox-item">
-              <input type="checkbox" id="aiOptClearOldNodes" checked />
-              <span><strong>Xóa sạch dàn node cũ</strong> để dựng mới</span>
-            </label>
-            <label class="ai-checkbox-item">
-              <input type="checkbox" id="aiOptAttachAudio" checked />
-              <span>Gán file nhạc làm <strong>Audio nền</strong> của MV</span>
-            </label>
-            <label class="ai-checkbox-item">
-              <input type="checkbox" id="aiOptPromptImageVideo" checked />
-              <span>Dựng cụm: <strong>Prompt ➔ Tạo Ảnh ➔ Tạo Video</strong></span>
-            </label>
-            <label class="ai-checkbox-item">
-              <input type="checkbox" id="aiOptAddToTimeline" checked />
-              <span>Tự động xếp video vào <strong>Timeline MV</strong></span>
-            </label>
-            <label class="ai-checkbox-item">
-              <input type="checkbox" id="aiOptAutoArrange" checked />
-              <span>Tự động <strong>sắp xếp dàn node</strong> gọn gàng</span>
-            </label>
-            <label class="ai-checkbox-item">
-              <input type="checkbox" id="aiOptContinuity" />
-              <span>Nối mạch cảnh liên tiếp (Khung cuối ➔ Khung đầu)</span>
-            </label>
-          </div>
-
-          <div class="ai-sidebar-box">
-            <h3>🤖 Cấu Hình Model AI</h3>
-            <div id="aiConfigStatus" class="ai-status-indicator">
-              <span>Đang kiểm tra Model AI...</span>
-            </div>
-
-            <label class="ai-checkbox-item" style="margin-bottom:8px;">
-              <input type="checkbox" id="aiUseCustomProxy" />
-              <span>Tùy chỉnh Proxy / Model AI riêng</span>
-            </label>
-
-            <div id="aiCustomProxyFields" class="hidden" style="margin-top:8px;">
-              <div class="ai-form-group">
-                <label for="aiCustomProvider">Provider:</label>
-                <select id="aiCustomProvider">
-                  <option value="custom_proxy">OpenAI Compatible (Proxy)</option>
-                  <option value="openai">OpenAI Official</option>
-                  <option value="gemini">Google Gemini</option>
-                </select>
-              </div>
-              <div class="ai-form-group">
-                <label for="aiCustomBaseUrl">Base URL / Proxy:</label>
-                <input type="text" id="aiCustomBaseUrl" placeholder="https://api.openai.com/v1" />
-              </div>
-              <div class="ai-form-group">
-                <label for="aiCustomApiKey">API Key:</label>
-                <input type="password" id="aiCustomApiKey" placeholder="sk-..." />
-              </div>
-              <div class="ai-form-group">
-                <label for="aiCustomModel">Model Name:</label>
-                <input type="text" id="aiCustomModel" placeholder="gpt-4o, deepseek-chat, gemini-1.5-pro..." />
-              </div>
-            </div>
-          </div>
-
+  <!-- Thanh bên phải: AI Copilot & Gán Node Nhanh (Minh Âm Studio) -->
+  <aside id="copilotDrawer" class="copilot-drawer hidden" aria-label="AI Copilot &amp; Gán Node Nhanh">
+    <header class="copilot-header">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:18px;">🤖</span>
+        <div>
+          <strong style="font-size:13.5px;color:#f8fafc;display:block;">Minh Âm Copilot &amp; Gán Nhanh</strong>
+          <small id="copilotSelectionBadge" style="font-size:11px;color:#a78bfa;">Sẵn sàng tạo &amp; gán node tức thì</small>
         </div>
       </div>
+      <button id="closeCopilotDrawerBtn" type="button" style="background:transparent;border:none;color:#94a3b8;font-size:20px;cursor:pointer;line-height:1;" title="Đóng (Esc)">×</button>
+    </header>
 
-      <footer class="modal-actions" style="padding:14px 20px; background:#141724; border-top:1px solid #282d44; display:flex; justify-content:space-between; align-items:center;">
-        <button id="cancelAiDirectorBtn" type="button">Hủy</button>
-        <div style="display:flex; gap:10px;">
-          <button id="submitAiDirectorBtn" type="button" class="ai-director-btn" style="font-size:13px; padding:8px 18px;">
-            <span>✨ Dựng Dàn Node</span>
-          </button>
-          <button id="submitAiDirectorAutoRunBtn" type="button" class="accent-btn" style="background:linear-gradient(135deg, #7c3aed, #db2777);color:#fff;font-weight:700;border:none;font-size:13px;padding:8px 18px;border-radius:6px;box-shadow:0 0 12px rgba(219,39,119,0.35);cursor:pointer;" title="Dựng kịch bản chuẩn timecode SRT, tự động render tuần tự qua Muse AI và tự động ghép video + nhạc + phụ đề thành phẩm!">
-            <span>🚀 Dựng &amp; Chạy 1 Phát Xong Luôn</span>
-          </button>
-        </div>
-      </footer>
+    <div class="copilot-tabs" role="tablist">
+      <button type="button" class="copilot-tab-btn active" data-copilot-tab="spawn">⚡ Đẻ Node Nhanh</button>
+      <button type="button" class="copilot-tab-btn" data-copilot-tab="chat">💬 AI Chat Copilot</button>
+      <button type="button" class="copilot-tab-btn" data-copilot-tab="batch">🔗 Gán Hàng Loạt</button>
     </div>
-  </div>
+
+    <div class="copilot-body">
+      <!-- TAB 1: ĐẺ & GÁN NODE TỨC THÌ (0 GIÂY) -->
+      <div id="copilotPaneSpawn" class="copilot-pane" style="display:flex;flex-direction:column;gap:12px;">
+        <div class="copilot-card">
+          <label for="quickSpawnInput" style="font-size:12px;font-weight:700;color:#e2e8f0;display:block;margin-bottom:6px;">
+            📋 Dán Danh Sách Prompt hoặc Khóa Nhân Vật:
+          </label>
+          <p style="font-size:11px;color:#94a3b8;margin:0 0 8px;line-height:1.4;">
+            • Dán <strong>nhiều dòng văn bản</strong> (mỗi dòng 1 cảnh) ➔ Tự đẻ dàn node tương ứng.<br/>
+            • Dán <strong>CHAR_01 / FACE_LOCK / OUTFIT_LOCK</strong> ➔ Tự đẻ cụm 4 node khóa nhân vật nối vào Tập tham chiếu!
+          </p>
+          <textarea id="quickSpawnInput" rows="7" style="width:100%;background:#0c0e17;border:1px solid #333a56;color:#f1f5f9;border-radius:8px;padding:10px;font-size:12px;line-height:1.45;resize:vertical;" placeholder="Ví dụ cách 1 (Mỗi dòng 1 cảnh):&#10;Cận cảnh cô gái đứng dưới mưa phố cổ, ánh đèn neon phản chiếu, 8k&#10;Góc máy rộng chiếc xe cổ chạy qua con đường lá vàng rơi&#10;Góc máy từ trên cao toàn cảnh thành phố lúc bình minh&#10;&#10;Hoặc cách 2 (Khóa nhân vật):&#10;• Anh Chồng (CHAR_01 — 28 tuổi):&#10;o FACE_LOCK_01: Nam miền Tây 28 tuổi, mặt tròn hiền lành..."></textarea>
+        </div>
+
+        <div class="copilot-card" style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div>
+              <label for="quickSpawnPattern" style="font-size:11px;color:#94a3b8;display:block;margin-bottom:4px;">Kiểu cụm Node muốn tạo:</label>
+              <select id="quickSpawnPattern" style="width:100%;background:#0c0e17;border:1px solid #333a56;color:#f1f5f9;border-radius:6px;padding:6px 8px;font-size:11.5px;">
+                <option value="auto">✨ Tự nhận diện thông minh</option>
+                <option value="image_only">🖼️ Chỉ cụm Tạo Ảnh (Prompt ➔ Ảnh)</option>
+                <option value="image_video_timeline">🎬 Cụm Ảnh ➔ Video ➔ Timeline</option>
+                <option value="char_lock">👤 Cụm Khóa Nhân Vật ➔ Tham chiếu</option>
+                <option value="prompt_only">📝 Chỉ tạo dàn ô Prompt rời</option>
+              </select>
+            </div>
+            <div>
+              <label for="quickSpawnAspect" style="font-size:11px;color:#94a3b8;display:block;margin-bottom:4px;">Khung hình mặc định:</label>
+              <select id="quickSpawnAspect" style="width:100%;background:#0c0e17;border:1px solid #333a56;color:#f1f5f9;border-radius:6px;padding:6px 8px;font-size:11.5px;">
+                <option value="16:9">16:9 (Ngang chuẩn)</option>
+                <option value="9:16">9:16 (Dọc TikTok/Reels)</option>
+                <option value="1:1">1:1 (Vuông)</option>
+                <option value="4:3">4:3 (Cổ điển)</option>
+                <option value="3:4">3:4 (Chân dung)</option>
+              </select>
+            </div>
+          </div>
+
+          <label style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:#cbd5e1;cursor:pointer;margin-top:2px;">
+            <input type="checkbox" id="quickSpawnLinkRefs" checked />
+            <span>Tự nối <strong>Tập ảnh tham chiếu / Tập ảnh đầu vào</strong> đang có vào các node mới</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:#cbd5e1;cursor:pointer;">
+            <input type="checkbox" id="quickSpawnClearOld" />
+            <span>Xóa các node cũ trước khi tạo mới</span>
+          </label>
+
+          <div style="display:flex;gap:8px;margin-top:6px;">
+            <button id="quickSpawnBuildBtn" type="button" class="primary" style="flex:1;padding:9px 12px;font-weight:700;font-size:12px;border-radius:7px;cursor:pointer;">
+              ⚡ Tạo &amp; Nối Dây Ngay
+            </button>
+            <button id="quickSpawnRunBtn" type="button" style="padding:9px 12px;font-weight:700;font-size:12px;border-radius:7px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border:none;cursor:pointer;" title="Tạo dàn node xong tự động bấm Chạy luôn!">
+              🚀 Tạo &amp; Chạy
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: AI CHAT COPILOT -->
+      <div id="copilotPaneChat" class="copilot-pane hidden" style="display:flex;flex-direction:column;gap:10px;height:100%;">
+        <div class="copilot-card" style="padding:10px;">
+          <div style="font-size:11px;font-weight:700;color:#c4b5fd;margin-bottom:6px;">💡 Gợi ý lệnh nhanh (1-Click):</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <button type="button" class="copilot-chip" data-copilot-prompt="Viết 4 góc máy điện ảnh liên tiếp (Toàn cảnh, Trung cảnh, Cận cảnh, Góc động) cho cảnh đang chọn hoặc chủ đề mới">🎬 4 Góc máy điện ảnh</button>
+            <button type="button" class="copilot-chip" data-copilot-prompt="Nâng cấp các prompt đang chọn sang chuẩn điện ảnh 8K photorealistic, ánh sáng tự nhiên sắc nét">✨ Nâng cấp Prompt 8K</button>
+            <button type="button" class="copilot-chip" data-copilot-prompt="Tạo 4 cảnh video quảng cáo sản phẩm sang trọng, chuyển động camera mượt mà">💎 4 Cảnh TVC Sản phẩm</button>
+            <button type="button" class="copilot-chip" data-copilot-prompt="Thêm chi tiết ánh sáng hoàng hôn ấm áp, chiều sâu trường ảnh 35mm vào các node đang chọn">🌅 Thêm ánh sáng Hoàng hôn</button>
+          </div>
+        </div>
+
+        <div id="copilotChatMessages" style="flex:1;min-height:220px;max-height:380px;overflow-y:auto;background:#0c0e17;border:1px solid #252b42;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:10px;font-size:12px;">
+          <div style="background:#171b2e;border:1px solid #2e3656;border-radius:8px;padding:10px;color:#cbd5e1;line-height:1.45;">
+            👋 Chào bạn! Mình là <strong>Minh Âm Copilot</strong>.<br/>
+            • Bạn có thể <strong>chọn các node trên bàn dựng</strong> rồi bảo mình sửa/nâng cấp prompt.<br/>
+            • Hoặc bảo mình <strong>viết danh sách các cảnh mới</strong> rồi bấm 1 nút để đẻ thẳng ra bàn dựng!
+          </div>
+        </div>
+
+        <div class="copilot-card" style="padding:10px;">
+          <textarea id="copilotChatInput" rows="3" style="width:100%;background:#090b12;border:1px solid #353c59;color:#f8fafc;border-radius:7px;padding:8px;font-size:12px;resize:none;" placeholder="Nhập yêu cầu cho Copilot (VD: Viết 4 cảnh anh chồng miền Tây đi bắt cá dưới mưa)..."></textarea>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:8px;">
+            <small id="copilotStatusText" style="font-size:11px;color:#94a3b8;">Enter để gửi · Hỗ trợ cả Offline &amp; API</small>
+            <button id="copilotSendBtn" type="button" class="primary" style="padding:7px 16px;font-size:12px;font-weight:700;border-radius:6px;cursor:pointer;">Gửi ➔</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: GÁN NHANH HÀNG LOẠT (BATCH ASSIGN & BULK LINK) -->
+      <div id="copilotPaneBatch" class="copilot-pane hidden" style="display:flex;flex-direction:column;gap:10px;">
+        <div class="copilot-card">
+          <h4 style="margin:0 0 8px;font-size:12px;color:#e2e8f0;">🔗 1. Gán Ảnh Tham Chiếu Hàng Loạt (1-Click)</h4>
+          <p style="font-size:11px;color:#94a3b8;margin:0 0 8px;">Tự động nối dây từ node <strong>Tập ảnh tham chiếu</strong> hoặc <strong>Tập ảnh đầu vào</strong> sang tất cả các node đích:</p>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <button type="button" id="batchLinkRefsToImagesBtn" class="small-btn" style="text-align:left;padding:8px 10px;background:#1e2238;border:1px solid #3b4262;color:#e2e8f0;border-radius:6px;cursor:pointer;font-size:11.5px;">
+              📌 Gán Tập Tham Chiếu ➔ <strong>Tất cả Node Tạo Ảnh</strong>
+            </button>
+            <button type="button" id="batchLinkRefsToVideosBtn" class="small-btn" style="text-align:left;padding:8px 10px;background:#1e2238;border:1px solid #3b4262;color:#e2e8f0;border-radius:6px;cursor:pointer;font-size:11.5px;">
+              📌 Gán Tập Tham Chiếu ➔ <strong>Tất cả Node Tạo Video</strong>
+            </button>
+            <button type="button" id="batchSpawnVideosFromImagesBtn" class="small-btn" style="text-align:left;padding:8px 10px;background:#1e293b;border:1px solid #0284c7;color:#bae6fd;border-radius:6px;cursor:pointer;font-size:11.5px;font-weight:600;">
+              🎬 Đẻ đồng loạt <strong>Node Tạo Video</strong> từ mọi Node Tạo Ảnh
+            </button>
+            <button type="button" id="batchAddAllVideosToTimelineBtn" class="small-btn" style="text-align:left;padding:8px 10px;background:#1e2238;border:1px solid #3b4262;color:#e2e8f0;border-radius:6px;cursor:pointer;font-size:11.5px;">
+              🎞️ Đưa tất cả <strong>Node Tạo Video ➔ Timeline Dự Án</strong>
+            </button>
+          </div>
+        </div>
+
+        <div class="copilot-card">
+          <h4 style="margin:0 0 6px;font-size:12px;color:#e2e8f0;">🚫 2. Gán Negative Prompt Chung Toàn Bàn</h4>
+          <textarea id="batchNegativeInput" rows="2" style="width:100%;background:#0c0e17;border:1px solid #333a56;color:#f1f5f9;border-radius:6px;padding:7px;font-size:11.5px;margin-bottom:6px;">3D CGI, cartoon, anime, plastic smooth skin, blurry, bad anatomy, deformed eyes, extra fingers, text, watermark, signature</textarea>
+          <button type="button" id="batchApplyNegativeBtn" class="small-btn" style="width:100%;padding:7px 10px;background:#2a1929;border:1px solid #be185d;color:#fbcfe8;border-radius:6px;cursor:pointer;font-size:11.5px;font-weight:600;">
+            🚫 Tạo &amp; Nối Negative Này Vào Mọi Node Ảnh/Video
+          </button>
+        </div>
+
+        <div class="copilot-card">
+          <h4 style="margin:0 0 8px;font-size:12px;color:#e2e8f0;">📐 3. Đổi Khung Hình &amp; Thu Gọn Đồng Loạt</h4>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;">
+            <button type="button" class="small-btn" data-batch-aspect="16:9" style="padding:7px;background:#1e2238;border:1px solid #3b4262;color:#e2e8f0;border-radius:6px;cursor:pointer;font-size:11px;">🖥️ Tất cả 16:9</button>
+            <button type="button" class="small-btn" data-batch-aspect="9:16" style="padding:7px;background:#1e2238;border:1px solid #3b4262;color:#e2e8f0;border-radius:6px;cursor:pointer;font-size:11px;">📱 Tất cả 9:16</button>
+            <button type="button" class="small-btn" data-batch-aspect="1:1" style="padding:7px;background:#1e2238;border:1px solid #3b4262;color:#e2e8f0;border-radius:6px;cursor:pointer;font-size:11px;">🟦 Tất cả 1:1</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <button type="button" id="batchCollapseAllBtn" class="small-btn" style="padding:7px;background:#171926;border:1px solid #333a56;color:#cbd5e1;border-radius:6px;cursor:pointer;font-size:11px;">➖ Thu gọn mọi Node</button>
+            <button type="button" id="batchExpandAllBtn" class="small-btn" style="padding:7px;background:#171926;border:1px solid #333a56;color:#cbd5e1;border-radius:6px;cursor:pointer;font-size:11px;">➕ Mở rộng mọi Node</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
 
   <div id="wireGuideModal" class="modal-backdrop hidden">
     <section class="modal wire-guide-modal" role="dialog" aria-modal="true" aria-labelledby="wireGuideTitle">
@@ -691,6 +761,6 @@
 
 
   <script src="./vendor/ffmpeg/ffmpeg.js"></script>
-  <script src="./canvas.js?v=3.6.2"></script>
+  <script src="./canvas.js?v=3.7.0"></script>
 </body>
 </html>

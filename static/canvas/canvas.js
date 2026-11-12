@@ -283,6 +283,7 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
     textAppend: { title: 'Nối đuôi Text (Append)', inputs: [{ id: 'text', label: 'Văn bản gốc', type: 'text' }], outputs: [{ id: 'text', label: 'Kết quả', type: 'text' }] },
     textConcat: { title: 'Ghép nhiều Text (Merge)', inputs: [{ id: 'text', label: 'Thêm văn bản', type: 'text' }], outputs: [{ id: 'text', label: 'Kết quả', type: 'text' }] },
     imageInput: { title: 'Ảnh đầu vào (Image Input)', outputs: [{ id: 'image', label: 'Ảnh ra', type: 'image' }] },
+    imageBatchInput: { title: 'Tập ảnh đầu vào (Batch Images)', outputs: [{ id: 'image', label: 'Tập ảnh ra', type: 'image' }] },
     references: { title: 'Tập ảnh tham chiếu (References)', inputs: Array.from({length:8},(_,i)=>({id:`reference${i+1}`,label:`Ảnh ${i+1}`,type:'image'})), outputs: [{id:'image',label:'Tập ảnh',type:'image'}] },
     generateImage: {
       title: 'Tạo Ảnh (Generate Image)',
@@ -306,6 +307,7 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
       const data={...(node.data||{})};
       if(data.asset&&typeof data.asset==='object')data.asset={...data.asset};
       if(data.endFrame&&typeof data.endFrame==='object')data.endFrame={...data.endFrame};
+      if(Array.isArray(data.images))data.images=data.images.map(img=>({...img}));
       if(Array.isArray(data.clipOrder))data.clipOrder=[...data.clipOrder];
       if(data.durations&&typeof data.durations==='object')data.durations={...data.durations};
       return{...node,data};
@@ -440,6 +442,8 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
       type === 'negativePrompt' ? { text: 'blurry, low quality, distorted anatomy, extra fingers, text, watermark' } :
       type === 'textAppend' ? { text: 'cinematic lighting, detailed composition' } :
       type === 'textConcat' ? { separator: ', ' } :
+      type === 'imageInput' ? {} :
+      type === 'imageBatchInput' ? { images: [] } :
       type === 'imageResize' ? { width: 1024, height: 1024, fit: 'cover' } :
       type === 'generateImage' ? { model: 'muse-image', size: '1:1', status: 'idle' } :
       type === 'generateVideo' ? { model: 'muse-video', size: '16:9', duration: 5, continuity: false, status: 'idle' } :
@@ -676,7 +680,7 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
   function syncReferenceFanOut(references){for(const generator of state.nodes.filter(node=>['generateImage','generateVideo'].includes(node.type)))connectReferenceNode(references,generator);}
 
   function makeNode(type,x,y){
-    const data=type==='prompt'?{text:'Describe what you want Muse to generate...'}:type==='negativePrompt'?{text:'blurry, low quality, distorted anatomy, extra fingers, text, watermark'}:type==='imageInput'?{}:type==='generateVideo'?{model:'muse-video',size:'16:9',duration:5,continuity:false,status:'idle'}:{};
+    const data=type==='prompt'?{text:'Describe what you want Muse to generate...'}:type==='negativePrompt'?{text:'blurry, low quality, distorted anatomy, extra fingers, text, watermark'}:type==='imageBatchInput'?{images:[]}:type==='imageInput'?{}:type==='generateVideo'?{model:'muse-video',size:'16:9',duration:5,continuity:false,status:'idle'}:{};
     return{id:uid(type),type,x,y,data};
   }
 
@@ -748,109 +752,280 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
     }).filter(scene=>scene.hasImagePrompt||scene.hasVideoPrompt);
   }
 
+  function parseAssetLockList(text) {
+    if (!text || typeof text !== 'string') return [];
+    // If the script contains scenes, character locks can only exist in the preamble before the first scene!
+    const firstSceneIdx = text.search(/^\s*(?:[-*•]\s*)?(?:#{1,6}\s*)?(?:\*{1,2}\s*)?(?:(?:PHÂN\s*)?C[AẢÀÁẠÃÂẬẦẤ]NH|SCENE|SHOT|CLIP)\s*\d+/im);
+    const assetSection = firstSceneIdx !== -1 ? text.slice(0, firstSceneIdx) : text;
+
+    const rawLines = assetSection.split(/\r?\n/);
+    const lines = rawLines.map(l => l.trim()).filter(Boolean);
+    if (!lines.length) return [];
+
+    const items = [];
+    let current = null;
+
+    const sceneFieldNames = /^(?:khung\s+[đd]ầu|opening\s+frame|khung\s+cuối|ending\s+frame|diễn\s+biến|action|prompt\s+[ảa]nh|image\s+prompt|prompt\s+video|video\s+prompt|audio|âm\s+thanh|negative|checklist)/i;
+
+    const isHeader = (line) => {
+      if (sceneFieldNames.test(line)) return false;
+      // Has colon at end or bracketed name: e.g. "• Anh Chồng (CHAR_01 — 28 tuổi):", "Anh Chồng (CHAR_01):"
+      if (/^[•\-*–—\d\.]*\s*(?:#{1,6}\s*)?(\[?[^:\]]+\]?)\s*:\s*$/i.test(line)) {
+        const lower = line.toLowerCase();
+        // Exclude attribute names like FACE_LOCK:, HAIR_LOCK:, etc.
+        if (!lower.includes('_lock') && !lower.includes('lock_') && !/^(?:face|hair|body|outfit|utfit|quần|áo|tóc|mặt|dáng)\s*:/i.test(lower)) {
+          return true;
+        }
+      }
+      // Or lines containing (CHAR_...) or [CHAR_...] or (SET_...) or (PROP_...)
+      if (/\((?:CHAR|SET|PROP|LOC)_[^\)]+\)\s*:?/i.test(line) || /\[(?:CHAR|SET|PROP|LOC)_[^\]]+\]\s*:?/i.test(line)) {
+        return true;
+      }
+      return false;
+    };
+
+    const isAttrLine = (line) => {
+      if (sceneFieldNames.test(line)) return false;
+      const lower = line.toLowerCase();
+      if (lower.includes('_lock') || lower.includes('lock_')) return true;
+      if (/^(?:face|hair|body|outfit|utfit|quần|áo|tóc|mặt|dáng|tuổi|chiều cao|vóc dáng)\s*:/i.test(line)) return true;
+      if (/^[o•\-*–—]\s*(?:face|hair|body|outfit|utfit|quần|áo|tóc|mặt|dáng|tuổi)/i.test(line)) return true;
+      return false;
+    };
+
+    for (const line of lines) {
+      if (isHeader(line)) {
+        if (current && (current.details.length || current.name)) items.push(current);
+        let name = line.replace(/^[•\-*–—\d\.]+\s*/, '').replace(/:\s*$/, '').trim();
+        current = { name, details: [] };
+      } else if (current) {
+        if (sceneFieldNames.test(line)) continue;
+        let attr = line.replace(/^[o•\-*–—\d\.]+\s*/, '').trim();
+        const colonIdx = attr.indexOf(':');
+        if (colonIdx !== -1 && colonIdx < 60) {
+          const val = attr.slice(colonIdx + 1).trim();
+          if (val) current.details.push(val.replace(/[,;.\s]+$/, ''));
+        } else {
+          current.details.push(attr.replace(/[,;.\s]+$/, ''));
+        }
+      } else if (isAttrLine(line)) {
+        current = { name: 'Nhân vật 1', details: [] };
+        let attr = line.replace(/^[o•\-*–—\d\.]+\s*/, '').trim();
+        const colonIdx = attr.indexOf(':');
+        if (colonIdx !== -1 && colonIdx < 60) {
+          const val = attr.slice(colonIdx + 1).trim();
+          if (val) current.details.push(val.replace(/[,;.\s]+$/, ''));
+        } else {
+          current.details.push(attr.replace(/[,;.\s]+$/, ''));
+        }
+      }
+    }
+    if (current && (current.details.length || current.name)) items.push(current);
+
+    const validItems = items.filter(it => it.details.length > 0 || (it.name && it.name.length > 3));
+
+    return validItems.map((item, idx) => {
+      const combined = item.details.filter(Boolean).join(', ');
+      return {
+        name: item.name || (`Nhân vật ${idx + 1}`),
+        prompt: combined || item.name,
+        negative: 'mờ, biến dạng, chữ ký, xấu, méo mó, watermark, 3D CGI, cartoon, anime, bad anatomy, deformed eyes, extra fingers'
+      };
+    });
+  }
+
   function buildSceneNodesFromScript(){
-    const status=$('#scriptImportStatus'),scriptText=$('#scriptInput').value,scenes=parseSceneScript(scriptText);
-    if(!scenes.length){status.className='error';status.textContent='No scenes found. Use headings like “CẢNH 1 (0:00–0:07): Title” or “Scene 1 (0:00–0:05): Title”, then add Prompt ảnh or Prompt video.';return;}
-    createUndoSnapshot('Create nodes from script (3-Stage Workflow)');
-    const baseY=Math.max(40,...state.nodes.filter(node=>!node.data?.dockOnly).map(node=>node.y+360)),createdVideos=[];
-    let made=0;
+    const status=$('#scriptImportStatus'),scriptText=$('#scriptInput').value;
+    const scenes=parseSceneScript(scriptText);
+    const assetLocks=parseAssetLockList(scriptText);
 
-    // GIAI ĐOẠN 1 – KHÓA TÀI NGUYÊN (ASSET LOCKS)
-    const preambleMatch=scriptText.search(/^\s*(?:[-*•]\s*)?(?:#{1,6}\s*)?(?:\*{1,2}\s*)?(?:(?:PHÂN\s*)?C[AẢÀÁẠÃÂẬẦẤ]NH|SCENE|SHOT|CLIP)\s*\d+/im);
-    const preamble=preambleMatch!==-1?scriptText.slice(0,preambleMatch):'';
-    const namedLocks=extractBracketLocks(preamble);
-    const charLock=namedLocks['char lock']||namedLocks['character lock']||'';
-    const setLock=namedLocks['set lock']||namedLocks.set||'';
-    const styleLock=namedLocks['style lock']||namedLocks.style||'';
-    const hasAssetLocks=Boolean(charLock||setLock);
-
-    let masterReferences=null;
-    if(hasAssetLocks){
-      let currentAssetY=baseY;
-      let charImgNode=null, setImgNode=null;
-      if(charLock){
-        const promptText=withPromptContext(charLock,[styleLock]);
-        const charPrompt=makeNode('prompt',80,currentAssetY);
-        charPrompt.data={text:promptText,sceneLabel:'GIAI ĐOẠN 1: [CHAR LOCK] Nhân vật Gốc'};
-        charImgNode=makeNode('generateImage',410,currentAssetY);
-        charImgNode.data={model:'muse-image',size:scenes[0]?.size||'16:9',status:'idle',sceneLabel:'Tạo [CHAR LOCK] Nhân vật Gốc'};
-        state.nodes.push(charPrompt,charImgNode);
-        state.edges.push({id:uid('edge'),source:charPrompt.id,sourcePort:'text',target:charImgNode.id,targetPort:'prompt'});
-        made+=2;
-        currentAssetY+=340;
-      }
-      if(setLock){
-        const promptText=withPromptContext(setLock,[styleLock]);
-        const setPrompt=makeNode('prompt',80,currentAssetY);
-        setPrompt.data={text:promptText,sceneLabel:'GIAI ĐOẠN 1: [SET LOCK] Bối cảnh Gốc'};
-        setImgNode=makeNode('generateImage',410,currentAssetY);
-        setImgNode.data={model:'muse-image',size:scenes[0]?.size||'16:9',status:'idle',sceneLabel:'Tạo [SET LOCK] Bối cảnh Gốc'};
-        state.nodes.push(setPrompt,setImgNode);
-        state.edges.push({id:uid('edge'),source:setPrompt.id,sourcePort:'text',target:setImgNode.id,targetPort:'prompt'});
-        made+=2;
-        currentAssetY+=340;
-      }
-      masterReferences=makeNode('references',740,baseY+120);
-      masterReferences.data={sceneLabel:'Tập ảnh tham chiếu gốc (Master References)'};
-      state.nodes.push(masterReferences);
-      if(charImgNode)state.edges.push({id:uid('edge'),source:charImgNode.id,sourcePort:'image',target:masterReferences.id,targetPort:'reference1'});
-      if(setImgNode)state.edges.push({id:uid('edge'),source:setImgNode.id,sourcePort:'image',target:masterReferences.id,targetPort:'reference2'});
-      made++;
+    if(!scenes.length && !assetLocks.length){
+      status.className='error';
+      status.textContent='Không tìm thấy phân cảnh hoặc danh sách nhân vật hợp lệ. Hãy dán danh sách nhân vật (ví dụ: • Anh Chồng (CHAR_01): ...) hoặc kịch bản phân cảnh (CẢNH 1: ...).';
+      return;
     }
 
-    const sceneBaseX=hasAssetLocks?1120:80;
-    scenes.forEach((scene,index)=>{
-      const column=index%4,row=Math.floor(index/4),x=sceneBaseX+column*650,y=baseY+row*1100,label=`Scene ${scene.number}${scene.title?`: ${scene.title}`:''}`;
-      let imageNode=null,videoNode=null;
-      // GIAI ĐOẠN 2 – TẠO ẢNH KEYFRAME
-      if(scene.hasImagePrompt){
-        const prompt=makeNode('prompt',x,y);
-        prompt.data={text:scene.imagePrompt,sceneLabel:label};
-        const image=makeNode('generateImage',x+330,y);
-        image.data={model:'muse-image',size:scene.size,status:'idle',sceneLabel:label};
-        state.nodes.push(prompt,image);
-        state.edges.push({id:uid('edge'),source:prompt.id,sourcePort:'text',target:image.id,targetPort:'prompt'});
-        if(masterReferences){
-          state.edges.push({id:uid('edge'),source:masterReferences.id,sourcePort:'image',target:image.id,targetPort:'reference'});
+    createUndoSnapshot('Create nodes from script (3-Stage Workflow)');
+    const baseY=Math.max(40,...state.nodes.filter(node=>!node.data?.dockOnly).map(node=>node.y+360));
+    const createdVideos=[];
+    let made=0;
+
+    let masterReferences=null;
+
+    // GIAI ĐOẠN 1 – KHÓA TÀI NGUYÊN / TẠO CỤM NODE NHÂN VẬT (ASSET LOCKS)
+    if(assetLocks.length > 0){
+      masterReferences=makeNode('references', 740, baseY + 30);
+      masterReferences.data={sceneLabel:'Tập ảnh tham chiếu (References)'};
+      state.nodes.push(masterReferences);
+      made++;
+
+      assetLocks.forEach((asset, idx) => {
+        const rowY = baseY + idx * 460;
+        const shotNum = idx + 1;
+
+        // 1. Node Prompt (Văn bản)
+        const promptNode = makeNode('prompt', 80, rowY);
+        promptNode.data = {
+          text: asset.prompt || 'Nhập prompt mô tả cảnh bạn muốn Muse AI tạo...',
+          customName: 'Prompt (Văn bản)',
+          sceneLabel: asset.name
+        };
+
+        // 2. Node Negative Prompt (Lời nhắc loại trừ)
+        const negNode = makeNode('negativePrompt', 80, rowY + 240);
+        negNode.data = {
+          text: asset.negative || 'mờ, biến dạng, chữ ký, xấu, méo mó, watermark, 3D CGI, cartoon, anime, bad anatomy, deformed eyes, extra fingers',
+          customName: 'Negative Prompt (Lời nhắc loại trừ)'
+        };
+
+        // 3. Node Tạo Ảnh (Generate Image) 1:1 (Vuông)
+        const imgNode = makeNode('generateImage', 400, rowY + 30);
+        imgNode.data = {
+          model: 'muse-image',
+          size: '1:1', // Khóa tỉ lệ 1:1 chuẩn ảnh chân dung tham chiếu
+          status: 'idle',
+          customName: `Tạo Ảnh (Generate Image) ${shotNum}`,
+          sceneLabel: asset.name
+        };
+
+        state.nodes.push(promptNode, negNode, imgNode);
+        made += 3;
+
+        // Dây nối 1: Prompt.text -> Tạo Ảnh.prompt (màu tím)
+        state.edges.push({
+          id: uid('edge'),
+          source: promptNode.id,
+          sourcePort: 'text',
+          target: imgNode.id,
+          targetPort: 'prompt'
+        });
+
+        // Dây nối 2: Negative.text -> Tạo Ảnh.negative (màu đỏ)
+        state.edges.push({
+          id: uid('edge'),
+          source: negNode.id,
+          sourcePort: 'text',
+          target: imgNode.id,
+          targetPort: 'negative'
+        });
+
+        // Dây nối 3: Tạo Ảnh.image -> Tập ảnh tham chiếu.reference{1..8} (màu xanh dương)
+        const refPortId = `reference${Math.min(idx + 1, 8)}`;
+        state.edges.push({
+          id: uid('edge'),
+          source: imgNode.id,
+          sourcePort: 'image',
+          target: masterReferences.id,
+          targetPort: refPortId
+        });
+      });
+    } else {
+      // Legacy preamble check if bracket locks were used
+      const preambleMatch=scriptText.search(/^\s*(?:[-*•]\s*)?(?:#{1,6}\s*)?(?:\*{1,2}\s*)?(?:(?:PHÂN\s*)?C[AẢÀÁẠÃÂẬẦẤ]NH|SCENE|SHOT|CLIP)\s*\d+/im);
+      const preamble=preambleMatch!==-1?scriptText.slice(0,preambleMatch):'';
+      const namedLocks=extractBracketLocks(preamble);
+      const charLock=namedLocks['char lock']||namedLocks['character lock']||'';
+      const setLock=namedLocks['set lock']||namedLocks.set||'';
+      const styleLock=namedLocks['style lock']||namedLocks.style||'';
+      const hasAssetLocks=Boolean(charLock||setLock);
+
+      if(hasAssetLocks){
+        let currentAssetY=baseY;
+        let charImgNode=null, setImgNode=null;
+        if(charLock){
+          const promptText=withPromptContext(charLock,[styleLock]);
+          const charPrompt=makeNode('prompt',80,currentAssetY);
+          charPrompt.data={text:promptText,sceneLabel:'GIAI ĐOẠN 1: [CHAR LOCK] Nhân vật Gốc'};
+          charImgNode=makeNode('generateImage',410,currentAssetY);
+          charImgNode.data={model:'muse-image',size:scenes[0]?.size||'1:1',status:'idle',sceneLabel:'Tạo [CHAR LOCK] Nhân vật Gốc'};
+          state.nodes.push(charPrompt,charImgNode);
+          state.edges.push({id:uid('edge'),source:charPrompt.id,sourcePort:'text',target:charImgNode.id,targetPort:'prompt'});
+          made+=2;
+          currentAssetY+=340;
         }
-        imageNode=image;
-        made+=2;
-      }
-      // GIAI ĐOẠN 3 – TẠO VIDEO (Ảnh tham chiếu gốc + Keyframe cảnh)
-      if(scene.hasVideoPrompt){
-        const prompt=makeNode('prompt',x,y+540);
-        prompt.data={text:scene.videoPrompt,sceneLabel:label};
-        const requestedDuration=[5,6,8,10].reduce((best,value)=>Math.abs(value-scene.seconds)<Math.abs(best-scene.seconds)?value:best,5);
-        videoNode=makeNode('generateVideo',x+330,y+540);
-        videoNode.data={model:'muse-video',size:scene.size,duration:requestedDuration,continuity:createdVideos.length>0,status:'idle',sceneLabel:label};
-        state.nodes.push(prompt,videoNode);
-        state.edges.push({id:uid('edge'),source:prompt.id,sourcePort:'text',target:videoNode.id,targetPort:'prompt'});
-        // Video = Keyframe cảnh làm khung đầu
-        if(imageNode)state.edges.push({id:uid('edge'),source:imageNode.id,sourcePort:'image',target:videoNode.id,targetPort:'reference'});
-        // Video = Ảnh tham chiếu gốc (Master References)
-        if(masterReferences)state.edges.push({id:uid('edge'),source:masterReferences.id,sourcePort:'image',target:videoNode.id,targetPort:'reference'});
-        made+=2;
-        createdVideos.push({node:videoNode,seconds:requestedDuration});
-      }
-      if(scene.negative){
-        const negative=makeNode('negativePrompt',x,y+270);
-        negative.data={text:scene.negative,sceneLabel:label};
-        state.nodes.push(negative);
-        if(imageNode)state.edges.push({id:uid('edge'),source:negative.id,sourcePort:'text',target:imageNode.id,targetPort:'negative'});
-        if(videoNode)state.edges.push({id:uid('edge'),source:negative.id,sourcePort:'text',target:videoNode.id,targetPort:'negative'});
+        if(setLock){
+          const promptText=withPromptContext(setLock,[styleLock]);
+          const setPrompt=makeNode('prompt',80,currentAssetY);
+          setPrompt.data={text:promptText,sceneLabel:'GIAI ĐOẠN 1: [SET LOCK] Bối cảnh Gốc'};
+          setImgNode=makeNode('generateImage',410,currentAssetY);
+          setImgNode.data={model:'muse-image',size:scenes[0]?.size||'1:1',status:'idle',sceneLabel:'Tạo [SET LOCK] Bối cảnh Gốc'};
+          state.nodes.push(setPrompt,setImgNode);
+          state.edges.push({id:uid('edge'),source:setPrompt.id,sourcePort:'text',target:setImgNode.id,targetPort:'prompt'});
+          made+=2;
+          currentAssetY+=340;
+        }
+        masterReferences=makeNode('references',740,baseY+120);
+        masterReferences.data={sceneLabel:'Tập ảnh tham chiếu gốc (Master References)'};
+        state.nodes.push(masterReferences);
+        if(charImgNode)state.edges.push({id:uid('edge'),source:charImgNode.id,sourcePort:'image',target:masterReferences.id,targetPort:'reference1'});
+        if(setImgNode)state.edges.push({id:uid('edge'),source:setImgNode.id,sourcePort:'image',target:masterReferences.id,targetPort:'reference2'});
         made++;
       }
-    });
+    }
 
-    const timeline=ensureDockTimeline();
-    timeline.data.clipOrder=createdVideos.map(item=>item.node.id);
-    timeline.data.durations=timeline.data.durations||{};
-    createdVideos.forEach(({node,seconds})=>{timeline.data.durations[node.id]=seconds;});
+    // GIAI ĐOẠN 2 & 3 – TẠO PHÂN CẢNH VÀ VIDEO KEYFRAME (NẾU CÓ)
+    if(scenes.length > 0){
+      const sceneBaseX=(assetLocks.length > 0 || masterReferences)?1120:80;
+      scenes.forEach((scene,index)=>{
+        const column=index%4,row=Math.floor(index/4),x=sceneBaseX+column*650,y=baseY+row*1100,label=`Scene ${scene.number}${scene.title?`: ${scene.title}`:''}`;
+        let imageNode=null,videoNode=null;
+        // GIAI ĐOẠN 2 – TẠO ẢNH KEYFRAME
+        if(scene.hasImagePrompt){
+          const prompt=makeNode('prompt',x,y);
+          prompt.data={text:scene.imagePrompt,sceneLabel:label};
+          const image=makeNode('generateImage',x+330,y);
+          image.data={model:'muse-image',size:scene.size,status:'idle',sceneLabel:label};
+          state.nodes.push(prompt,image);
+          state.edges.push({id:uid('edge'),source:prompt.id,sourcePort:'text',target:image.id,targetPort:'prompt'});
+          if(masterReferences){
+            state.edges.push({id:uid('edge'),source:masterReferences.id,sourcePort:'image',target:image.id,targetPort:'reference'});
+          }
+          imageNode=image;
+          made+=2;
+        }
+        // GIAI ĐOẠN 3 – TẠO VIDEO (Ảnh tham chiếu gốc + Keyframe cảnh)
+        if(scene.hasVideoPrompt){
+          const prompt=makeNode('prompt',x,y+540);
+          prompt.data={text:scene.videoPrompt,sceneLabel:label};
+          const requestedDuration=[5,6,8,10].reduce((best,value)=>Math.abs(value-scene.seconds)<Math.abs(best-scene.seconds)?value:best,5);
+          videoNode=makeNode('generateVideo',x+330,y+540);
+          videoNode.data={model:'muse-video',size:scene.size,duration:requestedDuration,continuity:createdVideos.length>0,status:'idle',sceneLabel:label};
+          state.nodes.push(prompt,videoNode);
+          state.edges.push({id:uid('edge'),source:prompt.id,sourcePort:'text',target:videoNode.id,targetPort:'prompt'});
+          // Video = Keyframe cảnh làm khung đầu
+          if(imageNode)state.edges.push({id:uid('edge'),source:imageNode.id,sourcePort:'image',target:videoNode.id,targetPort:'reference'});
+          // Video = Ảnh tham chiếu gốc (Master References)
+          if(masterReferences)state.edges.push({id:uid('edge'),source:masterReferences.id,sourcePort:'image',target:videoNode.id,targetPort:'reference'});
+          made+=2;
+          createdVideos.push({node:videoNode,seconds:requestedDuration});
+        }
+        if(scene.negative){
+          const negative=makeNode('negativePrompt',x,y+270);
+          negative.data={text:scene.negative,sceneLabel:label};
+          state.nodes.push(negative);
+          if(imageNode)state.edges.push({id:uid('edge'),source:negative.id,sourcePort:'text',target:imageNode.id,targetPort:'negative'});
+          if(videoNode)state.edges.push({id:uid('edge'),source:negative.id,sourcePort:'text',target:videoNode.id,targetPort:'negative'});
+          made++;
+        }
+      });
+
+      const timeline=ensureDockTimeline();
+      timeline.data.clipOrder=createdVideos.map(item=>item.node.id);
+      timeline.data.durations=timeline.data.durations||{};
+      createdVideos.forEach(({node,seconds})=>{timeline.data.durations[node.id]=seconds;});
+      if($('#timelineDock').classList.contains('collapsed'))toggleTimeline();
+    }
+
     $('#scriptModal').classList.add('hidden');
     render();
     saveState();
-    if($('#timelineDock').classList.contains('collapsed'))toggleTimeline();
-    setRunStatus(`Created ${scenes.length} scenes (3-Stage Workflow) · ${made} nodes · ${createdVideos.length} video clips ordered on the Timeline.`,'ok');
+    setTimeout(fitCanvas, 60);
+
+    if(scenes.length > 0){
+      setRunStatus(`Đã tạo ${scenes.length} phân cảnh · ${assetLocks.length ? assetLocks.length + ' nhân vật · ' : ''}${made} nodes · ${createdVideos.length} video clips trên Timeline.`, 'ok');
+    } else {
+      setRunStatus(`Đã tạo cụm node Khóa Nhân vật (${assetLocks.length} nhân vật) · ${made} nodes đã nối dây chuẩn chỉnh sẵn sàng render!`, 'ok');
+    }
   }
 
   function screenToCanvas(x,y){const rect=$('#viewport').getBoundingClientRect();return{x:x-rect.left,y:y-rect.top};}
@@ -949,16 +1124,18 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
   }
   function renderNode(n) {
     const el = document.createElement('section');
-    el.className = `node ${['generateImage','generateVideo'].includes(n.type) ? 'generate' : ''} ${n.type==='timeline'?'timeline-node':''} ${state.selectedNodeIds.includes(n.id)||state.selectedNodeId===n.id ? 'selected' : ''}`;
+    el.className = `node ${['generateImage','generateVideo'].includes(n.type) ? 'generate' : ''} ${n.type==='timeline'?'timeline-node':''} ${n.data?.collapsed?'collapsed':''} ${state.selectedNodeIds.includes(n.id)||state.selectedNodeId===n.id ? 'selected' : ''}`;
     el.dataset.id = n.id;
     el.style.left = `${n.x}px`;
     el.style.top = `${n.y}px`;
     const head = document.createElement('div');
     head.className = 'node-header';
     const title=document.createElement('span');title.className='node-title';title.textContent=['generateImage','generateVideo'].includes(n.type)?generationNodeTitle(n):(n.data.customName||`${(nodeDefs[n.type]?.title || n.type || 'Node')}${n.data.sceneLabel?` · ${n.data.sceneLabel}`:''}`);title.title=title.textContent;
-    const rename=document.createElement('button');rename.type='button';rename.className='node-rename';rename.title='Rename node';rename.setAttribute('aria-label',`Rename ${title.textContent}`);rename.textContent='✎';
+    const collapseBtn=document.createElement('button');collapseBtn.type='button';collapseBtn.className='node-rename';collapseBtn.title=n.data?.collapsed?'Mở rộng node':'Thu gọn node';collapseBtn.textContent=n.data?.collapsed?'＋':'−';
+    collapseBtn.onclick=event=>{event.stopPropagation();n.data.collapsed=!n.data.collapsed;render();scheduleAutoSave();};
+    const rename=document.createElement('button');rename.type='button';rename.className='node-rename';rename.title='Đổi tên node';rename.setAttribute('aria-label',`Rename ${title.textContent}`);rename.textContent='✎';
     rename.onclick=event=>{event.stopPropagation();openNodeRenameModal(n.id);};
-    const close=document.createElement('span');close.className='node-close';close.title='Delete';close.textContent='×';head.append(title,rename,close);
+    const close=document.createElement('span');close.className='node-close';close.title='Xóa node';close.textContent='×';head.append(title,collapseBtn,rename,close);
     head.querySelector('.node-close').onclick = (e) => { e.stopPropagation(); removeNode(n.id); };
     setupDrag(head, n, el);
     el.appendChild(head);
@@ -997,6 +1174,120 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
       const hint = document.createElement('div'); hint.className = 'hint'; hint.textContent = 'Kéo cổng ra của ảnh này nối vào "Ảnh nguồn" của Tạo Video hoặc Tạo Ảnh.'; body.appendChild(hint);
     }
 
+    if (n.type === 'imageBatchInput') {
+      n.data.images = n.data.images || [];
+      const count = n.data.images.length;
+
+      const badge = document.createElement('span');
+      badge.className = 'ref-badge';
+      badge.textContent = `${count} ảnh trong tập`;
+      body.appendChild(badge);
+
+      if (count === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.style.height = '100px';
+        empty.style.fontSize = '12px';
+        empty.style.textAlign = 'center';
+        empty.style.padding = '12px';
+        empty.textContent = 'Chưa có ảnh nào · Bấm bên dưới để chọn nhiều ảnh từ máy';
+        body.appendChild(empty);
+      } else {
+        const grid = document.createElement('div');
+        grid.className = 'batch-image-grid';
+        grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:180px;overflow-y:auto;margin:8px 0;padding:6px;background:#0c0d12;border:1px solid #282a36;border-radius:8px;';
+
+        n.data.images.forEach((imgObj, idx) => {
+          const item = document.createElement('div');
+          item.style.cssText = 'position:relative;aspect-ratio:1/1;border-radius:6px;overflow:hidden;background:#171923;border:1px solid #3d4154;';
+
+          const img = document.createElement('img');
+          img.src = imgObj.url;
+          img.title = imgObj.name || `Ảnh ${idx + 1}`;
+          img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;margin-top:0;';
+          item.appendChild(img);
+
+          const del = document.createElement('button');
+          del.type = 'button';
+          del.innerHTML = '×';
+          del.title = 'Xóa ảnh này';
+          del.style.cssText = 'position:absolute;top:2px;right:2px;width:18px;height:18px;line-height:16px;text-align:center;background:rgba(0,0,0,0.8);color:#ff7979;border:0;border-radius:50%;font-size:12px;font-weight:bold;cursor:pointer;padding:0;';
+          del.onclick = (e) => {
+            e.stopPropagation();
+            createUndoSnapshot('Remove image from batch');
+            n.data.images.splice(idx, 1);
+            render();
+            saveState();
+          };
+          item.appendChild(del);
+          grid.appendChild(item);
+        });
+        body.appendChild(grid);
+      }
+
+      const btnRow = document.createElement('div');
+      btnRow.style.cssText = 'display:flex;gap:6px;margin-top:8px;align-items:center;';
+
+      const label = document.createElement('label');
+      label.className = 'small-btn';
+      label.style.cssText = 'flex:1;text-align:center;cursor:pointer;background:#242635;border-color:#5a4b86;color:#e3ddff;font-weight:600;padding:7px;';
+      label.innerHTML = '📁 <strong>Thêm ảnh từ máy</strong>';
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.multiple = true;
+      input.style.display = 'none';
+      input.onchange = async () => {
+        const files = Array.from(input.files || []);
+        if (!files.length) return;
+        createUndoSnapshot('Add images to batch');
+        for (const file of files) {
+          const base64 = await new Promise(resolve => {
+            const r = new FileReader();
+            r.onload = () => resolve(String(r.result || ''));
+            r.readAsDataURL(file);
+          });
+          if (base64) {
+            n.data.images.push({
+              id: uid('batchImg'),
+              url: base64,
+              name: file.name,
+              size: file.size
+            });
+          }
+        }
+        render();
+        saveState();
+        setRunStatus(`Đã thêm ${files.length} ảnh vào tập ảnh đầu vào.`, 'ok');
+      };
+      label.appendChild(input);
+      btnRow.appendChild(label);
+
+      if (count > 0) {
+        const clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'small-btn';
+        clearBtn.textContent = '🗑️ Xóa hết';
+        clearBtn.title = 'Xóa toàn bộ ảnh trong tập này';
+        clearBtn.style.cssText = 'color:#ff9393;cursor:pointer;padding:7px 9px;';
+        clearBtn.onclick = (e) => {
+          e.stopPropagation();
+          if (!confirm('Bạn có chắc muốn xóa tất cả ảnh trong tập này?')) return;
+          createUndoSnapshot('Clear batch images');
+          n.data.images = [];
+          render();
+          saveState();
+        };
+        btnRow.appendChild(clearBtn);
+      }
+      body.appendChild(btnRow);
+
+      const hint = document.createElement('div');
+      hint.className = 'hint';
+      hint.textContent = 'Kéo cổng ra "Tập ảnh" nối vào "Ảnh tham chiếu" của Tạo Ảnh hoặc Tạo Video để gửi toàn bộ ảnh.';
+      body.appendChild(hint);
+    }
+
     if(n.type==='references'){
       const incoming=(nodeDefs.references.inputs||[]).reduce((count,input)=>count+getIncoming(n.id,input.id).length,0),badge=document.createElement('span');badge.className='ref-badge';badge.textContent=`${incoming} ảnh tham chiếu đã nối`;body.appendChild(badge);
       const list=document.createElement('div');list.className='references-input-list';(nodeDefs.references.inputs||[]).forEach(input=>{const row=document.createElement('div');row.textContent=`${input.label} · kết nối ảnh nguồn`;list.appendChild(row);});body.appendChild(list);
@@ -1013,7 +1304,101 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
       const statusText = n.data.status === 'running' ? 'Đang tạo ảnh Muse AI...' : n.data.status === 'success' ? 'Hoàn thành' : n.data.status === 'error' ? 'Lỗi' : 'Sẵn sàng';
       const st = document.createElement('div'); st.className = `status ${n.data.status || 'idle'}`; st.textContent = `${statusText}${n.data.error ? ' · ' + n.data.error : ''}`; body.appendChild(st);
       if(n.data.asset?.width&&n.data.asset?.height){const dimensions=document.createElement('div');dimensions.className=`hint ${n.data.asset.sizeMismatch?'error':''}`;dimensions.textContent=`Kích thước: ${n.data.asset.width} × ${n.data.asset.height} px (${n.data.size})`;body.appendChild(dimensions);}
-      if (n.data.asset?.url) { const a=document.createElement('a'); a.href=n.data.asset.url; a.target='_blank'; a.className='image-link'; const img=document.createElement('img'); img.src=n.data.asset.url; a.appendChild(img); body.appendChild(a); }
+      if (n.data.asset?.url) {
+        const wrap = document.createElement('div');
+        wrap.className = 'generated-image-wrap';
+        wrap.style.marginTop = '8px';
+
+        // Lịch sử các lần Tạo lại (Variation History < 1/N >)
+        if (Array.isArray(n.data.history) && n.data.history.length > 1) {
+          const histBar = document.createElement('div');
+          histBar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;background:#161826;border:1px solid #353b58;border-radius:6px;padding:3px 6px;margin-bottom:5px;font-size:11px;color:#cbd5e1;';
+          const curIdx = Math.max(0, Math.min(n.data.history.length - 1, n.data.historyIndex ?? (n.data.history.length - 1)));
+          const prevBtn = document.createElement('button');
+          prevBtn.type = 'button';
+          prevBtn.textContent = '◀';
+          prevBtn.disabled = curIdx <= 0;
+          prevBtn.style.cssText = 'background:transparent;border:none;color:#a78bfa;cursor:pointer;font-size:11px;padding:2px 6px;';
+          prevBtn.onclick = (e) => {
+            e.stopPropagation();
+            const nextIdx = Math.max(0, curIdx - 1);
+            n.data.historyIndex = nextIdx;
+            n.data.asset = { ...n.data.history[nextIdx] };
+            render();
+            saveState();
+          };
+          const histLabel = document.createElement('span');
+          histLabel.innerHTML = `Ảnh <strong>${curIdx + 1}/${n.data.history.length}</strong>`;
+          const nextBtn = document.createElement('button');
+          nextBtn.type = 'button';
+          nextBtn.textContent = '▶';
+          nextBtn.disabled = curIdx >= n.data.history.length - 1;
+          nextBtn.style.cssText = 'background:transparent;border:none;color:#a78bfa;cursor:pointer;font-size:11px;padding:2px 6px;';
+          nextBtn.onclick = (e) => {
+            e.stopPropagation();
+            const nextIdx = Math.min(n.data.history.length - 1, curIdx + 1);
+            n.data.historyIndex = nextIdx;
+            n.data.asset = { ...n.data.history[nextIdx] };
+            render();
+            saveState();
+          };
+          histBar.append(prevBtn, histLabel, nextBtn);
+          wrap.appendChild(histBar);
+        }
+
+        const a = document.createElement('a');
+        a.href = n.data.asset.url;
+        a.target = '_blank';
+        a.className = 'image-link';
+        const img = document.createElement('img');
+        img.src = n.data.asset.url;
+        img.title = 'Click để xem/tải ảnh kích thước gốc';
+        a.appendChild(img);
+        wrap.appendChild(a);
+
+        // Nút Gán Nhanh 1-Click: Tạo Video từ ảnh này & Gán vào Tập tham chiếu
+        const quickRow = document.createElement('div');
+        quickRow.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px;';
+
+        const toVidBtn = document.createElement('button');
+        toVidBtn.type = 'button';
+        toVidBtn.className = 'small-btn';
+        toVidBtn.style.cssText = 'background:#17253b;border:1px solid #0284c7;color:#bae6fd;font-size:10.5px;font-weight:700;padding:6px 4px;border-radius:6px;cursor:pointer;';
+        toVidBtn.textContent = '🎬 + Tạo Video';
+        toVidBtn.title = 'Tự động đẻ 1 node Tạo Video nối dây sẵn từ bức ảnh này';
+        toVidBtn.onclick = (e) => {
+          e.stopPropagation();
+          quickSpawnVideoFromImageNode(n.id);
+        };
+
+        const toRefBtn = document.createElement('button');
+        toRefBtn.type = 'button';
+        toRefBtn.className = 'small-btn';
+        toRefBtn.style.cssText = 'background:#241c38;border:1px solid #7c3aed;color:#e9d5ff;font-size:10.5px;font-weight:700;padding:6px 4px;border-radius:6px;cursor:pointer;';
+        toRefBtn.textContent = '📌 + Tham chiếu';
+        toRefBtn.title = 'Tự động gán bức ảnh này vào node Tập ảnh tham chiếu (References)';
+        toRefBtn.onclick = (e) => {
+          e.stopPropagation();
+          quickAssignNodeToReferences(n.id);
+        };
+
+        quickRow.append(toVidBtn, toRefBtn);
+        wrap.appendChild(quickRow);
+
+        const regenBtn = document.createElement('button');
+        regenBtn.type = 'button';
+        regenBtn.className = 'small-btn image-regen-btn';
+        regenBtn.style.cssText = 'width:100%;margin-top:5px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;background:#252336;border:1px solid #5a4b86;color:#e3ddff;padding:6px 10px;border-radius:7px;cursor:pointer;font-size:11px;';
+        regenBtn.innerHTML = '↻ Chưa vừa ý? Bấm Tạo Lại Ảnh Này';
+        regenBtn.title = 'Tạo lại ảnh mới từ Muse AI (vẫn giữ lại ảnh cũ trong lịch sử để so sánh)';
+        regenBtn.disabled = state.isRunning;
+        regenBtn.onclick = (e) => {
+          e.stopPropagation();
+          executeGenerationNode(n.id, { again: true });
+        };
+        wrap.appendChild(regenBtn);
+        body.appendChild(wrap);
+      }
       const promptCount=getIncoming(n.id,'prompt').length;if(promptCount>1){const b=document.createElement('span');b.className='ref-badge';b.textContent=`${promptCount} nguồn prompt đã ghép`;body.appendChild(b);}
       const referenceCount=getIncoming(n.id,'reference').length;if(referenceCount){const b=document.createElement('span');b.className='ref-badge';b.textContent=`${referenceCount} ảnh tham chiếu đã nối`;body.appendChild(b);}
       body.appendChild(createNodeRunActions(n));
@@ -1069,8 +1454,8 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
       button.onclick=event=>{event.stopPropagation();runSingleNode(node.id);};
     }
     actions.appendChild(button);
-    if(node.type==='generateVideo'){
-      const again=document.createElement('button');again.type='button';again.className='node-run-button again';again.textContent='↻ Tạo lại';again.title='Tạo lại video này với độ bám sát prompt cao hơn';again.disabled=state.isRunning;
+    if(['generateImage','generateVideo'].includes(node.type)){
+      const again=document.createElement('button');again.type='button';again.className='node-run-button again';again.textContent='↻ Tạo lại';again.title=node.type==='generateVideo'?'Tạo lại video này với độ bám sát prompt cao hơn':'Tạo lại ảnh mới từ Muse AI nếu chưa vừa ý';again.disabled=state.isRunning;
       again.onclick=event=>{event.stopPropagation();executeGenerationNode(node.id,{again:true});};actions.appendChild(again);
     }
     return actions;
@@ -1089,7 +1474,7 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
       const label=document.createElement('span'); label.className='port-label left'; label.style.top=`${y-1}px`; const count=isMultiInput(n.type,p.id)?getIncoming(n.id,p.id).length:0;label.textContent=count?`${p.label} · ${count}`:p.label;if(count)port.title=n.type==='textConcat'?`Nguồn văn bản (${count} nguồn đã nối)`:p.id==='prompt'?`Nguồn prompt (${count} prompt đã nối)`:`Ảnh tham chiếu (${count} ảnh đã nối)`;el.append(label,port);
     });
     (def.outputs || []).forEach((p, i) => {
-      const y = ['prompt','negativePrompt','textAppend'].includes(n.type) ? 80 : n.type==='generateVideo'?82+i*30:['imageInput','generateImage'].includes(n.type)?82:66+i*42;
+      const y = ['prompt','negativePrompt','textAppend'].includes(n.type) ? 80 : n.type==='generateVideo'?82+i*30:['imageInput','imageBatchInput','generateImage'].includes(n.type)?82:66+i*42;
       const port=document.createElement('div'); port.className='port out'; port.dataset.node=n.id; port.dataset.port=p.id;port.dataset.type=p.type; port.style.top=`${y}px`;
       const outHint = p.type==='text' ? ' ➔ Kéo nối sang cổng Prompt của Tạo Ảnh hoặc Tạo Video' : p.type==='negative' ? ' ➔ Kéo nối sang cổng Loại trừ của Tạo Ảnh hoặc Tạo Video' : p.type==='image' ? (p.id==='endFrame' ? ' ➔ Kéo nối sang cổng Ảnh nguồn của Tạo Video tiếp theo để nối tiếp phân cảnh' : ' ➔ Kéo nối sang cổng Ảnh nguồn của Tạo Video hoặc Xem trước') : p.type==='video' ? ' ➔ Kéo nối sang Timeline hoặc Xem trước' : '';
       port.title=`Cổng xuất: ${p.label}${outHint}`;
@@ -2226,18 +2611,18 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
 
   function openCanvasMenu(e){
     const nodeEl=e.target.closest('.node');e.preventDefault();e.stopPropagation();
-    if(!nodeEl){const rect=$('#viewport').getBoundingClientRect(),menu=$('#canvasMenu');state.contextPoint={x:(e.clientX-rect.left-state.panX)/state.zoom,y:(e.clientY-rect.top-state.panY)/state.zoom};menu.innerHTML='';delete menu.dataset.nodeId;const title=document.createElement('div');title.className='menu-caption';title.textContent='Menu Bàn Dựng Canvas';menu.appendChild(title);[['＋ Prompt Lời nhắc','add:prompt'],['＋ Ghi chú text','add:text'],['＋ Lời nhắc loại trừ','add:negativePrompt'],['＋ Ảnh đầu vào','add:imageInput'],['＋ Tập ảnh tham chiếu','add:references'],['＋ Tạo ảnh Muse','add:generateImage'],['＋ Tạo video Muse','add:generateVideo'],['＋ Dòng thời gian (Timeline)','add:timeline'],['＋ Xem trước media','add:preview'],['📋 Sao chép (Ctrl+C)','copy'],['📥 Dán node (Ctrl+V)','paste'],['✨ Nhân bản (Ctrl+D)','duplicate'],['🔳 Chọn tất cả (Ctrl+A)','select-all'],['💾 Lưu Workflow','save'],['▶ Chạy Workflow','run'],['⚡ Tự động sắp xếp node','arrange'],['🗑️ Xóa node đang chọn','delete-selected'],['✂️ Xóa toàn bộ dây nối','disconnect-all']].forEach(([label,action])=>{const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.contextAction=action;menu.appendChild(button);});menu.classList.remove('hidden');menu.style.left=`${Math.min(e.clientX,innerWidth-230)}px`;menu.style.top=`${Math.min(e.clientY,innerHeight-420)}px`;return;}
+    if(!nodeEl){const rect=$('#viewport').getBoundingClientRect(),menu=$('#canvasMenu');state.contextPoint={x:(e.clientX-rect.left-state.panX)/state.zoom,y:(e.clientY-rect.top-state.panY)/state.zoom};menu.innerHTML='';delete menu.dataset.nodeId;const title=document.createElement('div');title.className='menu-caption';title.textContent='Menu Bàn Dựng Canvas';menu.appendChild(title);[['＋ Prompt Lời nhắc','add:prompt'],['＋ Ghi chú text','add:text'],['＋ Lời nhắc loại trừ','add:negativePrompt'],['＋ Ảnh đầu vào (1 ảnh)','add:imageInput'],['＋ Tập ảnh đầu vào (Nhiều ảnh từ máy)','add:imageBatchInput'],['＋ Tập ảnh tham chiếu','add:references'],['＋ Tạo ảnh Muse','add:generateImage'],['＋ Tạo video Muse','add:generateVideo'],['＋ Dòng thời gian (Timeline)','add:timeline'],['＋ Xem trước media','add:preview'],['📋 Sao chép (Ctrl+C)','copy'],['📥 Dán node (Ctrl+V)','paste'],['✨ Nhân bản (Ctrl+D)','duplicate'],['🔳 Chọn tất cả (Ctrl+A)','select-all'],['💾 Lưu Workflow','save'],['▶ Chạy Workflow','run'],['⚡ Tự động sắp xếp node','arrange'],['🗑️ Xóa node đang chọn','delete-selected'],['✂️ Xóa toàn bộ dây nối','disconnect-all']].forEach(([label,action])=>{const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.contextAction=action;menu.appendChild(button);});menu.classList.remove('hidden');menu.style.left=`${Math.min(e.clientX,innerWidth-230)}px`;menu.style.top=`${Math.min(e.clientY,innerHeight-420)}px`;return;}
     e.stopPropagation();const node=nodeById(nodeEl.dataset.id);if(!node)return;state.selectedNodeId=node.id;
     const menu=$('#canvasMenu');menu.innerHTML='';menu.dataset.nodeId=node.id;
     const title=document.createElement('div');title.className='menu-caption';title.textContent=['generateImage','generateVideo'].includes(node.type)?generationNodeTitle(node):(node.data.customName||(nodeDefs[node.type]?.title || node.type || 'Node'));menu.appendChild(title);
     const addAction=(label,action)=>{const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.contextAction=action;menu.appendChild(button);};
     addAction('Đổi tên node…','node-rename');
     if(['generateImage','generateVideo'].includes(node.type))addAction(node.data.status==='running'?`■ Dừng ${node.type==='generateVideo'?'tạo Video':'tạo Ảnh'}`:`▶ Tạo ${node.type==='generateVideo'?'Video':'Ảnh'}`,'node-run');
-    if(node.type==='generateVideo')addAction('↻ Tạo lại · bám sát lời nhắc hơn','node-again');
+    if(['generateImage','generateVideo'].includes(node.type))addAction(`↻ Tạo lại ${node.type==='generateVideo'?'video':'ảnh'} mới`,'node-again');
     if(node.type==='timeline')addAction('▶ Xem trước chuỗi timeline','node-preview');
     if((nodeDefs[node.type]?.outputs||[]).some(port=>port.type==='text'))addAction('Tạo node Ghép nhiều text','node-create-text-merge');
     if((nodeDefs[node.type]?.outputs||[]).some(port=>['image','video'].includes(port.type)))addAction('Tạo node Xem trước media','node-create-preview');
-    if(node.type==='imageInput')addAction('Chọn / thay đổi ảnh','node-choose-image');
+    if(['imageInput','imageBatchInput'].includes(node.type))addAction(node.type==='imageBatchInput'?'Thêm nhiều ảnh từ máy…':'Chọn / thay đổi ảnh','node-choose-image');
     if(node.type==='imageResize')addAction('Tải ảnh đã đổi cỡ về','node-download-image');
     if(node.type==='preview')addAction('Tải media xem trước về','node-download-preview');
     if(node.type==='prompt'||node.type==='negativePrompt'||node.type==='textAppend')addAction('Soạn thảo nội dung text','node-focus-text');
@@ -2567,7 +2952,22 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
   function resolveReferences(nodeId){
     const references=[],seen=new Set();
     const add=(url,name)=>{if(url&&!seen.has(url)){seen.add(url);references.push({url,name:name||`Reference ${references.length+1}`});}};
-    const visit=(source,sourcePort,visited=new Set())=>{if(!source||visited.has(source.id))return;visited.add(source.id);if(source.type==='references'){for(const edge of getIncoming(source.id))visit(nodeById(edge.source),edge.sourcePort,visited);return;}if(sourcePort==='endFrame'){add(source.data?.endFrame?.url,source.data?.endFrame?.name);return;}if(source.type==='imageInput'&&source.data?.localDataUrl){add(source.data.localDataUrl,'Input image');return;}if(source.data?.asset?.kind==='image')add(source.data.asset.url,source.data.asset.name);};
+    const visit=(source,sourcePort,visited=new Set())=>{
+      if(!source||visited.has(source.id))return;
+      visited.add(source.id);
+      if(source.type==='references'){for(const edge of getIncoming(source.id))visit(nodeById(edge.source),edge.sourcePort,visited);return;}
+      if(source.type==='imageBatchInput'){
+        if(Array.isArray(source.data?.images)){
+          for(const img of source.data.images){
+            if(img?.url) add(img.url, img.name || 'Batch reference image');
+          }
+        }
+        return;
+      }
+      if(sourcePort==='endFrame'){add(source.data?.endFrame?.url,source.data?.endFrame?.name);return;}
+      if(source.type==='imageInput'&&source.data?.localDataUrl){add(source.data.localDataUrl,'Input image');return;}
+      if(source.data?.asset?.kind==='image')add(source.data.asset.url,source.data.asset.name);
+    };
     const node=nodeById(nodeId),previous=node?.type==='generateVideo'&&node.data?.continuity?timelinePredecessor(nodeId):null;if(previous)add(previous.data?.endFrame?.url,`CONTINUITY START FRAME · ${previous.data?.endFrame?.name||'previous clip end'}`);
     for(const edge of getIncoming(nodeId,'reference'))visit(nodeById(edge.source),edge.sourcePort);
     return references;
@@ -2627,7 +3027,9 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
       if(node.data.status==='idle')node.data.error='Previous run was interrupted; ready to retry.';
     }
     const abortController=new AbortController();state.generationAbortController=abortController;state.activeGenerationId=targetId;state.isRunning=true;$('#runBtn').disabled=false;$('#runBtn').textContent='■ Stop workflow';$('#runBtn').title='Stop the running workflow and its remaining nodes';
-    setRunStatus(targetId?(again?'Regenerating video with stronger prompt adherence…':'Running selected generation node…'):'Running workflow...','warn');
+    const targetNode = targetId ? nodeById(targetId) : null;
+    const isTargetVideo = targetNode?.type === 'generateVideo';
+    setRunStatus(targetId ? (again ? (isTargetVideo ? 'Đang tạo lại video với độ bám sát cao hơn…' : 'Đang tạo lại ảnh mới từ Muse AI…') : (isTargetVideo ? 'Đang tạo video…' : 'Đang tạo ảnh…')) : 'Đang chạy workflow...', 'warn');
     try{
       if(targetId)validateTargetPrompt(targetId);
       const selectedGenerations=generationOrder?new Set(generationOrder):null;
@@ -2642,6 +3044,7 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
           });
       for(const n of state.nodes){
         if(n.type==='imageInput'&&n.data.localDataUrl)n.data.asset={id:n.data.asset?.id||uid('asset'),kind:'image',url:n.data.localDataUrl,sourceNodeId:n.id};
+        if(n.type==='imageBatchInput'&&Array.isArray(n.data.images)&&n.data.images.length>0)n.data.asset={id:n.data.asset?.id||uid('asset'),kind:'image',url:n.data.images[0].url,sourceNodeId:n.id};
       }
       let generationStep=0;
       const totalGenerations=order.filter(id=>['generateImage','generateVideo'].includes(nodeById(id)?.type)).length;
@@ -2778,7 +3181,13 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
               if (!task || !task.result_url) throw new Error('Task hoàn thành nhưng không có URL ảnh.');
 
               const url = task.result_url;
-              n.data.asset = { id: uid('asset'), kind: 'image', url: url, name: `Image ${n.id}`, sourceNodeId: n.id, requestedSize: n.data.size };
+              const newAsset = { id: uid('asset'), kind: 'image', url: url, name: `Image ${n.id}`, sourceNodeId: n.id, requestedSize: n.data.size };
+              n.data.asset = newAsset;
+              n.data.history = Array.isArray(n.data.history) ? n.data.history : [];
+              if (!n.data.history.some(item => item?.url === url)) {
+                n.data.history.push(newAsset);
+              }
+              n.data.historyIndex = n.data.history.length - 1;
               n.data.status = 'success';
             }
 
@@ -3012,6 +3421,12 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
       state.autoStitchOnComplete = true;
       setRunStatus(`🚀 1-Phát-Xong-Luôn: Bắt đầu chuỗi render tự động qua Muse AI (${vNodes.length} cảnh)...`, 'warn');
       void execute();
+    } else {
+      const imgNodes = state.nodes.filter(n => n.type === 'generateImage' && n.data?.status !== 'success');
+      if (imgNodes.length > 0) {
+        setRunStatus(`🚀 1-Phát-Xong-Luôn: Bắt đầu chuỗi tạo ảnh qua Muse AI (${imgNodes.length} ảnh)...`, 'warn');
+        void execute();
+      }
     }
   });
 
@@ -3106,784 +3521,642 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
 
   // ==================== WORKFLOW PRESETS & WIRE GUIDE LISTENERS ====================
   
-    // ==================== AI DIRECTOR MODAL & GENERATOR ====================
-  const aiDirectorBtn = $('#aiDirectorBtn');
-  const aiDirectorModal = $('#aiDirectorModal');
-  const aiLoadingOverlay = $('#aiLoadingOverlay');
-  const aiLoadingText = $('#aiLoadingText');
+  // ==================== MINH ÂM COPILOT & QUICK NODE COMMANDER ====================
+  const copilotDrawer = $('#copilotDrawer');
+  const copilotToggleBtn = $('#copilotToggleBtn');
+  const closeCopilotDrawerBtn = $('#closeCopilotDrawerBtn');
+  const copilotSelectionBadge = $('#copilotSelectionBadge');
 
-  let currentAiAudio = null;
-  let currentAiSrt = null; // { file, url, local_path, filename, content, totalDuration, cuesCount }
-
-  // ==================== SRT / LRC SUBTITLE HANDLER ====================
-  const aiUploadSrtBtn = $('#aiUploadSrtBtn');
-  const aiSrtFile = $('#aiSrtFile');
-  const aiSrtInfo = $('#aiSrtInfo');
-  const aiClearSrtBtn = $('#aiClearSrtBtn');
-
-  async function handleSrtFile(file) {
-    if (!file) return;
-    if (aiSrtInfo) aiSrtInfo.textContent = `Đang đọc file: ${file.name}...`;
-
-    try {
-      const text = await file.text();
-      if (!text || !text.trim()) {
-        throw new Error('File rỗng hoặc không đọc được nội dung.');
-      }
-
-      let totalDuration = 0;
-      let cuesCount = 0;
-
-      // 1. Nhận diện định dạng SRT: 00:01:23,456 --> 00:01:28,789
-      const srtMatches = [...text.matchAll(/(\d{1,2}):(\d{2}):(\d{2})[,\.](\d{1,3})/g)];
-      if (srtMatches.length >= 2) {
-        cuesCount = Math.floor(srtMatches.length / 2);
-        const last = srtMatches[srtMatches.length - 1];
-        totalDuration = Math.round(
-          parseInt(last[1], 10) * 3600 +
-          parseInt(last[2], 10) * 60 +
-          parseInt(last[3], 10) +
-          parseInt(last[4], 10) / 1000
-        );
-      } else {
-        // 2. Nhận diện định dạng LRC: [01:23.45]
-        const lrcMatches = [...text.matchAll(/\[(\d{1,2}):(\d{2})(?:[,\.](\d{1,3}))?\]/g)];
-        if (lrcMatches.length) {
-          cuesCount = lrcMatches.length;
-          const last = lrcMatches[lrcMatches.length - 1];
-          totalDuration = Math.round(parseInt(last[1], 10) * 60 + parseInt(last[2], 10) + 7);
-        }
-      }
-
-      currentAiSrt = {
-        file,
-        filename: file.name,
-        content: text,
-        totalDuration: totalDuration,
-        cuesCount: cuesCount
-      };
-
-      // Tự động nhận diện và điền thời lượng (giây) vào ô Thời lượng nếu chưa có audio thực tế dài hơn
-      if (totalDuration > 0 && $('#aiAudioDurationManual')) {
-        $('#aiAudioDurationManual').value = totalDuration;
-      }
-
-      // Tự động bóc tách ca từ thuần điền vào ô Lời bài hát (#aiLyricsInput) nếu đang trống
-      if ($('#aiLyricsInput')) {
-        const rawLines = text.split(/\r?\n/)
-          .map(l => l.trim())
-          .filter(l => l && !/^\d+$/.test(l) && !/-->/.test(l) && !l.startsWith('[ti:') && !l.startsWith('[ar:') && !l.startsWith('[al:') && !l.startsWith('[by:'))
-          .map(l => l.replace(/\[\d{1,2}:\d{2}(?:[,\.]\d{1,3})?\]/g, '').trim())
-          .filter(l => l.length > 0);
-
-        if (!$('#aiLyricsInput').value.trim() && rawLines.length > 0) {
-          $('#aiLyricsInput').value = rawLines.join('\n');
-        }
-      }
-
-      // Tự động gợi ý tên bài hát từ tên file
-      if ($('#aiSongTitle') && (!$('#aiSongTitle').value || $('#aiSongTitle').value === 'MV Suno AI')) {
-        const cleanTitle = file.name.replace(/\.(srt|lrc|txt)$/i, '').replace(/[_-]+/g, ' ').trim();
-        if (cleanTitle) $('#aiSongTitle').value = cleanTitle;
-      }
-
-      const m = Math.floor(totalDuration / 60);
-      const s = totalDuration % 60;
-      const durStr = totalDuration > 0 ? ` · ${m}p${s < 10 ? '0' : ''}${s} (${totalDuration}s)` : '';
-      if (aiSrtInfo) {
-        aiSrtInfo.innerHTML = `✅ <strong>${file.name}</strong> <span style="color:#4ade80; font-weight:bold;">(${cuesCount} câu${durStr})</span>`;
-      }
-      aiClearSrtBtn?.classList.remove('hidden');
-      setRunStatus(`Đã nạp file phụ đề "${file.name}" (${cuesCount} câu, ${totalDuration}s) thành công!`, 'ok');
-    } catch (err) {
-      if (aiSrtInfo) aiSrtInfo.innerHTML = `<span style="color:#f87171;">Lỗi đọc file: ${err.message}</span>`;
-      setRunStatus(`Lỗi đọc file SRT/LRC: ${err.message}`, 'error');
+  function updateCopilotSelectionBadge() {
+    if (!copilotSelectionBadge) return;
+    const count = state.selectedNodeIds.length;
+    if (count > 0) {
+      copilotSelectionBadge.textContent = `🎯 Đang chọn ${count} node trên bàn dựng`;
+      copilotSelectionBadge.style.color = '#4ade80';
+    } else {
+      copilotSelectionBadge.textContent = 'Sẵn sàng tạo & gán node tức thì';
+      copilotSelectionBadge.style.color = '#a78bfa';
     }
   }
 
-  if (aiUploadSrtBtn && aiSrtFile) {
-    aiUploadSrtBtn.onclick = () => aiSrtFile.click();
-    aiSrtFile.onchange = async () => {
-      if (aiSrtFile.files && aiSrtFile.files.length) {
-        await handleSrtFile(aiSrtFile.files[0]);
-      }
-    };
-  }
-
-  if (aiClearSrtBtn) {
-    aiClearSrtBtn.onclick = () => {
-      currentAiSrt = null;
-      if (aiSrtFile) aiSrtFile.value = '';
-      if (aiSrtInfo) aiSrtInfo.textContent = 'Chưa tải file .srt / .lrc (Tùy chọn)';
-      aiClearSrtBtn.classList.add('hidden');
-      setRunStatus('Đã xóa thông tin file phụ đề SRT.', 'ok');
-    };
-  }
-
-  // Kéo thả file .srt / .lrc trực tiếp vào ô Lời bài hát (#aiLyricsInput)
-  const lyricsInputEl = $('#aiLyricsInput');
-  if (lyricsInputEl) {
-    ['dragenter', 'dragover'].forEach(evName => {
-      lyricsInputEl.addEventListener(evName, (e) => {
-        e.preventDefault();
-        lyricsInputEl.style.borderColor = '#a855f7';
-      });
-    });
-    ['dragleave', 'drop'].forEach(evName => {
-      lyricsInputEl.addEventListener(evName, (e) => {
-        e.preventDefault();
-        lyricsInputEl.style.borderColor = '';
-      });
-    });
-    lyricsInputEl.addEventListener('drop', async (e) => {
-      const dt = e.dataTransfer;
-      if (dt && dt.files && dt.files.length) {
-        const file = dt.files[0];
-        if (/\.(srt|lrc|txt)$/i.test(file.name)) {
-          await handleSrtFile(file);
-        }
-      }
-    });
-  }
-
-  // ==================== AUDIO FILE HANDLER & AUTO DURATION ====================
-  const aiUploadAudioBtn = $('#aiUploadAudioBtn');
-  const aiAudioFile = $('#aiAudioFile');
-  const aiAudioPreview = $('#aiAudioPreview');
-  const aiAudioInfo = $('#aiAudioInfo');
-  const aiAudioPlayerWrap = $('#aiAudioPlayerWrap');
-
-  if (aiUploadAudioBtn && aiAudioFile) {
-    aiUploadAudioBtn.onclick = () => aiAudioFile.click();
-    aiAudioFile.onchange = async () => {
-      const file = aiAudioFile.files[0];
-      if (!file) return;
-
-      if (aiAudioInfo) aiAudioInfo.textContent = `Đang phân tích & tải lên: ${file.name}...`;
-
-      // 1. Đo thời lượng ngay lập tức từ file blob (không cần chờ upload xong)
-      const objectUrl = URL.createObjectURL(file);
-      const tempAudio = new Audio();
-      tempAudio.src = objectUrl;
-
-      const applyAudioDuration = (durSec) => {
-        const dur = Math.round(durSec);
-        if (dur > 0) {
-          // Tự động nhận diện và điền vào ô Thời lượng (giây)
-          if ($('#aiAudioDurationManual')) {
-            $('#aiAudioDurationManual').value = dur;
-          }
-          if (currentAiAudio) {
-            currentAiAudio.duration = dur;
-          }
-          const m = Math.floor(dur / 60);
-          const s = dur % 60;
-          const durStr = `${m}:${s < 10 ? '0' : ''}${s} (${dur}s)`;
-          if (aiAudioInfo) {
-            aiAudioInfo.innerHTML = `🎵 <strong>${file.name}</strong> · <span style="color:#c084fc; font-weight:bold;">${durStr}</span>`;
-          }
-        }
-      };
-
-      tempAudio.onloadedmetadata = () => {
-        applyAudioDuration(tempAudio.duration);
-      };
-
-      if (aiAudioPreview) {
-        aiAudioPreview.src = objectUrl;
-        aiAudioPlayerWrap?.classList.remove('hidden');
-        aiAudioPreview.onloadedmetadata = () => {
-          applyAudioDuration(aiAudioPreview.duration);
-        };
-      }
-
-      // 2. Upload to backend /api/upload-media
-      const formData = new FormData();
-      formData.append('file', file);
-      try {
-        const res = await fetch('/api/upload-media', { method: 'POST', body: formData });
-        if (!res.ok) throw new Error('Upload audio thất bại');
-        const data = await res.json();
-        const detectedDur = Math.round(tempAudio.duration || aiAudioPreview?.duration || 0);
-        currentAiAudio = {
-          file,
-          url: data.url,
-          local_path: data.local_path,
-          filename: data.filename,
-          duration: detectedDur || currentAiAudio?.duration || 0
-        };
-        if (currentAiAudio.duration > 0 && $('#aiAudioDurationManual')) {
-          $('#aiAudioDurationManual').value = currentAiAudio.duration;
-        }
-        const m = Math.floor(currentAiAudio.duration / 60);
-        const s = currentAiAudio.duration % 60;
-        const durStr = currentAiAudio.duration > 0 ? ` · ${m}:${s < 10 ? '0' : ''}${s} (${currentAiAudio.duration}s)` : '';
-        if (aiAudioInfo) {
-          aiAudioInfo.innerHTML = `✅ <strong>${file.name}</strong><span style="color:#4ade80; font-weight:bold;">${durStr} · Đã nạp thành công!</span>`;
-        }
-        setRunStatus(`Đã nạp file nhạc "${file.name}" (${currentAiAudio.duration}s) thành công!`, 'ok');
-      } catch (e) {
-        if (aiAudioInfo) aiAudioInfo.textContent = `Lỗi tải file: ${e.message}`;
-        setRunStatus(`Lỗi upload audio: ${e.message}`, 'error');
-      }
-    };
-  }
-
-  async function checkAiConfig() {
-    try {
-      const res = await fetch('/api/director/config');
-      if (!res.ok) return;
-      const data = await res.json();
-      const statusBox = $('#aiConfigStatus');
-      if (statusBox) {
-        if (data.has_api_key) {
-          statusBox.className = 'ai-status-indicator ready';
-          statusBox.innerHTML = `<span>🟢 Đã kết nối Model: <strong>${data.ai_model}</strong> (${data.ai_provider})</span>`;
-        } else {
-          statusBox.className = 'ai-status-indicator warning';
-          statusBox.innerHTML = `<span>⚠️ Chưa có API Key · Bạn có thể điền thông tin bên dưới</span>`;
-        }
-      }
-      if ($('#aiCustomBaseUrl') && !$('#aiCustomBaseUrl').value) $('#aiCustomBaseUrl').value = data.ai_base_url || 'https://api.openai.com/v1';
-      if ($('#aiCustomModel') && !$('#aiCustomModel').value) $('#aiCustomModel').value = data.ai_model || 'gpt-4o';
-      if ($('#aiCustomProvider')) $('#aiCustomProvider').value = data.ai_provider || 'custom_proxy';
-    } catch (e) {
-      console.warn('Could not load AI config:', e);
+  function toggleCopilotDrawer(forceOpen) {
+    if (!copilotDrawer) return;
+    const isHidden = copilotDrawer.classList.contains('hidden');
+    const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : isHidden;
+    copilotDrawer.classList.toggle('hidden', !shouldOpen);
+    if (shouldOpen) {
+      updateCopilotSelectionBadge();
     }
   }
 
-  if (aiDirectorBtn && aiDirectorModal) {
-    aiDirectorBtn.onclick = () => {
-      if (aiLoadingOverlay) aiLoadingOverlay.classList.add('hidden');
-      aiDirectorModal.classList.remove('hidden');
-      // Sync audio from timeline dock if available
-      const dockTl = state.nodes.find(n => n.type === 'timeline')?.data;
-      if (dockTl?.audioUrl) {
-        const dockDur = Math.round(dockTl.audioDuration || 0);
-        if (!currentAiAudio || currentAiAudio.url !== dockTl.audioUrl) {
-          currentAiAudio = { url: dockTl.audioUrl, duration: dockDur, filename: dockTl.audioFilename || 'BGM' };
-        }
-        if ($('#aiAudioInfo')) {
-          $('#aiAudioInfo').innerHTML = `🎵 <strong>${dockTl.audioFilename || 'Audio'}</strong> · <span style="color:#c084fc; font-weight:bold;">${dockDur}s</span>`;
-        }
-        if ($('#aiAudioDurationManual') && dockDur > 0) {
-          $('#aiAudioDurationManual').value = dockDur;
-        }
-        if (aiAudioPreview && !aiAudioPreview.src) {
-          aiAudioPreview.src = dockTl.audioUrl;
-          aiAudioPlayerWrap?.classList.remove('hidden');
-        }
+  if (copilotToggleBtn) {
+    copilotToggleBtn.onclick = () => toggleCopilotDrawer();
+  }
+  if (closeCopilotDrawerBtn) {
+    closeCopilotDrawerBtn.onclick = () => toggleCopilotDrawer(false);
+  }
+
+  // Copilot Tabs switching
+  document.querySelectorAll('[data-copilot-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.copilotTab;
+      document.querySelectorAll('[data-copilot-tab]').forEach(b => b.classList.toggle('active', b === btn));
+      $('#copilotPaneSpawn')?.classList.toggle('hidden', tab !== 'spawn');
+      $('#copilotPaneChat')?.classList.toggle('hidden', tab !== 'chat');
+      $('#copilotPaneBatch')?.classList.toggle('hidden', tab !== 'batch');
+      updateCopilotSelectionBadge();
+    });
+  });
+
+  // 1-Click Quick Assign: Tạo Video từ 1 Node Ảnh bất kỳ
+  function quickSpawnVideoFromImageNode(imageNodeId) {
+    const imgNode = nodeById(imageNodeId);
+    if (!imgNode) return;
+    createUndoSnapshot('Quick spawn video from image');
+
+    // Lấy prompt gốc của node ảnh để gợi ý chuyển động
+    const basePrompt = resolvePrompt(imgNode.id) || imgNode.data?.customName || 'Cinematic scene';
+    const pNode = makeNode('prompt', imgNode.x + 330, imgNode.y - 30);
+    pNode.data.text = `${basePrompt}\nCamera motion: Slow cinematic dolly in, subtle natural movement, 24fps film look`;
+    pNode.data.customName = `Prompt Video · từ ${imgNode.data?.customName || imgNode.id}`;
+    state.nodes.push(pNode);
+
+    const vNode = makeNode('generateVideo', imgNode.x + 660, imgNode.y);
+    vNode.data.size = ['16:9', '9:16', '1:1'].includes(imgNode.data?.size) ? imgNode.data.size : '16:9';
+    vNode.data.duration = 7;
+    vNode.data.customName = `Tạo Video · từ ${imgNode.data?.customName || imgNode.id}`;
+    state.nodes.push(vNode);
+
+    // Nối Prompt -> Tạo Video
+    state.edges.push({
+      id: uid('edge'),
+      source: pNode.id,
+      sourcePort: 'text',
+      target: vNode.id,
+      targetPort: 'prompt'
+    });
+
+    // Nối Ảnh -> Tạo Video (Khung đầu)
+    state.edges.push({
+      id: uid('edge'),
+      source: imgNode.id,
+      sourcePort: 'image',
+      target: vNode.id,
+      targetPort: 'reference'
+    });
+
+    // Đưa vào Timeline Dự Án
+    const timeline = ensureDockTimeline();
+    timeline.data.clipOrder = timeline.data.clipOrder || [];
+    if (!timeline.data.clipOrder.includes(vNode.id)) {
+      timeline.data.clipOrder.push(vNode.id);
+    }
+    syncTimelineDock();
+    render();
+    saveState();
+    setRunStatus('🎬 Đã đẻ Node Tạo Video nối sẵn từ ảnh và đưa vào Timeline!', 'ok');
+  }
+
+  // 1-Click Quick Assign: Gán 1 Node Ảnh vào Tập ảnh tham chiếu (References)
+  function quickAssignNodeToReferences(sourceNodeId) {
+    const srcNode = nodeById(sourceNodeId);
+    if (!srcNode) return;
+    createUndoSnapshot('Quick assign to references');
+
+    let refNode = state.nodes.find(n => n.type === 'references');
+    if (!refNode) {
+      refNode = makeNode('references', srcNode.x + 350, srcNode.y);
+      refNode.data.customName = 'Tập ảnh tham chiếu (References)';
+      state.nodes.push(refNode);
+    }
+
+    // Kiểm tra xem đã nối chưa
+    const alreadyLinked = state.edges.some(e => e.source === srcNode.id && e.target === refNode.id);
+    if (alreadyLinked) {
+      setRunStatus('📌 Ảnh này đã được nối trong Tập ảnh tham chiếu rồi!', 'warn');
+      return;
+    }
+
+    // Tìm cổng reference1..8 còn trống
+    let targetPort = 'reference1';
+    for (let i = 1; i <= 8; i++) {
+      const portId = `reference${i}`;
+      const busy = state.edges.some(e => e.target === refNode.id && e.targetPort === portId);
+      if (!busy) {
+        targetPort = portId;
+        break;
       }
-      void checkAiConfig();
-      $('#aiSongTitle')?.focus();
-    };
+    }
 
-    $('#closeAiDirectorBtn')?.addEventListener('click', () => aiDirectorModal.classList.add('hidden'));
-    $('#cancelAiDirectorBtn')?.addEventListener('click', () => aiDirectorModal.classList.add('hidden'));
-    aiDirectorModal.addEventListener('click', (e) => {
-      if (e.target === aiDirectorModal) aiDirectorModal.classList.add('hidden');
+    state.edges.push({
+      id: uid('edge'),
+      source: srcNode.id,
+      sourcePort: 'image',
+      target: refNode.id,
+      targetPort
     });
 
-    // Preset chips
-    aiDirectorModal.querySelectorAll('.ai-chip[data-style]').forEach(chip => {
-      chip.addEventListener('click', () => {
-        const style = chip.dataset.style;
-        if (style && $('#aiGenreStyle')) {
-          $('#aiGenreStyle').value = style;
-        }
-      });
-    });
+    render();
+    saveState();
+    setRunStatus(`📌 Đã gán [${srcNode.data?.customName || srcNode.id}] vào cổng ${targetPort} của Tập ảnh tham chiếu!`, 'ok');
+  }
 
-    // Custom proxy toggle
-    $('#aiUseCustomProxy')?.addEventListener('change', (e) => {
-      const fields = $('#aiCustomProxyFields');
-      if (fields) fields.classList.toggle('hidden', !e.target.checked);
-    });
+  // TAB 1: Đẻ & Gán Node Tức Thì từ văn bản bất kỳ
+  function executeQuickSpawn(autoRun = false) {
+    const raw = ($('#quickSpawnInput')?.value || '').trim();
+    if (!raw) {
+      setRunStatus('Vui lòng dán danh sách prompt hoặc thông tin nhân vật vào ô!', 'warn');
+      $('#quickSpawnInput')?.focus();
+      return;
+    }
 
-    let aiDirectorAutoRunMode = false;
-    $('#submitAiDirectorAutoRunBtn')?.addEventListener('click', () => {
-      aiDirectorAutoRunMode = true;
-      $('#submitAiDirectorBtn')?.click();
-    });
+    const pattern = $('#quickSpawnPattern')?.value || 'auto';
+    const aspect = $('#quickSpawnAspect')?.value || '16:9';
+    const linkRefs = $('#quickSpawnLinkRefs')?.checked ?? true;
+    const clearOld = $('#quickSpawnClearOld')?.checked ?? false;
 
-    // Submit handler
-    $('#submitAiDirectorBtn')?.addEventListener('click', async () => {
-      const songTitle = $('#aiSongTitle')?.value.trim() || 'MV Suno AI';
-      const genreStyle = $('#aiGenreStyle')?.value.trim() || 'dark avant-garde Vietnamese theatrical folk, sarcastic Cheo clown, 96 bpm';
-      const lyrics = $('#aiLyricsInput')?.value.trim();
+    // 1. Kiểm tra nếu là định dạng Khóa Nhân Vật (CHAR_01 / FACE_LOCK) hoặc Kịch bản Cảnh 1, Cảnh 2
+    const lockItems = parseAssetLockList(raw);
+    const parsedScenes = parseSceneScript(raw);
 
-      if (!lyrics) {
-        alert('Vui lòng dán lời bài hát (Lyrics) từ Suno vào ô Lời bài hát để AI phân tích!');
-        $('#aiLyricsInput')?.focus();
+    if (pattern === 'char_lock' || (pattern === 'auto' && lockItems.length > 0 && parsedScenes.length === 0)) {
+      if ($('#scriptInput')) {
+        $('#scriptInput').value = raw;
+        void buildSceneNodesFromScript(autoRun);
+        return;
+      }
+    }
+    if (pattern === 'auto' && parsedScenes.length > 0) {
+      if ($('#scriptInput')) {
+        $('#scriptInput').value = raw;
+        void buildSceneNodesFromScript(autoRun);
+        return;
+      }
+    }
+
+    // 2. Xử lý danh sách nhiều dòng Prompt (mỗi dòng 1 ý / 1 cảnh)
+    const lines = raw
+      .split(/\r?\n/)
+      .map(l => l.replace(/^\s*(?:[-*•+]|\d+[.)])\s*/, '').trim())
+      .filter(l => l.length > 0);
+
+    if (!lines.length) {
+      setRunStatus('Không tìm thấy dòng nội dung hợp lệ nào.', 'warn');
+      return;
+    }
+
+    createUndoSnapshot(`Quick Spawn ${lines.length} items`);
+    if (clearOld) {
+      state.nodes = [];
+      state.edges = [];
+      state.notes = [];
+      state.selectedNodeIds = [];
+    }
+
+    // Tìm node tham chiếu hiện có (Tập ảnh tham chiếu hoặc Tập ảnh đầu vào)
+    const refHub = linkRefs
+      ? state.nodes.find(n => n.type === 'references') || state.nodes.find(n => n.type === 'imageBatchInput')
+      : null;
+
+    const existingMaxY = state.nodes.length
+      ? Math.max(...state.nodes.map(n => Number(n.y) || 0)) + 340
+      : 80;
+    const startX = 120;
+    let curY = clearOld ? 80 : existingMaxY;
+
+    const effectivePattern = pattern === 'auto' ? 'image_video_timeline' : pattern;
+    const defaultNeg = '3D CGI, cartoon, anime, plastic smooth skin, blurry, bad anatomy, deformed eyes, extra fingers, text, watermark';
+    const createdVideoIds = [];
+
+    lines.forEach((lineText, idx) => {
+      const num = idx + 1;
+      const pNode = makeNode('prompt', startX, curY);
+      pNode.data.text = lineText;
+      pNode.data.customName = `Prompt (Văn bản) ${num}`;
+      state.nodes.push(pNode);
+
+      if (effectivePattern === 'prompt_only') {
+        curY += 230;
         return;
       }
 
-      const useCustom = $('#aiUseCustomProxy')?.checked;
-      const selectedMode = $('#aiModeSelect')?.value || 'auto';
-      const payload = {
-        song_title: songTitle,
-        genre_style: genreStyle,
-        bpm: 'Auto (from Suno style)',
-        vocal: 'Auto (from Suno style)',
-        lyrics: lyrics,
-        mood: genreStyle,
-        mode: selectedMode
-      };
+      const negNode = makeNode('negativePrompt', startX, curY + 230);
+      negNode.data.text = defaultNeg;
+      negNode.data.customName = `Negative Prompt ${num}`;
+      state.nodes.push(negNode);
 
-      // Check audio duration from file or manual input or timeline dock
-      const manualDur = parseFloat($('#aiAudioDurationManual')?.value);
-      const timelineAudio = state.nodes.find(n => n.type === 'timeline')?.data;
+      const imgNode = makeNode('generateImage', startX + 340, curY + 40);
+      imgNode.data.size = aspect;
+      imgNode.data.model = 'muse-image';
+      imgNode.data.customName = `Tạo Ảnh (Generate Image) ${num}`;
+      state.nodes.push(imgNode);
 
-            if (currentAiSrt) {
-        payload.srt_content = currentAiSrt.content;
-        payload.audio_duration = payload.audio_duration || currentAiSrt.totalDuration;
-      }
-      if (currentAiAudio) {
-        payload.audio_url = currentAiAudio.url;
-        payload.audio_duration = manualDur || currentAiAudio.duration;
-        payload.audio_filename = currentAiAudio.filename;
-      } else if (timelineAudio?.audioUrl) {
-        payload.audio_url = timelineAudio.audioUrl;
-        payload.audio_duration = manualDur || timelineAudio.audioDuration;
-        payload.audio_filename = timelineAudio.audioFilename;
-      } else if (manualDur && manualDur > 10) {
-        payload.audio_duration = manualDur;
-      }
+      state.edges.push(
+        { id: uid('edge'), source: pNode.id, sourcePort: 'text', target: imgNode.id, targetPort: 'prompt' },
+        { id: uid('edge'), source: negNode.id, sourcePort: 'text', target: imgNode.id, targetPort: 'negative' }
+      );
 
-      if (useCustom) {
-        payload.ai_provider = $('#aiCustomProvider')?.value;
-        payload.ai_base_url = $('#aiCustomBaseUrl')?.value.trim();
-        payload.ai_api_key = $('#aiCustomApiKey')?.value.trim();
-        payload.ai_model = $('#aiCustomModel')?.value.trim();
-      }
-
-      // Show loading
-      if (aiLoadingOverlay) {
-        aiLoadingOverlay.classList.remove('hidden');
-        if (aiLoadingText) aiLoadingText.textContent = `✨ AI đang phân tích ca từ & style nhạc "${songTitle}"...`;
-      }
-
-      try {
-        const res = await fetch('/api/director/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+      if (refHub) {
+        state.edges.push({
+          id: uid('edge'),
+          source: refHub.id,
+          sourcePort: 'image',
+          target: imgNode.id,
+          targetPort: 'reference'
         });
+      }
 
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.detail || `Lỗi HTTP ${res.status}`);
-        }
+      if (effectivePattern === 'image_video_timeline') {
+        const vNode = makeNode('generateVideo', startX + 680, curY + 40);
+        vNode.data.size = ['16:9', '9:16', '1:1'].includes(aspect) ? aspect : '16:9';
+        vNode.data.duration = 7;
+        vNode.data.customName = `Tạo Video (Generate Video) ${num}`;
+        state.nodes.push(vNode);
+        createdVideoIds.push(vNode.id);
 
-        const data = await res.json();
-        const shots = data.shots || [];
-        if (!shots.length) {
-          throw new Error('AI không trích xuất được phân cảnh nào từ lời bài hát. Vui lòng kiểm tra lại cấu trúc lời bài hát.');
-        }
+        state.edges.push(
+          { id: uid('edge'), source: pNode.id, sourcePort: 'text', target: vNode.id, targetPort: 'prompt' },
+          { id: uid('edge'), source: negNode.id, sourcePort: 'text', target: vNode.id, targetPort: 'negative' },
+          { id: uid('edge'), source: imgNode.id, sourcePort: 'image', target: vNode.id, targetPort: 'reference' }
+        );
+      }
 
-        // Options
-        const optClearOld = $('#aiOptClearOldNodes')?.checked ?? true;
-        const optAttachAudio = $('#aiOptAttachAudio')?.checked ?? true;
-        const optPromptImageVideo = $('#aiOptPromptImageVideo')?.checked ?? true;
-        const optAddToTimeline = $('#aiOptAddToTimeline')?.checked ?? true;
-        const optAutoArrange = $('#aiOptAutoArrange')?.checked ?? true;
-        const optContinuity = $('#aiOptContinuity')?.checked ?? false;
+      curY += 490;
+    });
 
-        // Build workflow nodes
-        createUndoSnapshot(`AI Director: ${songTitle}`);
+    if (createdVideoIds.length) {
+      const timeline = ensureDockTimeline();
+      timeline.data.clipOrder = clearOld
+        ? [...createdVideoIds]
+        : [...(timeline.data.clipOrder || []), ...createdVideoIds];
+      syncTimelineDock();
+    }
 
-        if (optClearOld) {
-          state.nodes = [];
-          state.edges = [];
-          state.notes = [];
-          state.selectedNodeIds = [];
-        }
+    render();
+    fitCanvas();
+    void saveState();
+    setRunStatus(`⚡ Đã đẻ & nối dây thành công ${lines.length} cụm node trên bàn dựng!`, 'ok');
 
-        // 1. Create Master Info Note Card with Production Engine & Treatment
-        const projectInfo = data.project_info || {};
-        const creativeTreatment = data.creative_treatment || {};
-        const visualLocks = data.visual_locks || {};
-        const refLibrary = data.reference_asset_library || [];
-        const visualBible = data.visual_bible || {};
-        const visualMotif = data.visual_motif || creativeTreatment.theme || creativeTreatment.concept || '';
-        const refPack = data.reference_pack || {};
+    if (autoRun) {
+      void execute();
+    }
+  }
 
-        let bibleSummary = '';
-        const charLocks = visualLocks.char_locks || [];
-        const setLocks = visualLocks.set_locks || [];
-        const propLocks = visualLocks.prop_locks || [];
-        const styleLocks = visualLocks.style_locks || [];
+  $('#quickSpawnBuildBtn')?.addEventListener('click', () => executeQuickSpawn(false));
+  $('#quickSpawnRunBtn')?.addEventListener('click', () => executeQuickSpawn(true));
 
-        if (charLocks.length) {
-          bibleSummary += `\n👤 NHÂN VẬT (CHAR LOCK):\n` + charLocks.map(c => `• [${c.id || 'CHAR'}] ${c.name || 'Nhân vật'}: ${c.description || ''}`).join('\n') + '\n';
-        } else if (visualBible.character_lock) {
-          bibleSummary += `\n👤 NHÂN VẬT: ${visualBible.character_lock}\n`;
-        }
+  // TAB 2: AI Chat Copilot
+  const copilotChatMessages = $('#copilotChatMessages');
+  const copilotChatInput = $('#copilotChatInput');
+  const copilotSendBtn = $('#copilotSendBtn');
+  const copilotStatusText = $('#copilotStatusText');
 
-        if (setLocks.length) {
-          bibleSummary += `\n🏛️ BỐI CẢNH (SET LOCK):\n` + setLocks.map(s => `• [${s.id || 'SET'}] ${s.name || 'Bối cảnh'}: ${s.description || ''}`).join('\n') + '\n';
-        } else if (visualBible.location_lock) {
-          bibleSummary += `\n🏛️ BỐI CẢNH: ${visualBible.location_lock}\n`;
-        }
+  function getSelectedPromptTexts() {
+    const selectedIds = state.selectedNodeIds.length ? state.selectedNodeIds : [];
+    const results = [];
+    for (const id of selectedIds) {
+      const n = nodeById(id);
+      if (!n) continue;
+      if (['prompt', 'negativePrompt', 'textAppend'].includes(n.type) && n.data?.text) {
+        results.push(n.data.text);
+      } else if (['generateImage', 'generateVideo'].includes(n.type)) {
+        const resolved = resolvePrompt(n.id);
+        if (resolved) results.push(resolved);
+      }
+    }
+    return results;
+  }
 
-        if (propLocks.length) {
-          bibleSummary += `\n🎭 ĐẠO CỤ (PROP LOCK):\n` + propLocks.map(p => `• [${p.id || 'PROP'}] ${p.name || 'Đạo cụ'}: ${p.description || ''}`).join('\n') + '\n';
-        }
+  function applyPromptsToSelectedNodes(prompts) {
+    if (!Array.isArray(prompts) || !prompts.length) return;
+    createUndoSnapshot('Copilot fill selected prompts');
 
-        if (styleLocks.length) {
-          bibleSummary += `\n🎨 PHONG CÁCH (STYLE LOCK):\n` + styleLocks.map(st => `• ${st.description || st.name || ''}`).join('\n') + '\n';
-        } else if (visualBible.style_lock) {
-          bibleSummary += `\n🎨 PHONG CÁCH: ${visualBible.style_lock}\n`;
-        }
-
-        const modeDisplay = projectInfo.mode_display || (projectInfo.mode ? `MODE: ${projectInfo.mode}` : 'MODE 1 — MUSIC VIDEO DIRECTOR');
-
-        state.notes = state.notes || [];
-        state.notes.push({
-          id: uid('note'),
-          x: -300,
-          y: 80,
-          width: 350,
-          text: `🎬 KẾ HOẠCH SẢN XUẤT: ${songTitle}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎯 CHẾ ĐỘ: ${modeDisplay}
-${creativeTreatment.concept ? `\n💡 Ý TƯỞNG (CONCEPT):\n${creativeTreatment.concept}\n` : ''}${creativeTreatment.creative_vision ? `\n👁️ TẦM NHÌN ĐẠO DIỄN:\n${creativeTreatment.creative_vision}\n` : ''}${creativeTreatment.color_palette ? `\n🎨 BẢNG MÀU ĐIỆN ẢNH:\n${creativeTreatment.color_palette}\n` : ''}
-🎭 MOTIF TRUNG TÂM:
-${visualMotif || 'AI Video Storyboard Cinema'}
-
-🎵 STYLE / MOOD:
-${genreStyle}
-${bibleSummary}
-${currentAiAudio ? `🎧 FILE NHẠC: ${currentAiAudio.filename} (${currentAiAudio.duration}s)\n` : ''}✨ TỔNG PHÂN CẢNH: ${shots.length} Shots
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Kế hoạch Storyboard đa chế độ chuẩn điện ảnh!`
-        });
-
-        // 2. GIAI ĐOẠN 1 – KHÓA TÀI NGUYÊN GỐC (ASSET LOCKS & REFERENCES HUB)
-        const colPromptX = 80;
-        const colImageX = 410;
-        let assetRowY = 80;
-        const createdAssetImageNodes = [];
-
-        // Dynamic generation from Reference Asset Library
-        if (Array.isArray(refLibrary) && refLibrary.length > 0) {
-          refLibrary.forEach((asset, aIdx) => {
-            const assetId = asset.asset_id || `REF_${aIdx+1}`;
-            const lockGroup = asset.lock_group || 'LOCK';
-            const assetName = asset.name || `Tài nguyên ${aIdx+1}`;
-            const assetPrompt = asset.prompt || '';
-            const assetAspect = asset.aspect || '16:9';
-
-            const pNode = makeNode('prompt', colPromptX, assetRowY);
-            pNode.data.text = assetPrompt;
-            pNode.data.customName = `📌 Neo: ${assetName}`;
-            pNode.data.sceneLabel = `GIAI ĐOẠN 1: [${lockGroup}] ${assetId}`;
-            state.nodes.push(pNode);
-
-            const imgNode = makeNode('generateImage', colImageX, assetRowY);
-            imgNode.data.model = 'muse-image';
-            imgNode.data.size = assetAspect;
-            imgNode.data.status = 'idle';
-            imgNode.data.customName = `🖼️ Ảnh Gốc: ${assetName}`;
-            imgNode.data.sceneLabel = `Tạo [${lockGroup}] ${assetId}`;
-            imgNode.data.assetId = assetId;
-            state.nodes.push(imgNode);
-
-            state.edges.push({
-              id: uid('edge'),
-              source: pNode.id,
-              sourcePort: 'text',
-              target: imgNode.id,
-              targetPort: 'prompt'
-            });
-
-            createdAssetImageNodes.push(imgNode);
-            assetRowY += 340;
-          });
+    // Tìm các node Prompt đang được chọn hoặc nối vào các node Tạo Ảnh/Video đang chọn
+    const targetPromptNodes = [];
+    for (const id of state.selectedNodeIds) {
+      const n = nodeById(id);
+      if (!n) continue;
+      if (['prompt', 'textAppend'].includes(n.type)) {
+        targetPromptNodes.push(n);
+      } else if (['generateImage', 'generateVideo'].includes(n.type)) {
+        const incoming = getIncoming(n.id, 'prompt').map(e => nodeById(e.source)).filter(Boolean);
+        if (incoming.length) {
+          targetPromptNodes.push(...incoming);
         } else {
-          // Legacy Fallback
-          const primaryCharPrompt = refPack.character_primary || refPack.character_prompt || (visualBible.character_lock ? `Cinematic portrait of ${visualBible.character_lock}, photorealistic 16:9` : "");
-          const secondaryCharPrompt = refPack.character_secondary || "";
-          const locationPrompt = refPack.location_main || refPack.location_prompt || (visualBible.location_lock ? `Master establishing shot of ${visualBible.location_lock}, 16:9` : "");
-          const propPrompt = refPack.prop_primary || "";
+          // Tự tạo node Prompt nối vào nếu chưa có!
+          const newP = makeNode('prompt', n.x - 320, n.y);
+          state.nodes.push(newP);
+          state.edges.push({ id: uid('edge'), source: newP.id, sourcePort: 'text', target: n.id, targetPort: 'prompt' });
+          targetPromptNodes.push(newP);
+        }
+      }
+    }
 
-          const legacyAssets = [
-            { prompt: primaryCharPrompt, name: "Nhân Vật Chính", group: "CHAR LOCK" },
-            { prompt: secondaryCharPrompt, name: "Nhân Vật Phụ", group: "CHAR LOCK 2" },
-            { prompt: locationPrompt, name: "Bối Cảnh Chính", group: "SET LOCK" },
-            { prompt: propPrompt, name: "Đạo Cụ Biểu Tượng", group: "PROP LOCK" }
-          ].filter(a => !!a.prompt);
+    // Nếu người dùng không chọn node nào, áp dụng cho tất cả các node Prompt hiện có trên bàn
+    const finalTargets = targetPromptNodes.length
+      ? targetPromptNodes
+      : state.nodes.filter(n => n.type === 'prompt');
 
-          legacyAssets.forEach(la => {
-            const pNode = makeNode('prompt', colPromptX, assetRowY);
-            pNode.data.text = la.prompt;
-            pNode.data.customName = `📌 Neo: ${la.name}`;
-            pNode.data.sceneLabel = `GIAI ĐOẠN 1: [${la.group}]`;
-            state.nodes.push(pNode);
+    if (!finalTargets.length) {
+      // Nếu bàn trống hoàn toàn, tự đẻ cụm node mới
+      if ($('#quickSpawnInput')) {
+        $('#quickSpawnInput').value = prompts.join('\n');
+        executeQuickSpawn(false);
+      }
+      return;
+    }
 
-            const imgNode = makeNode('generateImage', colImageX, assetRowY);
-            imgNode.data.model = 'muse-image';
-            imgNode.data.size = '16:9';
-            imgNode.data.status = 'idle';
-            imgNode.data.customName = `🖼️ Ảnh Gốc: ${la.name}`;
-            imgNode.data.sceneLabel = `Tạo [${la.group}]`;
-            state.nodes.push(imgNode);
+    finalTargets.forEach((pNode, idx) => {
+      if (prompts[idx] !== undefined) {
+        pNode.data.text = prompts[idx];
+      }
+    });
 
-            state.edges.push({ id: uid('edge'), source: pNode.id, sourcePort: 'text', target: imgNode.id, targetPort: 'prompt' });
-            createdAssetImageNodes.push(imgNode);
-            assetRowY += 340;
+    render();
+    void saveState();
+    setRunStatus(`✍️ Đã điền ${Math.min(finalTargets.length, prompts.length)} prompt trực tiếp vào các node trên bàn dựng!`, 'ok');
+  }
+
+  async function sendCopilotMessage(customText) {
+    const text = (typeof customText === 'string' ? customText : copilotChatInput?.value || '').trim();
+    if (!text) return;
+    if (!customText && copilotChatInput) copilotChatInput.value = '';
+
+    // Append user bubble
+    if (copilotChatMessages) {
+      const userBubble = document.createElement('div');
+      userBubble.style.cssText = 'align-self:flex-end;background:#3b1e6d;border:1px solid #6d28d9;color:#f8fafc;border-radius:8px;padding:8px 10px;max-width:90%;line-height:1.4;';
+      userBubble.textContent = text;
+      copilotChatMessages.appendChild(userBubble);
+      copilotChatMessages.scrollTop = copilotChatMessages.scrollHeight;
+    }
+
+    if (copilotStatusText) copilotStatusText.textContent = '⏳ Copilot đang xử lý...';
+    if (copilotSendBtn) copilotSendBtn.disabled = true;
+
+    try {
+      const selectedPrompts = getSelectedPromptTexts();
+      const aspect = $('#quickSpawnAspect')?.value || '16:9';
+      const res = await fetch('/api/copilot/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          selected_prompts: selectedPrompts,
+          aspect
+        })
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const prompts = data.prompts || [];
+
+      if (copilotChatMessages) {
+        const botCard = document.createElement('div');
+        botCard.style.cssText = 'background:#15192b;border:1px solid #2e3656;border-radius:8px;padding:10px;color:#e2e8f0;display:flex;flex-direction:column;gap:8px;';
+
+        const replyEl = document.createElement('div');
+        replyEl.style.cssText = 'color:#c4b5fd;font-weight:600;line-height:1.4;';
+        replyEl.textContent = `🤖 ${data.reply || 'Đã tạo danh sách prompt:'}`;
+        botCard.appendChild(replyEl);
+
+        if (prompts.length) {
+          const listEl = document.createElement('div');
+          listEl.style.cssText = 'display:flex;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto;background:#0a0c14;padding:8px;border-radius:6px;border:1px solid #22273d;font-size:11px;color:#cbd5e1;';
+          prompts.forEach((p, idx) => {
+            const item = document.createElement('div');
+            item.style.cssText = 'padding-bottom:4px;border-bottom:1px dashed #1e2235;';
+            item.textContent = `${idx + 1}. ${p}`;
+            listEl.appendChild(item);
           });
+          botCard.appendChild(listEl);
+
+          const btnGroup = document.createElement('div');
+          btnGroup.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-top:2px;';
+
+          const fillBtn = document.createElement('button');
+          fillBtn.type = 'button';
+          fillBtn.className = 'small-btn';
+          fillBtn.style.cssText = 'flex:1;background:#065f46;border:1px solid #10b981;color:#ecfdf5;font-weight:700;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:11px;';
+          fillBtn.textContent = '✍️ Điền vào Node đang chọn';
+          fillBtn.onclick = () => applyPromptsToSelectedNodes(prompts);
+
+          const spawnImgBtn = document.createElement('button');
+          spawnImgBtn.type = 'button';
+          spawnImgBtn.className = 'small-btn';
+          spawnImgBtn.style.cssText = 'flex:1;background:#1e293b;border:1px solid #38bdf8;color:#e0f2fe;font-weight:700;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:11px;';
+          spawnImgBtn.textContent = '🖼️ Đẻ dàn Node Ảnh';
+          spawnImgBtn.onclick = () => {
+            if ($('#quickSpawnInput')) $('#quickSpawnInput').value = prompts.join('\n');
+            if ($('#quickSpawnPattern')) $('#quickSpawnPattern').value = 'image_only';
+            executeQuickSpawn(false);
+          };
+
+          const spawnFullBtn = document.createElement('button');
+          spawnFullBtn.type = 'button';
+          spawnFullBtn.className = 'small-btn';
+          spawnFullBtn.style.cssText = 'width:100%;background:#3b1e6d;border:1px solid #8b5cf6;color:#f3e8ff;font-weight:700;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:11px;';
+          spawnFullBtn.textContent = '🎬 Đẻ dàn Ảnh ➔ Video ➔ Timeline';
+          spawnFullBtn.onclick = () => {
+            if ($('#quickSpawnInput')) $('#quickSpawnInput').value = prompts.join('\n');
+            if ($('#quickSpawnPattern')) $('#quickSpawnPattern').value = 'image_video_timeline';
+            executeQuickSpawn(false);
+          };
+
+          btnGroup.append(fillBtn, spawnImgBtn, spawnFullBtn);
+          botCard.appendChild(btnGroup);
         }
 
-        // Tạo HUB: Tập ảnh tham chiếu (References) gom toàn bộ các ảnh neo gốc vào một mối
-        const masterReferences = makeNode('references', 740, 180);
-        masterReferences.data = {
-          customName: 'Tập ảnh tham chiếu (References)',
-          sceneLabel: 'Tập ảnh tham chiếu (References) · Khóa tạo hình gốc'
-        };
-        state.nodes.push(masterReferences);
+        copilotChatMessages.appendChild(botCard);
+        copilotChatMessages.scrollTop = copilotChatMessages.scrollHeight;
+      }
+      if (copilotStatusText) copilotStatusText.textContent = '✅ Sẵn sàng nhận lệnh tiếp theo';
+    } catch (err) {
+      if (copilotStatusText) copilotStatusText.textContent = `❌ Lỗi: ${err.message}`;
+    } finally {
+      if (copilotSendBtn) copilotSendBtn.disabled = false;
+    }
+  }
 
-        createdAssetImageNodes.forEach((imgNode, idx) => {
-          state.edges.push({
-            id: uid('edge'),
-            source: imgNode.id,
-            sourcePort: 'image',
-            target: masterReferences.id,
-            targetPort: `reference${idx + 1}`
-          });
-        });
-
-        const sceneBaseX = 1120;
-        const gridBaseY = 80;
-        const createdVideoIds = [];
-        let prevVideoNode = null;
-
-        // GIAI ĐOẠN 2 & 3: DÀN CẢNH LƯỚI 4 CỘT (GRID LAYOUT: KEYFRAME TĨNH & VIDEO CHUYỂN ĐỘNG)
-        shots.forEach((shot, idx) => {
-          const shotNum = shot.shot_number || shot.shot_num || (idx + 1);
-          const column = idx % 4;
-          const row = Math.floor(idx / 4);
-          const x = sceneBaseX + column * 680;
-          const y = gridBaseY + row * 1100;
-
-          const shotTitle = shot.title ? `Shot ${shotNum}: ${shot.title}` : `Shot ${shotNum}`;
-          const shotLabel = shot.timecode ? `Shot ${shotNum} [${shot.timecode}]` : shotTitle;
-          const negativePromptText = shot.negative_prompt || '3D CGI, cartoon, anime, plastic smooth skin, blurry, bad anatomy, deformed eyes, extra fingers, text, watermark, overlapping speakers, glitchy mouth.';
-
-          let currentImageNode = null;
-          let videoNode = null;
-
-          // GIAI ĐOẠN 2: TẠO ẢNH KEYFRAME (Cảnh tĩnh)
-          if (optPromptImageVideo) {
-            const imgPromptNode = makeNode('prompt', x, y);
-            let imgText = shot.image_prompt || shot.prompt || '';
-            const openFrame = shot.first_frame_description || shot.start_frame;
-            if (openFrame && !imgText.toLowerCase().includes(openFrame.toLowerCase())) {
-              imgText = `${imgText}\n\nOpening frame composition: ${openFrame}`;
-            }
-            imgPromptNode.data.text = imgText;
-            imgPromptNode.data.customName = `Prompt (Văn bản) · Shot ${shotNum}${shot.section ? ` (${shot.section})` : ''}`;
-            imgPromptNode.data.sceneLabel = `${shotLabel} (Keyframe)`;
-            if (shot.lyric_line) imgPromptNode.data.lyricLine = shot.lyric_line;
-            state.nodes.push(imgPromptNode);
-
-            currentImageNode = makeNode('generateImage', x + 330, y);
-            currentImageNode.data.model = 'muse-image';
-            currentImageNode.data.size = shot.aspect || '16:9';
-            currentImageNode.data.status = 'idle';
-            currentImageNode.data.customName = `Tạo Ảnh (Generate Image) · Shot ${shotNum}`;
-            currentImageNode.data.sceneLabel = shotLabel;
-            state.nodes.push(currentImageNode);
-
-            // Nối Prompt Ảnh -> Tạo Ảnh
-            state.edges.push({
-              id: uid('edge'),
-              source: imgPromptNode.id,
-              sourcePort: 'text',
-              target: currentImageNode.id,
-              targetPort: 'prompt'
-            });
-
-            // Nối Master References -> Tạo Ảnh Keyframe
-            if (masterReferences) {
-              state.edges.push({
-                id: uid('edge'),
-                source: masterReferences.id,
-                sourcePort: 'image',
-                target: currentImageNode.id,
-                targetPort: 'reference'
-              });
-            }
-          }
-
-          // NEGATIVE PROMPT (Lời nhắc loại trừ)
-          const negNode = makeNode('negativePrompt', x, y + 270);
-          negNode.data.text = negativePromptText;
-          negNode.data.customName = `Negative Prompt · Shot ${shotNum}`;
-          negNode.data.sceneLabel = `Loại trừ · Shot ${shotNum}`;
-          state.nodes.push(negNode);
-
-          if (currentImageNode) {
-            state.edges.push({
-              id: uid('edge'),
-              source: negNode.id,
-              sourcePort: 'text',
-              target: currentImageNode.id,
-              targetPort: 'negative'
-            });
-          }
-
-          // GIAI ĐOẠN 3: TẠO VIDEO (Chuyển động)
-          const vidPromptY = optPromptImageVideo ? y + 540 : y;
-          const vidNodeY = optPromptImageVideo ? y + 540 : y;
-
-          const vidPromptNode = makeNode('prompt', x, vidPromptY);
-          let vidText = shot.video_prompt || shot.prompt || '';
-          const motionDetails = [];
-          if (shot.camera_motion) motionDetails.push(`Camera motion: ${shot.camera_motion}`);
-          if (shot.end_frame) motionDetails.push(`Final frame to reach: ${shot.end_frame}`);
-          if (motionDetails.length && !vidText.toLowerCase().includes(shot.camera_motion?.toLowerCase() || 'xyz123')) {
-            vidText = `${vidText}\n\n${motionDetails.join('\n')}`;
-          }
-          vidPromptNode.data.text = vidText;
-          vidPromptNode.data.customName = `Prompt (Văn bản) · Shot ${shotNum} Video`;
-          vidPromptNode.data.sceneLabel = `${shotLabel} (Video)`;
-          if (shot.lyric_line) vidPromptNode.data.lyricLine = shot.lyric_line;
-          state.nodes.push(vidPromptNode);
-
-          const requestedDuration = [5, 6, 7, 8, 10].reduce(
-            (best, val) => Math.abs(val - (shot.duration || 7)) < Math.abs(best - (shot.duration || 7)) ? val : best,
-            shot.duration || 7
-          );
-
-          videoNode = makeNode('generateVideo', x + 330, vidNodeY);
-          videoNode.data.model = 'muse-video';
-          videoNode.data.size = shot.aspect || '16:9';
-          videoNode.data.duration = requestedDuration;
-          videoNode.data.status = 'idle';
-          if (shot.lyric_line) videoNode.data.lyric = shot.lyric_line;
-          if (shot.timecode) videoNode.data.timecode = shot.timecode;
-          videoNode.data.customName = `Tạo Video (Generate Video) · Shot ${shotNum}`;
-          videoNode.data.sceneLabel = shotLabel;
-          videoNode.data.continuity = createdVideoIds.length > 0;
-          state.nodes.push(videoNode);
-          createdVideoIds.push(videoNode.id);
-
-          // Nối Prompt Video -> Tạo Video
-          state.edges.push({
-            id: uid('edge'),
-            source: vidPromptNode.id,
-            sourcePort: 'text',
-            target: videoNode.id,
-            targetPort: 'prompt'
-          });
-
-          // Nối Negative Prompt -> Tạo Video
-          state.edges.push({
-            id: uid('edge'),
-            source: negNode.id,
-            sourcePort: 'text',
-            target: videoNode.id,
-            targetPort: 'negative'
-          });
-
-          // Nối Keyframe làm Khung đầu của Video
-          if (currentImageNode) {
-            state.edges.push({
-              id: uid('edge'),
-              source: currentImageNode.id,
-              sourcePort: 'image',
-              target: videoNode.id,
-              targetPort: 'reference'
-            });
-          }
-
-          // Nối Master References (Tập ảnh tham chiếu) vào Tạo Video
-          if (masterReferences) {
-            state.edges.push({
-              id: uid('edge'),
-              source: masterReferences.id,
-              sourcePort: 'image',
-              target: videoNode.id,
-              targetPort: 'reference'
-            });
-          }
-
-          // Continuity connection if enabled (Intelligent Character Cut Detection)
-          if (optContinuity && prevVideoNode) {
-            const prevSubj = (shots[idx - 1]?.subject || '').toLowerCase();
-            const currSubj = (shot.subject || '').toLowerCase();
-            const isSameChar = prevSubj && currSubj && prevSubj === currSubj && !currSubj.includes('rich') && !currSubj.includes('land');
-
-            if (isSameChar && !currentImageNode) {
-              state.edges.push({
-                id: uid('edge'),
-                source: prevVideoNode.id,
-                sourcePort: 'endFrame',
-                target: videoNode.id,
-                targetPort: 'reference'
-              });
-              videoNode.data.continuity = true;
-            } else {
-              videoNode.data.continuity = false;
-            }
-          }
-
-          prevVideoNode = videoNode;
-        });
-
-        // Add to timeline dock & attach audio
-        if (createdVideoIds.length) {
-          const timeline = ensureDockTimeline();
-          if (optAddToTimeline) {
-            timeline.data.clipOrder = optClearOld ? [...createdVideoIds] : [...(timeline.data.clipOrder || []), ...createdVideoIds];
-            timeline.data.durations = timeline.data.durations || {};
-            shots.forEach((shot, idx) => {
-              const vId = createdVideoIds[idx];
-              if (vId) timeline.data.durations[vId] = shot.duration || 7;
-            });
-          }
-          if (optAttachAudio && currentAiAudio) {
-            timeline.data.audioUrl = currentAiAudio.url;
-            timeline.data.audioFilename = currentAiAudio.filename;
-            timeline.data.audioDuration = currentAiAudio.duration;
-          }
-          if (currentAiSrt && currentAiSrt.content) {
-            timeline.data.srtContent = currentAiSrt.content;
-            timeline.data.srtFilename = currentAiSrt.filename || 'Phụ đề Suno';
-            state.srtContent = currentAiSrt.content;
-          }
-          syncTimelineDock();
-        }
-
-        // Auto arrange
-        if (optAutoArrange) {
-          try { arrangeNodes(); } catch (e) { console.warn('Could not auto arrange:', e); }
-        }
-
-        render();
-        await saveState();
-        fitCanvas();
-
-        // Close modal
-        if (aiLoadingOverlay) aiLoadingOverlay.classList.add('hidden');
-        aiDirectorModal.classList.add('hidden');
-
-        setRunStatus(`✨ AI Đạo Diễn đã dựng thành công ${shots.length} phân cảnh cho "${songTitle}"!`, 'ok');
-
-        if (aiDirectorAutoRunMode) {
-          aiDirectorAutoRunMode = false;
-          state.autoStitchOnComplete = true;
-          setRunStatus(`🚀 1-Phát-Xong-Luôn: Bắt đầu chuỗi render tự động qua Muse AI (${shots.length} cảnh)...`, 'warn');
-          void execute();
-        }
-      } catch (err) {
-        if (aiLoadingOverlay) aiLoadingOverlay.classList.add('hidden');
-        alert(`Lỗi phân tích AI: ${err.message || String(err)}`);
-        setRunStatus(`Lỗi AI Director: ${err.message || String(err)}`, 'warn');
+  if (copilotSendBtn) {
+    copilotSendBtn.onclick = () => void sendCopilotMessage();
+  }
+  if (copilotChatInput) {
+    copilotChatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        void sendCopilotMessage();
       }
     });
   }
+  document.querySelectorAll('[data-copilot-prompt]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      void sendCopilotMessage(chip.dataset.copilotPrompt);
+    });
+  });
+
+  // TAB 3: Công Cụ Gán Nhanh Hàng Loạt (Batch Link & Bulk Operations)
+  function batchLinkRefHubToTargets(targetType) {
+    const refHub = state.nodes.find(n => n.type === 'references') || state.nodes.find(n => n.type === 'imageBatchInput');
+    if (!refHub) {
+      setRunStatus('Chưa có node [Tập ảnh tham chiếu] hoặc [Tập ảnh đầu vào] trên bàn dựng!', 'warn');
+      return;
+    }
+    const targets = state.nodes.filter(n => n.type === targetType);
+    if (!targets.length) {
+      setRunStatus(`Không tìm thấy node ${targetType === 'generateImage' ? 'Tạo Ảnh' : 'Tạo Video'} nào trên bàn dựng.`, 'warn');
+      return;
+    }
+    createUndoSnapshot(`Batch link references to ${targetType}`);
+    let added = 0;
+    targets.forEach(t => {
+      const exists = state.edges.some(e => e.source === refHub.id && e.target === t.id && e.targetPort === 'reference');
+      if (!exists) {
+        state.edges.push({
+          id: uid('edge'),
+          source: refHub.id,
+          sourcePort: 'image',
+          target: t.id,
+          targetPort: 'reference'
+        });
+        added++;
+      }
+    });
+    render();
+    void saveState();
+    setRunStatus(`📌 Đã nối Tập tham chiếu vào ${added} node ${targetType === 'generateImage' ? 'Tạo Ảnh' : 'Tạo Video'}!`, 'ok');
+  }
+
+  $('#batchLinkRefsToImagesBtn')?.addEventListener('click', () => batchLinkRefHubToTargets('generateImage'));
+  $('#batchLinkRefsToVideosBtn')?.addEventListener('click', () => batchLinkRefHubToTargets('generateVideo'));
+
+  $('#batchSpawnVideosFromImagesBtn')?.addEventListener('click', () => {
+    const imgNodes = state.nodes.filter(n => n.type === 'generateImage');
+    if (!imgNodes.length) {
+      setRunStatus('Chưa có node Tạo Ảnh nào trên bàn dựng!', 'warn');
+      return;
+    }
+    createUndoSnapshot('Batch spawn videos from all images');
+    let count = 0;
+    const timeline = ensureDockTimeline();
+    timeline.data.clipOrder = timeline.data.clipOrder || [];
+
+    imgNodes.forEach((imgNode, idx) => {
+      const hasVideo = state.edges.some(e => e.source === imgNode.id && nodeById(e.target)?.type === 'generateVideo');
+      if (hasVideo) return;
+
+      const vNode = makeNode('generateVideo', imgNode.x + 360, imgNode.y);
+      vNode.data.size = ['16:9', '9:16', '1:1'].includes(imgNode.data?.size) ? imgNode.data.size : '16:9';
+      vNode.data.duration = 7;
+      vNode.data.customName = `Tạo Video ${idx + 1}`;
+      state.nodes.push(vNode);
+
+      // Copy prompt connection from image node to video node
+      getIncoming(imgNode.id, 'prompt').forEach(pEdge => {
+        state.edges.push({
+          id: uid('edge'),
+          source: pEdge.source,
+          sourcePort: 'text',
+          target: vNode.id,
+          targetPort: 'prompt'
+        });
+      });
+
+      state.edges.push({
+        id: uid('edge'),
+        source: imgNode.id,
+        sourcePort: 'image',
+        target: vNode.id,
+        targetPort: 'reference'
+      });
+
+      if (!timeline.data.clipOrder.includes(vNode.id)) {
+        timeline.data.clipOrder.push(vNode.id);
+      }
+      count++;
+    });
+
+    syncTimelineDock();
+    render();
+    void saveState();
+    setRunStatus(`🎬 Đã đẻ & nối dây đồng loạt ${count} node Tạo Video từ dàn node Tạo Ảnh!`, 'ok');
+  });
+
+  $('#batchAddAllVideosToTimelineBtn')?.addEventListener('click', () => {
+    const vidNodes = state.nodes.filter(n => n.type === 'generateVideo');
+    if (!vidNodes.length) {
+      setRunStatus('Chưa có node Tạo Video nào trên bàn dựng!', 'warn');
+      return;
+    }
+    createUndoSnapshot('Add all videos to timeline');
+    const timeline = ensureDockTimeline();
+    timeline.data.clipOrder = vidNodes.map(n => n.id);
+    syncTimelineDock();
+    render();
+    void saveState();
+    setRunStatus(`🎞️ Đã đưa toàn bộ ${vidNodes.length} node Tạo Video vào Timeline Dự Án!`, 'ok');
+  });
+
+  $('#batchApplyNegativeBtn')?.addEventListener('click', () => {
+    const negText = ($('#batchNegativeInput')?.value || '').trim();
+    if (!negText) return;
+    const gens = state.nodes.filter(n => ['generateImage', 'generateVideo'].includes(n.type));
+    if (!gens.length) {
+      setRunStatus('Chưa có node Tạo Ảnh hoặc Tạo Video nào trên bàn dựng!', 'warn');
+      return;
+    }
+    createUndoSnapshot('Batch apply negative prompt');
+    let masterNeg = state.nodes.find(n => n.type === 'negativePrompt');
+    if (!masterNeg) {
+      masterNeg = makeNode('negativePrompt', 80, 320);
+      masterNeg.data.customName = 'Negative Prompt Chung';
+      state.nodes.push(masterNeg);
+    }
+    masterNeg.data.text = negText;
+
+    gens.forEach(g => {
+      const hasNeg = state.edges.some(e => e.target === g.id && e.targetPort === 'negative');
+      if (!hasNeg) {
+        state.edges.push({
+          id: uid('edge'),
+          source: masterNeg.id,
+          sourcePort: 'text',
+          target: g.id,
+          targetPort: 'negative'
+        });
+      }
+    });
+
+    render();
+    void saveState();
+    setRunStatus(`🚫 Đã gán Negative Prompt chung cho toàn bộ ${gens.length} node Ảnh/Video!`, 'ok');
+  });
+
+  document.querySelectorAll('[data-batch-aspect]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const aspect = btn.dataset.batchAspect;
+      const gens = state.nodes.filter(n => ['generateImage', 'generateVideo'].includes(n.type));
+      if (!gens.length) return;
+      createUndoSnapshot(`Batch aspect ${aspect}`);
+      gens.forEach(g => { g.data.size = aspect; });
+      render();
+      void saveState();
+      setRunStatus(`📐 Đã đổi toàn bộ ${gens.length} node sang khung hình ${aspect}!`, 'ok');
+    });
+  });
+
+  $('#batchCollapseAllBtn')?.addEventListener('click', () => {
+    state.nodes.forEach(n => { n.data.collapsed = true; });
+    render();
+    void saveState();
+    setRunStatus('➖ Đã thu gọn toàn bộ node trên bàn dựng.', 'ok');
+  });
+
+  $('#batchExpandAllBtn')?.addEventListener('click', () => {
+    state.nodes.forEach(n => { n.data.collapsed = false; });
+    render();
+    void saveState();
+    setRunStatus('➕ Đã mở rộng toàn bộ node trên bàn dựng.', 'ok');
+  });
 
   const presetsBtn = $('#workflowPresetsBtn');
   const presetsMenu = $('#presetsMenu');
@@ -3964,9 +4237,12 @@ Kế hoạch Storyboard đa chế độ chuẩn điện ảnh!`
       }
       e.preventDefault();undoLastChange();return;
     }
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){
+      e.preventDefault();toggleCopilotDrawer();return;
+    }
     if((e.ctrlKey||e.metaKey)&&!isTextEntry(e.target)){
       const key=e.key.toLowerCase();
-      if(key==='a'){e.preventDefault();selectAllNodes();return;}
+      if(key==='a'){e.preventDefault();selectAllNodes();updateCopilotSelectionBadge();return;}
       if(key==='c'){e.preventDefault();copySelectedNodes();return;}
       if(key==='v'){e.preventDefault();pasteCopiedNodes();return;}
       if(key==='x'){e.preventDefault();cutSelectedNodes();return;}
