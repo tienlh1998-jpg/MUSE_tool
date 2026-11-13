@@ -35,6 +35,7 @@ from core.image_engine import ImageEngine, ImageGenerationError, normalise_aspec
 # Global mutex lock to strictly serialize Muse AI calls per account
 _MUSE_ACCOUNT_LOCK: Optional[asyncio.Lock] = None
 _PROJECT_MUSE_SESSIONS: Dict[str, str] = {}
+_SESSION_SEEN_IMAGE_IDS: Dict[str, set] = {}
 
 
 def _get_muse_account_lock() -> asyncio.Lock:
@@ -237,8 +238,10 @@ class MuseEngine:
                 return result
             except Exception as fb_exc:
                 if has_session:
+                    detail = getattr(self, "_last_muse_error", None)
+                    detail_suffix = f" [Muse: {detail}]" if detail else ""
                     raise RuntimeError(
-                        f"Máy chủ Muse AI chưa trả kết quả ảnh sau thời gian chờ (180s) và kênh dự phòng không khả dụng ({fb_exc}). "
+                        f"Máy chủ Muse AI chưa trả kết quả ảnh sau thời gian chờ (180s){detail_suffix} và kênh dự phòng không khả dụng ({fb_exc}). "
                         f"Vui lòng bấm 'Tạo lại' để Muse AI tiếp tục kết xuất!"
                     ) from fb_exc
                 raise
@@ -422,40 +425,210 @@ class MuseEngine:
         return None
 
     @staticmethod
-    def _extract_image_refs(events_list: list) -> list:
-        """Extract (raw_path, url) pairs from Muse presentation or message events."""
-        found = []
-        for ev in reversed(events_list or []):
+    def _image_ref_aliases(raw_path: Optional[str], url: Optional[str]) -> set:
+        """All stable aliases for a Muse image ref (raw_path, clean url, filename)."""
+        aliases = set()
+        if raw_path and isinstance(raw_path, str) and raw_path.strip():
+            rp = raw_path.strip()
+            aliases.add(rp)
+            aliases.add(rp.rsplit("/", 1)[-1])
+        if url and isinstance(url, str) and url.strip():
+            clean_u = url.strip().split("?", 1)[0].split("#", 1)[0]
+            if clean_u:
+                aliases.add(clean_u)
+                aliases.add(clean_u.rsplit("/", 1)[-1])
+        return aliases
+
+    @staticmethod
+    def _image_ref_identity(raw_path: Optional[str], url: Optional[str]) -> Optional[str]:
+        """Stable identity for a Muse image ref across polls (ignores rotating query signatures)."""
+        if raw_path and isinstance(raw_path, str) and raw_path.strip():
+            return raw_path.strip()
+        if url and isinstance(url, str) and url.strip():
+            return url.strip().split("?", 1)[0].split("#", 1)[0]
+        return None
+
+    @staticmethod
+    def _extract_image_refs(events_or_history: Any) -> list:
+        """Extract unique (raw_path, url) pairs from Muse events or full history payloads.
+
+        Skips user-authored messages so uploaded reference images are never
+        mistaken for Muse-generated outputs.
+        """
+        found: List[Tuple[Optional[str], Optional[str]]] = []
+        seen_keys: set = set()
+
+        def _add(raw_path: Optional[str], url: Optional[str]) -> None:
+            rp = raw_path.strip() if isinstance(raw_path, str) and raw_path.strip() else None
+            u = url.strip() if isinstance(url, str) and url.strip() else None
+            if not rp and not u:
+                return
+            ident = MuseEngine._image_ref_identity(rp, u)
+            if not ident or ident in seen_keys:
+                return
+            seen_keys.add(ident)
+            found.append((rp, u))
+
+        def _is_user_node(node: dict) -> bool:
+            role = str(node.get("role") or node.get("sender") or node.get("author") or "").strip().lower()
+            if role == "user":
+                return True
+            ev_name = str(node.get("event_name") or "").strip().lower()
+            if ev_name in ("user_message", "user.message", "chat.user_message"):
+                return True
+            return False
+
+        def _looks_image_path(val: Any) -> bool:
+            if not isinstance(val, str):
+                return False
+            clean = val.lower().split("?", 1)[0].split("#", 1)[0]
+            return clean.endswith((".png", ".jpg", ".jpeg", ".webp"))
+
+        def _walk(node: Any) -> None:
+            if isinstance(node, dict):
+                if _is_user_node(node):
+                    return
+                name = node.get("event_name", "")
+                p = node.get("payload", {}) if isinstance(node.get("payload"), dict) else {}
+
+                # 1. Explicit delta.presentation blocks
+                if name == "delta.presentation":
+                    data_block = p.get("data", {}) if isinstance(p.get("data"), dict) else {}
+                    images = data_block.get("images", []) if isinstance(data_block.get("images"), list) else []
+                    for img in images:
+                        if isinstance(img, dict):
+                            raw_path = img.get("path") or img.get("media_path")
+                            variants = img.get("variants") if isinstance(img.get("variants"), dict) else {}
+                            url = variants.get("original") or img.get("url") or img.get("src")
+                            _add(raw_path, url)
+                    if p.get("image_path"):
+                        ipath = str(p.get("image_path"))
+                        raw_p = ipath if ipath.startswith("sandbox://") else f"sandbox://{ipath.lstrip('/')}"
+                        _add(raw_p, None)
+
+                # 2. General image item / media object
+                kind = str(node.get("kind") or node.get("type") or "").strip().lower()
+                mime = str(
+                    node.get("mime_type")
+                    or node.get("mimeType")
+                    or node.get("mime")
+                    or node.get("content_type")
+                    or ""
+                ).strip().lower()
+                raw_path = node.get("path") or node.get("media_path") or node.get("image_path")
+                variants = node.get("variants") if isinstance(node.get("variants"), dict) else {}
+                url = variants.get("original") or node.get("url") or node.get("src")
+                if (
+                    kind == "image"
+                    or mime.startswith("image/")
+                    or _looks_image_path(raw_path)
+                    or _looks_image_path(url)
+                ):
+                    if isinstance(raw_path, str) and raw_path and not raw_path.startswith(("sandbox://", "http://", "https://")) and "/" in raw_path:
+                        if node.get("image_path") and not node.get("path"):
+                            raw_path = f"sandbox://{raw_path.lstrip('/')}"
+                    _add(raw_path, url)
+
+                for val in node.values():
+                    _walk(val)
+            elif isinstance(node, list):
+                # Walk in reverse so newest events/messages appear first
+                for item in reversed(node):
+                    _walk(item)
+
+        _walk(events_or_history)
+        return found
+
+    @staticmethod
+    def _pick_writable_session_id(sessions_payload: Any) -> Optional[str]:
+        """Pick the most recently updated writable Muse session."""
+        raw_sessions = (
+            sessions_payload.get("result", {}).get("sessions", [])
+            if isinstance(sessions_payload, dict)
+            else []
+        )
+        writable = [
+            s
+            for s in raw_sessions
+            if isinstance(s, dict)
+            and s.get("can_send_messages") is not False
+            and str(s.get("channel") or "").lower() != "whatsapp"
+            and isinstance(s.get("session_id"), str)
+            and s.get("session_id")
+        ]
+        writable.sort(key=lambda s: int(s.get("updated_at_ms") or 0), reverse=True)
+        return writable[0]["session_id"] if writable else None
+
+    @staticmethod
+    def _extract_event_list(events_or_history: Any) -> list:
+        if isinstance(events_or_history, list):
+            return events_or_history
+        if isinstance(events_or_history, dict):
+            res = events_or_history.get("result")
+            if isinstance(res, dict):
+                for key in ("chat_events", "messages", "events"):
+                    if isinstance(res.get(key), list):
+                        return res[key]
+            for key in ("chat_events", "messages", "events"):
+                if isinstance(events_or_history.get(key), list):
+                    return events_or_history[key]
+        return []
+
+    @classmethod
+    def _max_seq_and_ts(cls, events_or_history: Any) -> Tuple[int, int]:
+        max_seq = 0
+        max_ts = 0
+        for ev in cls._extract_event_list(events_or_history):
             if not isinstance(ev, dict):
                 continue
-            name = ev.get("event_name", "")
-            p = ev.get("payload", {}) if isinstance(ev.get("payload"), dict) else {}
+            p = ev.get("payload") if isinstance(ev.get("payload"), dict) else {}
+            seq = p.get("chat_event_seq") or ev.get("chat_event_seq")
+            if isinstance(seq, (int, float)) and int(seq) > max_seq:
+                max_seq = int(seq)
+            ts = ev.get("occurred_at_ms") or p.get("occurred_at_ms") or p.get("display_text_updated_at_ms")
+            if isinstance(ts, (int, float)) and int(ts) > max_ts:
+                max_ts = int(ts)
+        return max_seq, max_ts
 
-            # 1. Check delta.presentation
-            if name == "delta.presentation":
-                data_block = p.get("data", {}) if isinstance(p.get("data"), dict) else {}
-                images = data_block.get("images", []) if isinstance(data_block.get("images"), list) else []
-                for img in images:
-                    if isinstance(img, dict):
-                        raw_path = img.get("path")
-                        variants = img.get("variants") if isinstance(img.get("variants"), dict) else {}
-                        url = variants.get("original") or img.get("url")
-                        if raw_path or url:
-                            found.append((raw_path, url))
-                if p.get("image_path"):
-                    ipath = p.get("image_path")
-                    raw_p = ipath if ipath.startswith("sandbox://") else f"sandbox://{ipath.lstrip('/')}"
-                    found.append((raw_p, None))
+    @classmethod
+    def _extract_new_image_refs(
+        cls,
+        events_or_history: Any,
+        baseline_ids: set,
+        min_seq: int = 0,
+        min_ts: int = 0,
+    ) -> list:
+        """Extract only NEW non-user image refs created after min_seq / min_ts and not in baseline_ids."""
+        events = cls._extract_event_list(events_or_history)
+        if not events:
+            raw_refs = cls._extract_image_refs(events_or_history)
+            return [
+                (rp, u)
+                for rp, u in raw_refs
+                if not (cls._image_ref_aliases(rp, u) & baseline_ids)
+            ]
 
-            # 2. Check general message payload items or media
-            items = p.get("items", []) if isinstance(p.get("items"), list) else []
-            for it in items:
-                if isinstance(it, dict) and it.get("type") == "image":
-                    raw_path = it.get("path") or it.get("media_path")
-                    url = it.get("url") or it.get("src")
-                    if raw_path or url:
-                        found.append((raw_path, url))
-        return found
+        fresh_events = []
+        for ev in events:
+            if not isinstance(ev, dict):
+                continue
+            p = ev.get("payload") if isinstance(ev.get("payload"), dict) else {}
+            seq = p.get("chat_event_seq") or ev.get("chat_event_seq")
+            ts = ev.get("occurred_at_ms") or p.get("occurred_at_ms") or p.get("display_text_updated_at_ms")
+            if min_seq > 0 and isinstance(seq, (int, float)):
+                if int(seq) <= min_seq:
+                    continue
+            elif min_ts > 0 and isinstance(ts, (int, float)):
+                if int(ts) <= min_ts:
+                    continue
+            fresh_events.append(ev)
+
+        raw_refs = cls._extract_image_refs(fresh_events)
+        return [
+            (rp, u)
+            for rp, u in raw_refs
+            if not (cls._image_ref_aliases(rp, u) & baseline_ids)
+        ]
 
     async def _download_image(self, url: str) -> Optional[str]:
         try:
@@ -551,8 +724,35 @@ class MuseEngine:
                         report(38, "Đang gửi prompt tạo ảnh chất lượng cao tới Muse AI...")
 
                 clean_prompt = prompt.strip()
-                # Use persistent project session to keep all project shots in one chat
-                effective_session = session_id or get_or_create_muse_session(project_id)
+                self._last_muse_error = None
+
+                # Resolve the active writable Muse session before calling chat_stream so we
+                # can snapshot all existing images, max chat_event_seq, and max timestamp.
+                from core.muse_ai.media import extract_session_ids
+                sessions_before: set = set()
+                active_sid: Optional[str] = session_id if session_id else None
+                try:
+                    sl = await client.sessions_list()
+                    sessions_before = set(extract_session_ids(sl))
+                    if not active_sid:
+                        active_sid = self._pick_writable_session_id(sl)
+                except Exception as sl_err:
+                    print(f"[MuseEngine] sessions_list skipped: {sl_err}")
+
+                baseline_ids: set = set()
+                for seen_set in _SESSION_SEEN_IMAGE_IDS.values():
+                    baseline_ids.update(seen_set)
+                max_baseline_seq = 0
+                max_baseline_ts = 0
+
+                if active_sid:
+                    try:
+                        baseline_history = await client.history(session_id=active_sid, limit=80)
+                        for rp, u in self._extract_image_refs(baseline_history):
+                            baseline_ids.update(self._image_ref_aliases(rp, u))
+                        max_baseline_seq, max_baseline_ts = self._max_seq_and_ts(baseline_history)
+                    except Exception as base_err:
+                        print(f"[MuseEngine] Baseline history check skipped: {base_err}")
 
                 # Add clear image generation directive if needed
                 if not any(kw in clean_prompt.lower() for kw in ("create", "generate", "render", "photorealistic", "image", "ảnh", "tạo ảnh")):
@@ -563,12 +763,33 @@ class MuseEngine:
                 events = await client.chat_stream(
                     prompt=send_prompt,
                     images=valid_ref_paths or None,
-                    session_id=effective_session,
-                    stream_timeout=35.0,
+                    session_id=active_sid,
+                    stream_timeout=45.0,
                 )
 
-                # Check if chat_stream already yielded image presentation events
-                extracted = self._extract_image_refs(events)
+                resolved_session = (
+                    await client._resolve_session_id(active_sid, events, sessions_before)
+                    or active_sid
+                )
+                effective_session = resolved_session or "default"
+
+                def _event_matches_session(ev: Any) -> bool:
+                    if not resolved_session or not isinstance(ev, dict):
+                        return True
+                    ctx = ev.get("chat_context") if isinstance(ev.get("chat_context"), dict) else {}
+                    ev_sid = ctx.get("chat_id") or ev.get("session_id")
+                    if not ev_sid:
+                        return True
+                    return ev_sid == resolved_session
+
+                # Check if chat_stream already yielded NEW image presentation events for this session
+                session_events = [ev for ev in (events or []) if _event_matches_session(ev)]
+                extracted = self._extract_new_image_refs(
+                    session_events,
+                    baseline_ids=baseline_ids,
+                    min_seq=max_baseline_seq,
+                    min_ts=max_baseline_ts,
+                )
 
                 if not extracted:
                     if report:
@@ -585,15 +806,20 @@ class MuseEngine:
                             report(pct, f"Đang chờ Muse AI kết xuất ảnh độ phân giải cao ({int(elapsed)}s)...")
 
                         try:
-                            h = await client.history(session_id=effective_session, limit=30)
-                            events_list = h.get("result", {}).get("chat_events", []) if isinstance(h, dict) else []
-                            extracted = self._extract_image_refs(events_list)
+                            h = await client.history(session_id=resolved_session, limit=60)
+                            extracted = self._extract_new_image_refs(
+                                h,
+                                baseline_ids=baseline_ids,
+                                min_seq=max_baseline_seq,
+                                min_ts=max_baseline_ts,
+                            )
                             if extracted:
                                 break
                         except Exception as poll_err:
                             print(f"[MuseEngine] Image poll error: {poll_err}")
 
                 found_image_data = None
+                selected_aliases: set = set()
                 if extracted:
                     for raw_path, img_url in extracted:
                         if raw_path:
@@ -616,7 +842,11 @@ class MuseEngine:
                             except Exception as dl_err:
                                 print(f"[MuseEngine] CDN download failed: {dl_err}")
                         if found_image_data:
+                            selected_aliases = self._image_ref_aliases(raw_path, img_url)
                             break
+
+                if selected_aliases:
+                    _SESSION_SEEN_IMAGE_IDS.setdefault(effective_session, set()).update(selected_aliases)
 
                 if not found_image_data:
                     print(f"[MuseEngine] Không tìm thấy ảnh trả về từ Muse AI trong 180s.")
@@ -652,6 +882,7 @@ class MuseEngine:
                     "engine": "muse_ai",
                 }
             except Exception as exc:
+                self._last_muse_error = str(exc)
                 print(f"[MuseEngine] Tạo ảnh Muse AI thất bại ({exc}); chuyển sang fallback.")
                 return None
             finally:

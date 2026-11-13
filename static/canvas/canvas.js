@@ -685,13 +685,14 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
   }
 
   function scriptField(section,label,nextLabels){
-    const startPattern=new RegExp(`^\\s*(?:[-*•]\\s*)?(?:[A-E]\\)\\s*)?(?:\\*{1,2})?(?:\\[)?${label}(?:\\])?(?:\\*{1,2})?\\s*:\\s*(.*)$`,'im');
+    const startPattern=new RegExp(`^\\s*(?:[-*•]\\s*)?(?:[A-E]\\)\\s*)?(?:\\*{1,2}\\s*)?(?:\\[)?${label}(?:\\])?(?:\\s*\\*{1,2})?\\s*:\\s*(?:\\*{1,2})?\\s*(.*)$`,'im');
     const match=startPattern.exec(section);if(!match)return'';
     const start=match.index+match[0].length-(match[1]?match[1].length:0),tail=section.slice(start);
-    const stopPattern=nextLabels.length?new RegExp(`^\\s*(?:[-*•]\\s*)?(?:[A-E]\\)\\s*)?(?:\\*{1,2})?(?:\\[)?(?:${nextLabels.join('|')})(?:\\])?(?:\\*{1,2})?\\s*:`,'im'):null;
-    const stop=stopPattern?stopPattern.exec(tail):null;
+    const stopParts=[...nextLabels.map(nl=>`(?:[-*•]\\s*)?(?:[A-E]\\)\\s*)?(?:\\*{1,2}\\s*)?(?:\\[)?(?:${nl})(?:\\])?(?:\\s*\\*{1,2})?\\s*:`),'---\\s*$','#{1,6}\\s+'];
+    const stopPattern=new RegExp(`^\\s*(?:${stopParts.join('|')})`,'im');
+    const stop=stopPattern.exec(tail);
     let val=tail.slice(0,stop?stop.index:tail.length).trim();
-    val=val.replace(/^```[a-zA-Z]*\n?([\s\S]*?)```$/m,'$1').replace(/^`([\s\S]*?)`$/,'$1').trim();
+    val=val.replace(/^```[a-zA-Z]*\n?([\s\S]*?)```$/m,'$1').replace(/^`([\s\S]*?)`$/,'$1').replace(/^\s*\*{1,2}\s*/,'').replace(/\s*\*{1,2}\s*$/,'').trim();
     return val;
   }
   function extractBracketLocks(text){
@@ -704,7 +705,7 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
       const nextMatch=matches[index+1];
       const nextLockIndex=nextMatch?nextMatch.index:text.length;
       let tail=text.slice(startOfNext,nextLockIndex);
-      const stopIdx=tail.search(/^\s*(?:```|---|#{1,6}\s*(?:HỒI|CẢNH|SCENE)|(?:\*{1,2}\s*)?(?:(?:PHÂN\s*)?C[AẢÀÁẠÃÂẬẦẤ]NH|SCENE|SHOT|CLIP)\s*\d+)/im);
+      const stopIdx=tail.search(/^\s*(?:```|---|#{1,6}\s*(?:HỒI|CẢNH|SCENE|SHOT|PHẦN)|(?:\*{1,2}\s*)?(?:(?:PHÂN\s*)?C[AẢÀÁẠÃÂẬẦẤ]NH|SCENE|SHOT|CLIP)\s*\d+)/im);
       if(stopIdx!==-1)tail=tail.slice(0,stopIdx);
       let fullContent=(sameLineContent+(tail?'\n'+tail:'')).trim();
       fullContent=fullContent.replace(/^```[a-zA-Z]*\n?([\s\S]*?)```$/,'$1').replace(/^`([\s\S]*?)`$/,'$1').trim();
@@ -713,31 +714,60 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
     }
     return blocks;
   }
-  function expandScriptLocks(text,locks){return String(text||'').replace(/\[([A-Z][A-Z0-9_ ]*)\]/gi,(token,key)=>{const normalized=key.toLowerCase().trim().replace(/\s+/g,' '),canonical=normalized==='character lock'?'char lock':normalized;return locks[canonical]||locks[normalized.replaceAll(' ','_')]||locks[normalized]||token;});}
+  function expandScriptLocks(text,locks,tokenMap={}){
+    let out=String(text||'').replace(/\[([A-Z][A-Z0-9_ ]*)\]/gi,(token,key)=>{
+      const normalized=key.toLowerCase().trim().replace(/\s+/g,' '),canonical=normalized==='character lock'?'char lock':normalized;
+      return locks[canonical]||locks[normalized.replaceAll(' ','_')]||locks[normalized]||tokenMap[key.trim().toUpperCase().replace(/\s+/g,'_')]||token;
+    });
+    if(tokenMap&&typeof tokenMap==='object'){
+      for(const [tok,val] of Object.entries(tokenMap)){
+        if(!tok||!val)continue;
+        const re=new RegExp(`\\b${tok}\\b`,'g');
+        if(re.test(out)){
+          out=out.replace(new RegExp(`\\b${tok}\\b`,'g'),()=>out.includes(val)?'':val);
+        }
+      }
+      out=out.replace(/,\s*,+/g,',').replace(/\s{2,}/g,' ').replace(/^[,\s]+|[,\s]+$/g,'').trim();
+    }
+    return out;
+  }
   function withPromptContext(prompt,context,before=true){const value=String(prompt||'').trim(),parts=context.filter(Boolean).filter(part=>!value.includes(part));return before?[...parts,value].filter(Boolean).join('\n\n'):[value,...parts].filter(Boolean).join('\n\n');}
   function parseSceneScript(text){
-    const heading=/^\s*(?:[-*•]\s*)?(?:#{1,6}\s*)?(?:\*{1,2}\s*)?(?:(?:PHÂN\s*)?C[AẢÀÁẠÃÂẬẦẤ]NH|SCENE|SHOT|CLIP)\s*(\d+)\s*[:\.\s-]*\s*(?:\(([^)]*)\))?\s*[:\.\s-]*\s*(.*?)(?:\(([^)]*)\))?\s*(?:\*{1,2})?\s*$/gim,matches=[...text.matchAll(heading)];if(!matches.length)return[];
+    const heading=/^\s*(?:[-*•]\s*)?(?:#{1,6}\s*)?(?:\*{1,2}\s*)?(?:((?:PHÂN\s*)?C[AẢÀÁẠÃÂẬẦẤ]NH|SCENE|SHOT|CLIP))\s*(\d+)\s*[:\.\s-]*\s*(?:\(([^)]*)\))?\s*[:\.\s-]*\s*(.*?)(?:\(([^)]*)\))?\s*(?:\*{1,2})?\s*$/gim,matches=[...text.matchAll(heading)];if(!matches.length)return[];
+    const lockLib=parseMasterLockLibrary(text);
     const preamble=text.slice(0,matches[0].index),namedLocks=extractBracketLocks(preamble),allLockLabels=['CHAR(?:ACTER)?\\s*LOCK','NHÂN VẬT(?:\\s+THAM GIA)?','STYLE\\s*LOCK','PHONG CÁCH(?:\\s+VÀ\\s+KỸ\\s+THUẬT)?','SET\\s*LOCK','BỐI CẢNH(?:\\s*LOCK)?','VIDEO\\s*SUFFIX','NEGATIVE(?:\\s+PROMPT)?','PROMPT\\s+ÂM','C\\)'],locks={...namedLocks,
       'char lock':namedLocks['char lock']||namedLocks['character lock']||scriptField(preamble,'(?:CHAR(?:ACTER)?\\s*LOCK|NHÂN VẬT(?:\\s+THAM GIA)?)',allLockLabels.filter(l=>!l.includes('CHAR')))||'',
-      'style lock':namedLocks['style lock']||namedLocks.style||scriptField(preamble,'(?:STYLE\\s*LOCK|PHONG CÁCH(?:\\s+VÀ\\s+KỸ\\s+THUẬT)?)',allLockLabels.filter(l=>!l.includes('STYLE')))||'',
+      'style lock':namedLocks['style lock']||namedLocks.style||scriptField(preamble,'(?:STYLE\\s*LOCK|PHONG CÁCH(?:\\s+VÀ\\s+KỸ\\s+THUẬT)?)',allLockLabels.filter(l=>!l.includes('STYLE')))||lockLib.globalStyle||'',
       'set lock':namedLocks['set lock']||namedLocks.set||scriptField(preamble,'(?:SET\\s*LOCK|BỐI CẢNH(?:\\s*LOCK)?)',allLockLabels.filter(l=>!l.includes('SET')))||'',
       'video suffix':namedLocks['video suffix']||namedLocks.suffix||scriptField(preamble,'VIDEO\\s*SUFFIX',allLockLabels.filter(l=>!l.includes('SUFFIX')))||'',
-      negative:namedLocks.negative||scriptField(preamble,'(?:NEGATIVE(?:\\s+PROMPT)?|PROMPT\\s+ÂM)',allLockLabels.filter(l=>!l.includes('NEGATIVE')))||''
+      negative:namedLocks.negative||scriptField(preamble,'(?:NEGATIVE(?:\\s+PROMPT)?|PROMPT\\s+ÂM)',allLockLabels.filter(l=>!l.includes('NEGATIVE')))||lockLib.globalNegative||''
     };
     for(const key of Object.keys(locks))if(/^\[[^\]]+\]$/.test(locks[key]))locks[key]='';
+    const posTokenMap={...(lockLib.tokenMap||{})};
+    delete posTokenMap.GLOBAL_NEGATIVE_LOCK;
+    const allStopLabels=[
+      '(?:Bước\\s+[A-Z0-9][^:]*)','(?:Step\\s+[A-Z0-9][^:]*)','(?:Keyframe\\s+Generation)','(?:Video\\s+Generation)',
+      '(?:Timecode(?:\\s*&\\s*Audio)?)','Ingredients','LOCK\\s+MANIFEST','Input','(?:Transition|Chuyển\\s+cảnh)',
+      '(?:Khung\\s+[đd]ầu|Opening\\s+frame)','(?:Khung\\s+cuối|Ending\\s+frame)',
+      '(?:Diễn\\s+biến|Dien\\s+bien|Action(?:\\s+beats)?)',
+      '(?:Prompt\\s+[ảa]nh(?:\\s+khung\\s+[đd]ầu)?|Image\\s+prompt)',
+      '(?:Prompt\\s+video|Video\\s+prompt)','(?:Audio|Âm\\s+thanh|Am\\s+thanh)',
+      '(?:Negative(?:\\s+prompt)?|Prompt\\s+[âa]m)','Checklist','Tự\\s+kiểm\\s+tra','[A-E]\\)'
+    ];
     return matches.map((match,index)=>{
       const body=text.slice(match.index+match[0].length,matches[index+1]?.index??text.length);
-      const fieldStops=['(?:Khung\\s+[đd]ầu|Opening\\s+frame)','(?:Khung\\s+cuối|Ending\\s+frame)','(?:Diễn\\s+biến|Dien\\s+bien|Action(?:\\s+beats)?)','(?:Prompt\\s+[ảa]nh(?:\\s+khung\\s+[đd]ầu)?|Image\\s+prompt)','(?:Prompt\\s+video|Video\\s+prompt)','(?:Audio|Âm\\s+thanh|Am\\s+thanh)','(?:Negative(?:\\s+prompt)?|Prompt\\s+[âa]m)','Checklist','Tự\\s+kiểm\\s+tra','[A-E]\\)'];
-      const opening=scriptField(body,'(?:Khung\\s+[đd]ầu|Opening\\s+frame)',fieldStops.filter(label=>!label.includes('đầu')&&!label.includes('Opening'))),
-        ending=scriptField(body,'(?:Khung\\s+cuối|Ending\\s+frame)',fieldStops.filter(label=>!label.includes('cuối')&&!label.includes('Ending'))),
-        beats=scriptField(body,'(?:Diễn\\s+biến|Dien\\s+bien|Action(?:\\s+beats)?)',fieldStops.filter(label=>!label.includes('biến')&&!label.includes('Action'))),
-        rawImage=scriptField(body,'(?:Prompt\\s+[ảa]nh(?:\\s+khung\\s+[đd]ầu)?|Image\\s+prompt)',['Khung\\s+cuối','Ending\\s+frame','Diễn\\s+biến','Prompt\\s+video','Video\\s+prompt','Audio','Negative','Checklist','[A-E]\\)']),
-        rawVideo=scriptField(body,'(?:Prompt\\s+video|Video\\s+prompt)',['Audio','Âm\\s+thanh','Am\\s+thanh','Negative','Prompt\\s+[âa]m','Checklist','[A-E]\\)']),
-        audio=scriptField(body,'(?:Audio|Âm\\s+thanh|Am\\s+thanh)',['Negative','Prompt\\s+[âa]m','Checklist','[A-E]\\)']),
-        sceneNegative=scriptField(body,'(?:Negative(?:\\s+prompt)?|Prompt\\s+[âa]m)',['Checklist','[A-E]\\)']),
-        timeStr=match[2]||match[4]||'',range=timeStr.match(/(\d+):(\d{2})\s*(?:đến|to|[–—-])\s*(\d+):(\d{2})/i);
-      const seconds=range?(Number(range[3])*60+Number(range[4]))-(Number(range[1])*60+Number(range[2])):0;
-      let imagePrompt=expandScriptLocks(rawImage,locks),videoPrompt=expandScriptLocks(rawVideo,locks);
+      const opening=scriptField(body,'(?:Khung\\s+[đd]ầu|Opening\\s+frame)',allStopLabels.filter(l=>!l.includes('đầu')&&!l.includes('Opening'))),
+        ending=scriptField(body,'(?:Khung\\s+cuối|Ending\\s+frame)',allStopLabels.filter(l=>!l.includes('cuối')&&!l.includes('Ending'))),
+        beats=scriptField(body,'(?:Diễn\\s+biến|Dien\\s+bien|Action(?:\\s+beats)?)',allStopLabels.filter(l=>!l.includes('biến')&&!l.includes('Action'))),
+        rawImage=scriptField(body,'(?:Prompt\\s+[ảa]nh(?:\\s+khung\\s+[đd]ầu)?|Image\\s+prompt)',allStopLabels.filter(l=>!l.includes('Image')&&!l.includes('[ảa]nh'))),
+        rawVideo=scriptField(body,'(?:Prompt\\s+video|Video\\s+prompt)',allStopLabels.filter(l=>!l.includes('Video\\s+prompt')&&!l.includes('Prompt\\s+video'))),
+        audio=scriptField(body,'(?:Audio|Âm\\s+thanh|Am\\s+thanh)',allStopLabels.filter(l=>!l.includes('Audio'))),
+        sceneNegative=scriptField(body,'(?:Negative(?:\\s+prompt)?|Prompt\\s+[âa]m)',allStopLabels.filter(l=>!l.includes('Negative')&&!l.includes('[âa]m'))),
+        timeStr=match[3]||match[5]||'',
+        range=(timeStr.match(/(\d+):(\d{2})\s*(?:đến|to|[–—-])\s*(\d+):(\d{2})/i))||(body.match(/(\d+):(\d{2})\s*(?:đến|to|[–—-])\s*(\d+):(\d{2})/i)),
+        secMatch=body.match(/(?:Timecode[^:\n]*:[^\n]*|[(])\b(\d+)\s*s(?:ec|giây)?\b/i);
+      const seconds=range?(Number(range[3])*60+Number(range[4]))-(Number(range[1])*60+Number(range[2])):(secMatch?Number(secMatch[1]):0);
+      let imagePrompt=expandScriptLocks(rawImage,locks,posTokenMap),videoPrompt=expandScriptLocks(rawVideo,locks,posTokenMap);
       if(rawImage)imagePrompt=withPromptContext(imagePrompt,[locks['char lock'],locks['style lock']]);
       const videoContext=[locks['set lock'],locks['char lock'],locks['style lock']];
       if(rawVideo)videoPrompt=withPromptContext(videoPrompt,videoContext);
@@ -745,146 +775,353 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
       const videoDetails=[beats?`Timed action beats:\n${beats}`:'',ending?`Final frame to reach: ${ending}`:'',audio?`Audio direction: ${audio}. No speech.`:''];
       if(rawVideo)videoPrompt=[videoPrompt,...videoDetails].filter(Boolean).join('\n\n');
       if(locks['video suffix']&&!videoPrompt.includes(locks['video suffix']))videoPrompt=`${videoPrompt}\n\n${locks['video suffix']}`.trim();
-      const negative=expandScriptLocks(sceneNegative||locks.negative,locks),ratio=(imagePrompt+' '+videoPrompt+' '+preamble).match(/\b(9:16|16:9|1:1|4:3|3:4)\b/);
-      let title=(match[3]||'').trim().replace(/^[:\.\s-]+|[:\.\s-]+$/g,'').trim();
+      const negTokenMap=lockLib.globalNegative?{GLOBAL_NEGATIVE_LOCK:lockLib.globalNegative}:{};
+      const negative=expandScriptLocks(sceneNegative||locks.negative,locks,negTokenMap),ratio=(imagePrompt+' '+videoPrompt+' '+preamble).match(/\b(9:16|16:9|1:1|4:3|3:4)\b/);
+      let title=(match[4]||'').trim().replace(/^[:\.\s-]+|[:\.\s-]+$/g,'').trim();
       title=title.replace(/\*{1,2}$/,'').trim();
-      return{number:Number(match[1]),title,imagePrompt,videoPrompt,hasImagePrompt:Boolean(rawImage),hasVideoPrompt:Boolean(rawVideo),negative,seconds:seconds>0?seconds:6,size:ratio?.[1]||'16:9'};
+      const kw=(match[1]||'SHOT').toUpperCase().includes('SCENE')?'SCENE':((match[1]||'SHOT').toUpperCase().includes('CẢNH')?'CẢNH':'SHOT');
+      const code=match[2];
+      const headingLabel=`${kw} ${code}${title?`: ${title}`:''}`;
+      return{number:Number(code),code,headingLabel,title,imagePrompt,videoPrompt,hasImagePrompt:Boolean(rawImage),hasVideoPrompt:Boolean(rawVideo),negative,seconds:seconds>0?seconds:6,size:ratio?.[1]||'16:9'};
     }).filter(scene=>scene.hasImagePrompt||scene.hasVideoPrompt);
   }
 
-  function parseAssetLockList(text) {
-    if (!text || typeof text !== 'string') return [];
-    // If the script contains scenes, character locks can only exist in the preamble before the first scene!
+  function parseMasterLockLibrary(text) {
+    if (!text || typeof text !== 'string') {
+      return { isMasterLibrary: false, globalStyle: '', globalWorld: '', globalNegative: '', lightingLocks: [], items: [] };
+    }
+    // If there are scene headings (CẢNH 1, SCENE 1...), only inspect the preamble before the first scene
     const firstSceneIdx = text.search(/^\s*(?:[-*•]\s*)?(?:#{1,6}\s*)?(?:\*{1,2}\s*)?(?:(?:PHÂN\s*)?C[AẢÀÁẠÃÂẬẦẤ]NH|SCENE|SHOT|CLIP)\s*\d+/im);
     const assetSection = firstSceneIdx !== -1 ? text.slice(0, firstSceneIdx) : text;
 
     const rawLines = assetSection.split(/\r?\n/);
     const lines = rawLines.map(l => l.trim()).filter(Boolean);
-    if (!lines.length) return [];
+    if (!lines.length) {
+      return { isMasterLibrary: false, globalStyle: '', globalWorld: '', globalNegative: '', lightingLocks: [], items: [] };
+    }
 
+    // 1. Extract Global Locks, Lighting Locks & full Token Map
+    let globalStyle = '';
+    let globalWorld = '';
+    let globalNegative = '';
+    const lightingLocks = [];
+    const tokenMap = {};
+
+    for (const line of lines) {
+      const cleanLine = line.replace(/^[•\-*–—o]\s*/, '').replace(/\*{1,2}/g, '').replace(/`/g, '').trim();
+      const gm = cleanLine.match(/^(GLOBAL_STYLE_LOCK|GLOBAL_WORLD_LOCK|GLOBAL_NEGATIVE_LOCK|LIGHTING_REF_[A-Z0-9_]+|CHAR_ID_LOCK_[A-Z0-9_]+|FACE_LOCK_[A-Z0-9_]+|HAIR_LOCK_[A-Z0-9_]+|BODY_LOCK_[A-Z0-9_]+|OUTFIT_LOCK_[A-Z0-9_]+|SET_ID_LOCK_[A-Z0-9_]+|ARCH_LOCK_[A-Z0-9_]+|SPATIAL_LOCK_[A-Z0-9_]+|FIXTURE_LOCK_[A-Z0-9_]+|PROP_LOCK_[A-Z0-9_]+)\s*:\s*(.+)$/i);
+      if (gm) {
+        const key = gm[1].toUpperCase();
+        const val = gm[2].trim();
+        tokenMap[key] = val;
+        if (key === 'GLOBAL_STYLE_LOCK') globalStyle = val;
+        else if (key === 'GLOBAL_WORLD_LOCK') globalWorld = val;
+        else if (key === 'GLOBAL_NEGATIVE_LOCK') globalNegative = val;
+        else if (key.startsWith('LIGHTING_REF_')) lightingLocks.push({ key, value: val });
+      }
+    }
+
+    const hasLibraryMarkers = Boolean(
+      globalStyle || globalWorld || globalNegative ||
+      /(?:TẦNG\s*[1-4]|MASTER\s*LOCK|CHAR_ID_LOCK_|SET_ID_LOCK_|PROP_LOCK_|Prompt\s+tạo\s+(?:Master\s+)?Sheet|Character\s+Sheet\s+Prompt|Environment\s+Sheet\s+Prompt)/i.test(assetSection)
+    );
+
+    // 2. Scan for Character / Environment / Prop items
     const items = [];
     let current = null;
+    let capturingCopyPaste = false;
+    let inFence = false;
 
-    const sceneFieldNames = /^(?:khung\s+[đd]ầu|opening\s+frame|khung\s+cuối|ending\s+frame|diễn\s+biến|action|prompt\s+[ảa]nh|image\s+prompt|prompt\s+video|video\s+prompt|audio|âm\s+thanh|negative|checklist)/i;
-
-    const isHeader = (line) => {
-      if (sceneFieldNames.test(line)) return false;
-      // Has colon at end or bracketed name: e.g. "• Anh Chồng (CHAR_01 — 28 tuổi):", "Anh Chồng (CHAR_01):"
-      if (/^[•\-*–—\d\.]*\s*(?:#{1,6}\s*)?(\[?[^:\]]+\]?)\s*:\s*$/i.test(line)) {
-        const lower = line.toLowerCase();
-        // Exclude attribute names like FACE_LOCK:, HAIR_LOCK:, etc.
-        if (!lower.includes('_lock') && !lower.includes('lock_') && !/^(?:face|hair|body|outfit|utfit|quần|áo|tóc|mặt|dáng)\s*:/i.test(lower)) {
-          return true;
-        }
-      }
-      // Or lines containing (CHAR_...) or [CHAR_...] or (SET_...) or (PROP_...)
-      if (/\((?:CHAR|SET|PROP|LOC)_[^\)]+\)\s*:?/i.test(line) || /\[(?:CHAR|SET|PROP|LOC)_[^\]]+\]\s*:?/i.test(line)) {
-        return true;
-      }
+    const isSectionBanner = (line) => {
+      if (/^(?:---+|\#{1,6}\s*(?:PHẦN|1\.|2\.|3\.|4\.|Global|Character|Prompt)|PHẦN\s+\d+|Plaintext|Biến thể trạng thái|\d+\.\s*TẦNG\s+\d+|D\.\s*Hệ thống Đạo Cụ)/i.test(line)) return true;
       return false;
     };
 
-    const isAttrLine = (line) => {
-      if (sceneFieldNames.test(line)) return false;
-      const lower = line.toLowerCase();
-      if (lower.includes('_lock') || lower.includes('lock_')) return true;
-      if (/^(?:face|hair|body|outfit|utfit|quần|áo|tóc|mặt|dáng|tuổi|chiều cao|vóc dáng)\s*:/i.test(line)) return true;
-      if (/^[o•\-*–—]\s*(?:face|hair|body|outfit|utfit|quần|áo|tóc|mặt|dáng|tuổi)/i.test(line)) return true;
-      return false;
+    const parseItemHeader = (line) => {
+      // Ignore scene fields or Prompt tạo Sheet line
+      if (/^(?:khung\s+[đd]ầu|opening\s+frame|khung\s+cuối|ending\s+frame|diễn\s+biến|action|prompt\s+[ảa]nh|image\s+prompt|prompt\s+video|video\s+prompt|audio|âm\s+thanh|negative|checklist)/i.test(line)) return null;
+      if (/^(?:[•\-*–—o]\s*)?(?:\*{1,2})?(?:Prompt\s+tạo\s+(?:Master\s+)?Sheet|(?:Character|Environment|Set|Prop|Nhân\s*vật|Bối\s*cảnh|Đạo\s*cụ)[^:]*Sheet\s*Prompt)/i.test(line)) return null;
+
+      // Pattern 1: "A. Nhân vật chính: Anh Tâm ... (CHAR_ID_LOCK_01)" or "B. Bối cảnh 01: ... (SET_ID_LOCK_01)"
+      const secMatch = line.match(/^[A-Z]\.\s*(?:Nhân vật[^:]*|Bối cảnh[^:]*|Character[^:]*|Environment[^:]*|Set[^:]*)\s*:\s*(.+)$/i);
+      if (secMatch) {
+        const name = secMatch[1].trim();
+        const category = /SET_ID_LOCK|Bối cảnh|Environment/i.test(line) ? 'set' : 'char';
+        return { name, category, initialDetail: '' };
+      }
+
+      // Pattern 2: "PROP_LOCK_01 (Giỏ nhựa...): Mô tả..."
+      const propMatch = line.match(/^(?:[•\-*–—o]\s*)?(PROP_LOCK_\d+)\s*\(([^)]+)\)\s*:\s*(.*)$/i);
+      if (propMatch) {
+        return { name: `${propMatch[1]} (${propMatch[2].trim()})`, category: 'prop', initialDetail: propMatch[3].trim() };
+      }
+
+      // Pattern 3: "• Anh Chồng (CHAR_01 — 28 tuổi):" or "[CHAR_01]:"
+      if (/\((?:CHAR|SET|PROP|LOC)_[A-Z0-9_]+[^)]*\)\s*:?$/i.test(line) || /\[(?:CHAR|SET|PROP|LOC)_[A-Z0-9_]+[^\]]*\]\s*:?$/i.test(line)) {
+        const name = line.replace(/^[•\-*–—\d\.]+\s*/, '').replace(/:\s*$/, '').trim();
+        const category = /SET_|LOC_/i.test(name) ? 'set' : /PROP_/i.test(name) ? 'prop' : 'char';
+        return { name, category, initialDetail: '' };
+      }
+
+      // Pattern 4: Generic header ending with ":" (excluding *_LOCK: attributes and PHẦN banners)
+      if (/^[•\-*–—\d\.]*\s*(?:#{1,6}\s*)?(\[?[^:\]]+\]?)\s*:\s*$/i.test(line)) {
+        const lower = line.toLowerCase();
+        if (!lower.includes('_lock') && !lower.includes('lock_') && !lower.includes('global_') && !lower.includes('lighting_ref') && !/^(?:face|hair|body|outfit|utfit|quần|áo|tóc|mặt|dáng|biến thể|thông tin|concept|tầm nhìn|cung bậc|bảng)\b/i.test(lower)) {
+          const name = line.replace(/^[•\-*–—\d\.]+\s*/, '').replace(/\*{1,2}/g, '').replace(/:\s*$/, '').trim();
+          return { name, category: 'char', initialDetail: '' };
+        }
+      }
+
+      return null;
     };
 
     for (const line of lines) {
-      if (isHeader(line)) {
-        if (current && (current.details.length || current.name)) items.push(current);
-        let name = line.replace(/^[•\-*–—\d\.]+\s*/, '').replace(/:\s*$/, '').trim();
-        current = { name, details: [] };
-      } else if (current) {
-        if (sceneFieldNames.test(line)) continue;
-        let attr = line.replace(/^[o•\-*–—\d\.]+\s*/, '').trim();
-        const colonIdx = attr.indexOf(':');
-        if (colonIdx !== -1 && colonIdx < 60) {
-          const val = attr.slice(colonIdx + 1).trim();
-          if (val) current.details.push(val.replace(/[,;.\s]+$/, ''));
-        } else {
-          current.details.push(attr.replace(/[,;.\s]+$/, ''));
+      if (/^```/.test(line)) {
+        inFence = !inFence;
+        continue;
+      }
+
+      if (isSectionBanner(line)) {
+        if (/^Plaintext$/i.test(line)) continue;
+        // Section banners end any copy-paste capture from previous item
+        if (/^(?:---+|\#{1,6}\s*PHẦN|PHẦN\s+\d+|\d+\.\s*TẦNG\s+\d+|D\.\s*Hệ thống Đạo Cụ)/i.test(line)) {
+          if (current) { items.push(current); current = null; }
+          capturingCopyPaste = false;
         }
-      } else if (isAttrLine(line)) {
-        current = { name: 'Nhân vật 1', details: [] };
-        let attr = line.replace(/^[o•\-*–—\d\.]+\s*/, '').trim();
-        const colonIdx = attr.indexOf(':');
-        if (colonIdx !== -1 && colonIdx < 60) {
-          const val = attr.slice(colonIdx + 1).trim();
-          if (val) current.details.push(val.replace(/[,;.\s]+$/, ''));
-        } else {
-          current.details.push(attr.replace(/[,;.\s]+$/, ''));
+        continue;
+      }
+
+      // Detect "Prompt tạo Master Sheet ..." or "* **Character Sheet Prompt:**" / "* **Environment Sheet Prompt:**"
+      const cpClean = line.replace(/^[•\-*–—\d\.]+\s*/, '').replace(/\*{1,2}/g, '').trim();
+      const cpMatch = cpClean.match(/^((?:Prompt\s+tạo\s+(?:Master\s+)?Sheet[^:]*)|(?:(?:Character|Environment|Set|Prop|Nhân\s*vật|Bối\s*cảnh|Đạo\s*cụ)[^:]*Sheet\s*Prompt))\s*:\s*(.*)$/i);
+      if (cpMatch) {
+        const headingLabel = cpMatch[1].trim();
+        const isNamedSheet = /(?:Character|Environment|Set|Prop|Nhân\s*vật|Bối\s*cảnh|Đạo\s*cụ)[^:]*Sheet\s*Prompt/i.test(headingLabel);
+        if (!current || (isNamedSheet && current.copyPastePrompt)) {
+          if (current) items.push(current);
+          const isSet = /Environment|Set|Bối\s*cảnh/i.test(headingLabel);
+          const isProp = /Prop|Đạo\s*cụ/i.test(headingLabel);
+          current = {
+            name: headingLabel.replace(/\s*Prompt$/i, '').trim(),
+            category: isSet ? 'set' : isProp ? 'prop' : 'char',
+            details: [],
+            copyPastePrompt: ''
+          };
         }
+        capturingCopyPaste = true;
+        if (cpMatch[2] && cpMatch[2].trim() && !/^Plaintext$/i.test(cpMatch[2].trim())) {
+          current.copyPastePrompt = cpMatch[2].trim();
+        }
+        continue;
+      }
+
+      const headerInfo = parseItemHeader(line);
+      if (headerInfo && !inFence) {
+        if (current) items.push(current);
+        current = {
+          name: headerInfo.name,
+          category: headerInfo.category,
+          details: headerInfo.initialDetail ? [headerInfo.initialDetail] : [],
+          copyPastePrompt: ''
+        };
+        capturingCopyPaste = false;
+        continue;
+      }
+
+      if (!current) continue;
+
+      if (capturingCopyPaste) {
+        current.copyPastePrompt = current.copyPastePrompt
+          ? `${current.copyPastePrompt} ${line}`
+          : line;
+        continue;
+      }
+
+      // Collect attribute details as fallback
+      const attr = line.replace(/^[o•\-*–—\d\.]+\s*/, '').trim();
+      const colonIdx = attr.indexOf(':');
+      if (colonIdx !== -1 && colonIdx < 60) {
+        const val = attr.slice(colonIdx + 1).trim();
+        if (val) current.details.push(val.replace(/[,;.\s]+$/, ''));
+      } else {
+        current.details.push(attr.replace(/[,;.\s]+$/, ''));
       }
     }
-    if (current && (current.details.length || current.name)) items.push(current);
+    if (current) items.push(current);
 
-    const validItems = items.filter(it => it.details.length > 0 || (it.name && it.name.length > 3));
+    const validItems = items.filter(it => it.copyPastePrompt || it.details.length > 0 || (it.name && it.name.length > 3));
 
-    return validItems.map((item, idx) => {
-      const combined = item.details.filter(Boolean).join(', ');
+    const defaultNeg = globalNegative || 'mờ, biến dạng, chữ ký, xấu, méo mó, watermark, 3D CGI, cartoon, anime, bad anatomy, deformed eyes, extra fingers';
+    const mappedItems = validItems.map((item, idx) => {
+      let finalPrompt = '';
+      let detectedAspect = '';
+      if (item.copyPastePrompt) {
+        const arMatch = item.copyPastePrompt.match(/--ar\s+(16:9|9:16|1:1|4:3|3:4)\b/i);
+        if (arMatch) detectedAspect = arMatch[1];
+        finalPrompt = item.copyPastePrompt
+          .replace(/\s*--ar\s+(?:16:9|9:16|1:1|4:3|3:4)\b/gi, '')
+          .replace(/,?\s*\bGLOBAL_NEGATIVE_LOCK\b\.?/g, '')
+          .trim();
+        for (const [tok, val] of Object.entries(tokenMap)) {
+          if (tok === 'GLOBAL_NEGATIVE_LOCK' || !val) continue;
+          const re = new RegExp(`\\b${tok}\\b\\.?\\s*`, 'g');
+          if (re.test(finalPrompt)) {
+            finalPrompt = finalPrompt.replace(new RegExp(`\\b${tok}\\b\\.?`, 'g'), () =>
+              finalPrompt.includes(val) ? '' : val
+            );
+          }
+        }
+        finalPrompt = finalPrompt
+          .replace(/,\s*,+/g, ',')
+          .replace(/\.\s*,/g, '.')
+          .replace(/\s{2,}/g, ' ')
+          .replace(/^[,\s]+|[,\s]+$/g, '')
+          .trim();
+      } else {
+        const combined = item.details.filter(Boolean).join(', ');
+        finalPrompt = globalStyle ? `${globalStyle}. ${combined}` : combined;
+      }
+      const isSetCategory = item.category === 'set' || /SET_ID_LOCK|dilapidated|stilt house|environment/i.test(finalPrompt);
       return {
-        name: item.name || (`Nhân vật ${idx + 1}`),
-        prompt: combined || item.name,
-        negative: 'mờ, biến dạng, chữ ký, xấu, méo mó, watermark, 3D CGI, cartoon, anime, bad anatomy, deformed eyes, extra fingers'
+        name: item.name || `Tài nguyên ${idx + 1}`,
+        category: isSetCategory ? 'set' : (item.category || 'char'),
+        aspect: detectedAspect || (isSetCategory ? '16:9' : '1:1'),
+        prompt: finalPrompt || item.name,
+        negative: defaultNeg
       };
     });
+
+    return {
+      isMasterLibrary: hasLibraryMarkers && (mappedItems.length > 0 || Boolean(globalStyle || globalWorld || globalNegative)),
+      globalStyle,
+      globalWorld,
+      globalNegative,
+      lightingLocks,
+      tokenMap,
+      items: mappedItems
+    };
   }
 
-  function buildSceneNodesFromScript(){
+  function parseAssetLockList(text) {
+    return parseMasterLockLibrary(text).items;
+  }
+
+  function buildSceneNodesFromScript(autoRun=false, options={}){
     const status=$('#scriptImportStatus'),scriptText=$('#scriptInput').value;
     const scenes=parseSceneScript(scriptText);
-    const assetLocks=parseAssetLockList(scriptText);
+    const lockLib=parseMasterLockLibrary(scriptText);
+    const assetLocks=lockLib.items;
 
-    if(!scenes.length && !assetLocks.length){
-      status.className='error';
-      status.textContent='Không tìm thấy phân cảnh hoặc danh sách nhân vật hợp lệ. Hãy dán danh sách nhân vật (ví dụ: • Anh Chồng (CHAR_01): ...) hoặc kịch bản phân cảnh (CẢNH 1: ...).';
+    if(!scenes.length && !assetLocks.length && !lockLib.globalStyle && !lockLib.globalWorld && !lockLib.globalNegative){
+      if(status){
+        status.className='error';
+        status.textContent='Không tìm thấy phân cảnh hoặc danh sách nhân vật hợp lệ. Hãy dán danh sách nhân vật (ví dụ: • Anh Chồng (CHAR_01): ...) hoặc kịch bản phân cảnh (CẢNH 1: ...).';
+      }
       return;
     }
 
-    createUndoSnapshot('Create nodes from script (3-Stage Workflow)');
-    const baseY=Math.max(40,...state.nodes.filter(node=>!node.data?.dockOnly).map(node=>node.y+360));
+    createUndoSnapshot('Create nodes from script / Master Lock Library');
+    if(options.clearOld){
+      state.nodes=[];
+      state.edges=[];
+      state.notes=[];
+      state.selectedNodeIds=[];
+    }
+
+    const baseY=state.nodes.length ? Math.max(40,...state.nodes.filter(node=>!node.data?.dockOnly).map(node=>node.y+360)) : 40;
     const createdVideos=[];
     let made=0;
+    let contentStartY=baseY;
+
+    // TẦNG 1: GLOBAL LOCKS (Đi xuyên suốt toàn bộ quá trình tạo Ảnh & Video)
+    if(lockLib.globalStyle || lockLib.globalWorld || lockLib.globalNegative){
+      const globalStyleText=[lockLib.globalStyle, lockLib.globalWorld].filter(Boolean).join('\n\n');
+      if(globalStyleText){
+        let gStyleNode=state.nodes.find(n=>n.data?.isGlobalStyleLock);
+        if(!gStyleNode){
+          gStyleNode=makeNode('prompt', 80, baseY);
+          state.nodes.push(gStyleNode);
+          made++;
+        }
+        gStyleNode.data={
+          ...gStyleNode.data,
+          text: globalStyleText,
+          isGlobalStyleLock: true,
+          customName: '🌐 TẦNG 1: GLOBAL STYLE & WORLD LOCK',
+          sceneLabel: 'Xuyên suốt mọi Ảnh & Video'
+        };
+      }
+      if(lockLib.globalNegative){
+        let gNegNode=state.nodes.find(n=>n.data?.isGlobalNegativeLock);
+        if(!gNegNode){
+          gNegNode=makeNode('negativePrompt', 420, baseY);
+          state.nodes.push(gNegNode);
+          made++;
+        }
+        gNegNode.data={
+          ...gNegNode.data,
+          text: lockLib.globalNegative,
+          isGlobalNegativeLock: true,
+          customName: '🚫 TẦNG 1: GLOBAL NEGATIVE LOCK',
+          sceneLabel: 'Loại trừ xuyên suốt'
+        };
+      }
+      contentStartY = baseY + 290;
+    }
 
     let masterReferences=null;
+    let refHubs=[];
 
-    // GIAI ĐOẠN 1 – KHÓA TÀI NGUYÊN / TẠO CỤM NODE NHÂN VẬT (ASSET LOCKS)
+    // GIAI ĐOẠN 1 – KHÓA TÀI NGUYÊN / MASTER REFERENCE SHEETS (CHỈ TẠO ẢNH, KHÔNG TẠO VIDEO)
     if(assetLocks.length > 0){
-      masterReferences=makeNode('references', 740, baseY + 30);
-      masterReferences.data={sceneLabel:'Tập ảnh tham chiếu (References)'};
-      state.nodes.push(masterReferences);
-      made++;
+      const cols = assetLocks.length > 4 ? 2 : 1;
+      const refHubX = cols === 2 ? 1480 : 780;
+      const hubCount=Math.ceil(assetLocks.length / 8);
+      for(let h=0; h<hubCount; h++){
+        const hub=makeNode('references', refHubX, contentStartY + h * 440);
+        hub.data={
+          customName: hubCount > 1 ? `Tập ảnh tham chiếu ${h+1}` : 'Tập ảnh tham chiếu (References)',
+          sceneLabel: h===0 ? 'Nhân vật & Bối cảnh' : 'Đạo cụ & Tài nguyên'
+        };
+        state.nodes.push(hub);
+        refHubs.push(hub);
+        made++;
+      }
+      masterReferences=refHubs[0];
 
+      // Arrange Master Sheets in a clean 2-column grid so 12 sheets stay compact
       assetLocks.forEach((asset, idx) => {
-        const rowY = baseY + idx * 460;
+        const col = idx % cols;
+        const row = Math.floor(idx / cols);
+        const colOffsetX = col * 700;
+        const rowY = contentStartY + row * 470;
         const shotNum = idx + 1;
 
+        const shortName = String(asset.name || `Sheet ${shotNum}`).replace(/\s*—\s*[^()]+/, '').trim();
+
         // 1. Node Prompt (Văn bản)
-        const promptNode = makeNode('prompt', 80, rowY);
+        const promptNode = makeNode('prompt', 80 + colOffsetX, rowY);
         promptNode.data = {
           text: asset.prompt || 'Nhập prompt mô tả cảnh bạn muốn Muse AI tạo...',
-          customName: 'Prompt (Văn bản)',
+          customName: `📝 ${shotNum}. ${shortName}`,
           sceneLabel: asset.name
         };
 
         // 2. Node Negative Prompt (Lời nhắc loại trừ)
-        const negNode = makeNode('negativePrompt', 80, rowY + 240);
+        const negNode = makeNode('negativePrompt', 80 + colOffsetX, rowY + 230);
         negNode.data = {
-          text: asset.negative || 'mờ, biến dạng, chữ ký, xấu, méo mó, watermark, 3D CGI, cartoon, anime, bad anatomy, deformed eyes, extra fingers',
-          customName: 'Negative Prompt (Lời nhắc loại trừ)'
+          text: asset.negative || lockLib.globalNegative || 'mờ, biến dạng, chữ ký, xấu, méo mó, watermark, 3D CGI, cartoon, anime, bad anatomy, deformed eyes, extra fingers',
+          customName: `🚫 Loại trừ · ${shortName}`
         };
 
-        // 3. Node Tạo Ảnh (Generate Image) 1:1 (Vuông)
-        const imgNode = makeNode('generateImage', 400, rowY + 30);
+        // 3. Node Tạo Ảnh (Generate Image) - Chỉ tạo ảnh Master Sheet
+        const imgNode = makeNode('generateImage', 400 + colOffsetX, rowY + 20);
         imgNode.data = {
           model: 'muse-image',
-          size: '1:1', // Khóa tỉ lệ 1:1 chuẩn ảnh chân dung tham chiếu
+          size: asset.aspect || '1:1',
           status: 'idle',
-          customName: `Tạo Ảnh (Generate Image) ${shotNum}`,
+          isMasterSheet: true,
+          customName: `🖼️ ${shotNum}. ${shortName}`,
           sceneLabel: asset.name
         };
 
@@ -909,14 +1146,16 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
           targetPort: 'negative'
         });
 
-        // Dây nối 3: Tạo Ảnh.image -> Tập ảnh tham chiếu.reference{1..8} (màu xanh dương)
-        const refPortId = `reference${Math.min(idx + 1, 8)}`;
+        // Dây nối 3: Tạo Ảnh.image -> Tập ảnh tham chiếu (tự chia hub nếu > 8 ảnh)
+        const hubIndex = Math.floor(idx / 8);
+        const portSlot = (idx % 8) + 1;
+        const targetHub = refHubs[hubIndex] || refHubs[0];
         state.edges.push({
           id: uid('edge'),
           source: imgNode.id,
           sourcePort: 'image',
-          target: masterReferences.id,
-          targetPort: refPortId
+          target: targetHub.id,
+          targetPort: `reference${portSlot}`
         });
       });
     } else {
@@ -957,6 +1196,7 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
         masterReferences=makeNode('references',740,baseY+120);
         masterReferences.data={sceneLabel:'Tập ảnh tham chiếu gốc (Master References)'};
         state.nodes.push(masterReferences);
+        refHubs=[masterReferences];
         if(charImgNode)state.edges.push({id:uid('edge'),source:charImgNode.id,sourcePort:'image',target:masterReferences.id,targetPort:'reference1'});
         if(setImgNode)state.edges.push({id:uid('edge'),source:setImgNode.id,sourcePort:'image',target:masterReferences.id,targetPort:'reference2'});
         made++;
@@ -965,43 +1205,48 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
 
     // GIAI ĐOẠN 2 & 3 – TẠO PHÂN CẢNH VÀ VIDEO KEYFRAME (NẾU CÓ)
     if(scenes.length > 0){
-      const sceneBaseX=(assetLocks.length > 0 || masterReferences)?1120:80;
+      const sceneBaseX=(assetLocks.length > 0 || masterReferences) ? (assetLocks.length > 4 ? 1900 : 1160) : 80;
       scenes.forEach((scene,index)=>{
-        const column=index%4,row=Math.floor(index/4),x=sceneBaseX+column*650,y=baseY+row*1100,label=`Scene ${scene.number}${scene.title?`: ${scene.title}`:''}`;
+        const column=index%4,row=Math.floor(index/4),x=sceneBaseX+column*680,y=contentStartY+row*1100;
+        const shotTag=scene.headingLabel||`Scene ${scene.number}${scene.title?`: ${scene.title}`:''}`;
         let imageNode=null,videoNode=null;
         // GIAI ĐOẠN 2 – TẠO ẢNH KEYFRAME
         if(scene.hasImagePrompt){
           const prompt=makeNode('prompt',x,y);
-          prompt.data={text:scene.imagePrompt,sceneLabel:label};
+          prompt.data={text:scene.imagePrompt,customName:`📝 Keyframe · ${shotTag}`,sceneLabel:shotTag};
           const image=makeNode('generateImage',x+330,y);
-          image.data={model:'muse-image',size:scene.size,status:'idle',sceneLabel:label};
+          image.data={model:'muse-image',size:scene.size,status:'idle',customName:`🖼️ Keyframe · ${shotTag}`,sceneLabel:shotTag};
           state.nodes.push(prompt,image);
           state.edges.push({id:uid('edge'),source:prompt.id,sourcePort:'text',target:image.id,targetPort:'prompt'});
-          if(masterReferences){
-            state.edges.push({id:uid('edge'),source:masterReferences.id,sourcePort:'image',target:image.id,targetPort:'reference'});
-          }
+          const hubList=refHubs.length?refHubs:(masterReferences?[masterReferences]:[]);
+          hubList.forEach(hub=>{
+            state.edges.push({id:uid('edge'),source:hub.id,sourcePort:'image',target:image.id,targetPort:'reference'});
+          });
           imageNode=image;
           made+=2;
         }
         // GIAI ĐOẠN 3 – TẠO VIDEO (Ảnh tham chiếu gốc + Keyframe cảnh)
         if(scene.hasVideoPrompt){
           const prompt=makeNode('prompt',x,y+540);
-          prompt.data={text:scene.videoPrompt,sceneLabel:label};
+          prompt.data={text:scene.videoPrompt,customName:`🎬 Motion · ${shotTag}`,sceneLabel:shotTag};
           const requestedDuration=[5,6,8,10].reduce((best,value)=>Math.abs(value-scene.seconds)<Math.abs(best-scene.seconds)?value:best,5);
           videoNode=makeNode('generateVideo',x+330,y+540);
-          videoNode.data={model:'muse-video',size:scene.size,duration:requestedDuration,continuity:createdVideos.length>0,status:'idle',sceneLabel:label};
+          videoNode.data={model:'muse-video',size:scene.size,duration:requestedDuration,continuity:createdVideos.length>0,status:'idle',customName:`🎥 Video (${requestedDuration}s) · ${shotTag}`,sceneLabel:shotTag};
           state.nodes.push(prompt,videoNode);
           state.edges.push({id:uid('edge'),source:prompt.id,sourcePort:'text',target:videoNode.id,targetPort:'prompt'});
           // Video = Keyframe cảnh làm khung đầu
           if(imageNode)state.edges.push({id:uid('edge'),source:imageNode.id,sourcePort:'image',target:videoNode.id,targetPort:'reference'});
           // Video = Ảnh tham chiếu gốc (Master References)
-          if(masterReferences)state.edges.push({id:uid('edge'),source:masterReferences.id,sourcePort:'image',target:videoNode.id,targetPort:'reference'});
+          const hubList=refHubs.length?refHubs:(masterReferences?[masterReferences]:[]);
+          hubList.forEach(hub=>{
+            state.edges.push({id:uid('edge'),source:hub.id,sourcePort:'image',target:videoNode.id,targetPort:'reference'});
+          });
           made+=2;
           createdVideos.push({node:videoNode,seconds:requestedDuration});
         }
         if(scene.negative){
           const negative=makeNode('negativePrompt',x,y+270);
-          negative.data={text:scene.negative,sceneLabel:label};
+          negative.data={text:scene.negative,customName:`🚫 Loại trừ · ${shotTag}`,sceneLabel:shotTag};
           state.nodes.push(negative);
           if(imageNode)state.edges.push({id:uid('edge'),source:negative.id,sourcePort:'text',target:imageNode.id,targetPort:'negative'});
           if(videoNode)state.edges.push({id:uid('edge'),source:negative.id,sourcePort:'text',target:videoNode.id,targetPort:'negative'});
@@ -1144,12 +1389,19 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
     body.className = 'node-body';
 
     if (['prompt','negativePrompt','textAppend'].includes(n.type)) {
+      if (n.data?.isGlobalStyleLock || n.data?.isGlobalNegativeLock) {
+        const gBadge = document.createElement('span');
+        gBadge.className = 'ref-badge';
+        gBadge.style.cssText = 'background:#3b1e6d;border:1px solid #8b5cf6;color:#e9d5ff;margin-bottom:6px;display:inline-block;';
+        gBadge.textContent = '🔒 Tự động áp dụng xuyên suốt mọi Ảnh & Video';
+        body.appendChild(gBadge);
+      }
       const ta = document.createElement('textarea');
       ta.value = n.data.text || '';
       ta.placeholder = n.type==='negativePrompt'?'Nhập các chi tiết muốn loại bỏ (mờ, biến dạng, chữ ký...)...':n.type==='textAppend'?'Đoạn văn bản nối đuôi (ánh sáng, phong cách, chi tiết...)...':'Nhập prompt mô tả cảnh bạn muốn Muse AI tạo...';
       ta.oninput = () => n.data.text = ta.value;
       body.appendChild(ta);
-      if(n.type==='negativePrompt'){const hint=document.createElement('div');hint.className='hint';hint.textContent='Kéo cổng ra nối vào cổng "Loại trừ" của node Tạo ảnh hoặc Tạo video.';body.appendChild(hint);}
+      if(n.type==='negativePrompt' && !n.data?.isGlobalNegativeLock){const hint=document.createElement('div');hint.className='hint';hint.textContent='Kéo cổng ra nối vào cổng "Loại trừ" của node Tạo ảnh hoặc Tạo video.';body.appendChild(hint);}
       if(n.type==='textAppend'){const hint=document.createElement('div');hint.className='hint';hint.textContent='Tự động nối đuôi đoạn văn bản này vào prompt được nối tới.';body.appendChild(hint);}
     }
 
@@ -2937,16 +3189,36 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
     const source=sourceFor(getIncoming(nodeId,'text')[0]);return source?resolveText(source.id,seen):'';
   }
   function resolvePrompt(nodeId){
-    return getIncoming(nodeId,'prompt').map(edge=>nodeById(edge.source)).filter(Boolean).map(source=>resolveText(source.id).trim()).filter(Boolean).join('\n\n');
+    const localPrompt = getIncoming(nodeId,'prompt').map(edge=>nodeById(edge.source)).filter(Boolean).map(source=>resolveText(source.id).trim()).filter(Boolean).join('\n\n');
+    const target = nodeById(nodeId);
+    if (target && ['generateImage', 'generateVideo'].includes(target.type) && !target.data?.isMasterSheet) {
+      const globalStyleNode = state.nodes.find(n => n.data?.isGlobalStyleLock && n.data?.text?.trim());
+      if (globalStyleNode) {
+        const globalText = globalStyleNode.data.text.trim();
+        if (localPrompt && !localPrompt.includes(globalText.slice(0, 40))) {
+          return `${globalText}\n\n${localPrompt}`;
+        }
+        if (!localPrompt) return globalText;
+      }
+    }
+    return localPrompt;
   }
   function resolveNegativePrompt(nodeId){
     const source=sourceFor(getIncoming(nodeId,'negative')[0]);
-    if (source) {
-      const txt = resolveText(source.id);
-      if (txt) return txt;
-    }
     const node = nodeById(nodeId);
-    return node?.data?.negativePrompt || '';
+    let localNeg = '';
+    if (source) {
+      localNeg = resolveText(source.id) || '';
+    } else {
+      localNeg = node?.data?.negativePrompt || '';
+    }
+    const globalNegNode = state.nodes.find(n => n.data?.isGlobalNegativeLock && n.data?.text?.trim());
+    if (globalNegNode && node && ['generateImage', 'generateVideo'].includes(node.type)) {
+      const gNeg = globalNegNode.data.text.trim();
+      if (!localNeg) return gNeg;
+      if (!localNeg.includes(gNeg.slice(0, 35))) return `${localNeg}, ${gNeg}`;
+    }
+    return localNeg;
   }
   function timelinePredecessor(nodeId){const timeline=state.nodes.find(item=>item.type==='timeline'),order=timeline?.data?.clipOrder||[],index=order.indexOf(nodeId);return index>0?nodeById(order[index-1]):null;}
   function resolveReferences(nodeId){
@@ -3213,7 +3485,7 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
       const failed=state.nodes.find(n=>['generateImage','generateVideo'].includes(n.type)&&n.data.status==='running');
       if(failed){failed.data.status='error';failed.data.error=err?.message||String(err);render();}
       const message=err?.message||String(err);
-      setRunStatus(/failed to fetch/i.test(message)?`Muse connection failed. Reload MuseFlow ${appVersion}, then check the Muse session.`:`MuseFlow ${appVersion} · ${message}`,'error');
+      setRunStatus(/failed to fetch/i.test(message)?`Muse connection failed. Reload Minh Âm Studio ${appVersion}, then check the Muse session.`:`Minh Âm Studio ${appVersion} · ${message}`,'error');
       clearTimeout(autoSaveTimer);void queueWorkflowSave().catch(saveError=>{if(!state.isRunning)setRunStatus(`${runStatus.textContent} · Auto-save failed: ${saveError?.message||String(saveError)}`,'error');});
     }
     finally{state.isRunning=false;state.activeGenerationId=null;state.generationAbortController=null;state.generationRequestId=null;$('#runBtn').disabled=false;$('#runBtn').textContent='▶ Run workflow';$('#runBtn').title='Run every node in the workflow in dependency order';render();}
@@ -3675,21 +3947,21 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
     const linkRefs = $('#quickSpawnLinkRefs')?.checked ?? true;
     const clearOld = $('#quickSpawnClearOld')?.checked ?? false;
 
-    // 1. Kiểm tra nếu là định dạng Khóa Nhân Vật (CHAR_01 / FACE_LOCK) hoặc Kịch bản Cảnh 1, Cảnh 2
-    const lockItems = parseAssetLockList(raw);
+    // 1. Kiểm tra nếu là Thư viện Master Lock (Tầng 1/2/3/4), Khóa Nhân Vật (CHAR_LOCK) hoặc Kịch bản Cảnh 1, Cảnh 2
+    const lockLib = parseMasterLockLibrary(raw);
     const parsedScenes = parseSceneScript(raw);
 
-    if (pattern === 'char_lock' || (pattern === 'auto' && lockItems.length > 0 && parsedScenes.length === 0)) {
+    if (pattern === 'char_lock' || lockLib.isMasterLibrary || (pattern === 'auto' && lockLib.items.length > 0 && parsedScenes.length === 0)) {
       if ($('#scriptInput')) {
         $('#scriptInput').value = raw;
-        void buildSceneNodesFromScript(autoRun);
+        void buildSceneNodesFromScript(autoRun, { clearOld });
         return;
       }
     }
     if (pattern === 'auto' && parsedScenes.length > 0) {
       if ($('#scriptInput')) {
         $('#scriptInput').value = raw;
-        void buildSceneNodesFromScript(autoRun);
+        void buildSceneNodesFromScript(autoRun, { clearOld });
         return;
       }
     }
@@ -3730,9 +4002,12 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
 
     lines.forEach((lineText, idx) => {
       const num = idx + 1;
+      const cleanSnippet = lineText.replace(/\s+/g, ' ').trim();
+      const shortTitle = cleanSnippet.length > 34 ? `${cleanSnippet.slice(0, 34).trim()}…` : cleanSnippet;
+
       const pNode = makeNode('prompt', startX, curY);
       pNode.data.text = lineText;
-      pNode.data.customName = `Prompt (Văn bản) ${num}`;
+      pNode.data.customName = `📝 ${num}. ${shortTitle}`;
       state.nodes.push(pNode);
 
       if (effectivePattern === 'prompt_only') {
@@ -3742,13 +4017,13 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
 
       const negNode = makeNode('negativePrompt', startX, curY + 230);
       negNode.data.text = defaultNeg;
-      negNode.data.customName = `Negative Prompt ${num}`;
+      negNode.data.customName = `🚫 Loại trừ ${num}. ${shortTitle}`;
       state.nodes.push(negNode);
 
       const imgNode = makeNode('generateImage', startX + 340, curY + 40);
       imgNode.data.size = aspect;
       imgNode.data.model = 'muse-image';
-      imgNode.data.customName = `Tạo Ảnh (Generate Image) ${num}`;
+      imgNode.data.customName = `🖼️ ${num}. ${shortTitle}`;
       state.nodes.push(imgNode);
 
       state.edges.push(
@@ -3770,7 +4045,7 @@ if (typeof window !== 'undefined' && window.location && window.location.protocol
         const vNode = makeNode('generateVideo', startX + 680, curY + 40);
         vNode.data.size = ['16:9', '9:16', '1:1'].includes(aspect) ? aspect : '16:9';
         vNode.data.duration = 7;
-        vNode.data.customName = `Tạo Video (Generate Video) ${num}`;
+        vNode.data.customName = `🎬 ${num}. ${shortTitle}`;
         state.nodes.push(vNode);
         createdVideoIds.push(vNode.id);
 

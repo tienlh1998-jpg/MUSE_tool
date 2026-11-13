@@ -44,7 +44,7 @@ def extract_session_ids(value: Any) -> list[str]:
     def walk(node: Any) -> None:
         if isinstance(node, dict):
             for key, item in node.items():
-                if key in {"session_id", "sessionId", "thread_id", "threadId"}:
+                if key in {"session_id", "sessionId", "thread_id", "threadId", "chat_id", "chatId"}:
                     if isinstance(item, str) and item and item not in found:
                         found.append(item)
                 walk(item)

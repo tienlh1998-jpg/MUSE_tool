@@ -183,10 +183,31 @@ class MuseClient:
             return event_ids[-1]
         try:
             sessions_after = await self.sessions_list()
-            current = extract_session_ids(sessions_after)
-            new_ids = [value for value in current if value not in sessions_before]
+            raw_sessions = (
+                sessions_after.get("result", {}).get("sessions", [])
+                if isinstance(sessions_after, dict)
+                else []
+            )
+            writable = [
+                s
+                for s in raw_sessions
+                if isinstance(s, dict)
+                and s.get("can_send_messages") is not False
+                and str(s.get("channel") or "").lower() != "whatsapp"
+                and isinstance(s.get("session_id"), str)
+                and s.get("session_id")
+            ]
+            writable.sort(key=lambda s: int(s.get("updated_at_ms") or 0), reverse=True)
+            writable_ids = [s["session_id"] for s in writable]
+            new_ids = [value for value in writable_ids if value not in sessions_before]
             if new_ids:
                 return new_ids[0]
+            if writable_ids:
+                return writable_ids[0]
+            current = extract_session_ids(sessions_after)
+            new_any = [value for value in current if value not in sessions_before]
+            if new_any:
+                return new_any[0]
             if current:
                 return current[0]
         except Exception:
